@@ -58,15 +58,22 @@ These are the only tasks Claude Code cannot do through MCP. Tick them off as you
 
 ## M6 · Local webhook tunnel · needed day 3
 
-- [ ] 1. `brew install cloudflared`.
-- [ ] 2. In a second terminal: `cloudflared tunnel --url http://localhost:3000`. Copy the printed `https://….trycloudflare.com` URL.
-- [ ] 3. Set it in `.env.local` as `NEXT_PUBLIC_APP_URL` and restart `npm run dev`. The URL changes every time the tunnel restarts.
+- [x] 1. `brew install cloudflared`.
+- [x] 2. In a second terminal: `cloudflared tunnel --url http://localhost:3000`. Copy the printed `https://….trycloudflare.com` URL.
+- [x] 3. Set it in `.env.local` as `NEXT_PUBLIC_APP_URL` and restart `npm run dev`. The URL changes every time the tunnel restarts. (`*.trycloudflare.com` is already allowed in `next.config.ts`.)
 
 
 
 ## M7 · Resend — one check
 
 - [x] 1. Open [https://resend.com/domains](https://resend.com/domains) and confirm `preb.co` shows **Verified** (DKIM and SPF) and that the return‑path / MX record exists. Open and click tracking are already off. Claude created the sending‑only key through the MCP (`RESEND_API_KEY` in `.env.local`); add the same value to Vercel in M5 step 4.
+
+
+
+## M7b · Brand assets for emails · done on day 2, repeat after a logo change
+
+- [x] `npx tsx --env-file=.env.local scripts/upload-brand-assets.ts` uploads `public/logoName.png` and `public/logo.png` to the public Storage bucket `brand`; emails load the logo from there. Set `EMAIL_ASSET_BASE_URL` only if the assets move elsewhere (e.g. the Framer site).
+- Sign‑up requires a work email. Founders/testers with personal addresses go into `ADMIN_EMAILS` (locally and in Vercel, M5 step 4).
 
 
 

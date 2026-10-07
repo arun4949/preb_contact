@@ -1,5 +1,7 @@
+"use client";
+
 /* eslint-disable @next/next/no-img-element */
-import type { HTMLAttributes, Ref } from "react";
+import { useState, type HTMLAttributes, type Ref } from "react";
 import { cx, sortCx } from "@/utils/cx";
 
 /**
@@ -60,18 +62,23 @@ export function Avatar({
   ref,
   ...props
 }: AvatarProps) {
+  // Fall back to initials when the photo fails (expired or blocked provider URLs).
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const showPhoto = Boolean(src) && failedSrc !== src;
   return (
     <span
       ref={ref}
       className={cx(styles.base, styles.size[size], styles.color[color], className)}
       {...props}
     >
-      {src ? (
+      {showPhoto ? (
         <img
           src={src}
           alt={alt ?? ""}
           loading="lazy"
           decoding="async"
+          referrerPolicy="no-referrer"
+          onError={() => setFailedSrc(src ?? null)}
           className="size-full object-cover"
         />
       ) : (

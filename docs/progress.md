@@ -2,6 +2,85 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Day 2 — 2026-10-07 · Shell, dashboard, wizard (complete, browser-verified)
+
+### Done
+- ✅ **Stripe test catalogue** created: 14 products/prices at margin ×1.15 (`preb_<plan_key>` lookup keys, e.g. Pro 500 → $33/mo, Pro 6k → $359/yr). `npm run stripe:catalogue` now loads `.env.local` via `tsx --env-file`.
+- ✅ **Header** `components/application/header/`: `app-header.tsx` (logo, underline `Tabs` with Lists, pill **New list** + tooltip `N`, mobile icon button), `credits-dropdown.tsx` (Figma 1015:35: balance / plan, `ProgressBar`, next expiry, trial chip, red dot <10 %), `account-dropdown.tsx` (1015:33: avatar, name/workspace/email, Settings · Billing → `/lists?settings=…` until the settings modal lands day 5/6, Help/Feedback mailto, **theme toggle** segmented row, Log out), `use-shortcuts.ts` (`N` → /lists/new, `/` → focus search; ignored while typing or with a dialog open).
+- ✅ **Queries** (`lib/supabase/queries.ts`): `getLists(ws, user, {status, owner, q})` (status groups enriching/completed/paused, ilike search, drafts hidden), `getWorkspaceMembers`, `getCreditSummary` (available, plan credits, earliest expiry, isTrial). `(app)/layout.tsx` passes the summary to the header.
+- ✅ **Lists dashboard** `(app)/lists/page.tsx` (1015:30): gradient workspace avatar, title + count `Badge`, `ListsToolbar` (status `Select` with `StatusDot`, owner `Select`, debounced search → URL params, `Kbd /`), grid 1→2→3, filtered + first-run `EmptyState`, `loading.tsx` with `SkeletonCard`s.
+- ✅ **ListCard** `components/application/list-card/list-card.tsx`: status strip (Enriched ✓ date · Enriching with `ComposerLoader` rim + `AgentThinking` shimmer + % · Paused ⚠ · Stopped), title link, **`ContactGauge`** (`contact-gauge/contact-gauge.tsx`, 180° SVG, `chart-1` valid / `chart-3` risky arcs via `motion`, count-up, sweep while enriching, reduced-motion safe), metric rows with `Chip` percentages, Download All (disabled until done — export is day 4), overflow `Dropdown` → Rename `Dialog`, Stop/Delete `ConfirmDialog`. `list-status.tsx` = status → label/chip map.
+- ✅ **CSV lib** `lib/csv/`: `parse.ts` (PapaParse auto-delimiter, BOM strip, UTF-8→Latin-1 fallback, SheetJS first sheet, 10k-row / 20 MB caps, `truncated` flag), `automap.ts` (`PrebField`, `ColumnMapping` = field → column index, synonym table EN/DE/FR/ES), `normalize.ts` (domain/LinkedIn/email cleaning, full-name split, enrichability, dedup key, `normaliseRows` summary).
+- ✅ **List actions** `lib/lists/actions.ts` (server): `createDraftList` (draft row + signed upload URL), `attachUpload`, `parseList` (download from Storage, parse, normalise, dedup, **cache lookup** same-workspace <90 d → `cached` rows pre-filled via `mapRecord`, delete+insert `list_contacts` in 1,000-row batches, stores mapping/has_header/duplicates), `startList` (validates fields/name, requires `available ≥ typical`, inserts `credit_holds`, sets `queued` + estimates + `row_limit`, `after()` → POST `/api/jobs/tick`, redirects to `/lists/[id]`), `renameList`, `stopList` (queued → stopped + release hold; running → `stopping`), `deleteList` (hard delete + Storage cleanup + hold release), `discardDraft`.
+- ✅ **Wizard** `(app)/lists/new` + `components/application/new-list/`: `new-list-wizard.tsx` (Stepper, sparkle header, Go back, step slide animations `animate-step-forward/back`, draft discarded on back/unmount), `step-upload.tsx` (1015:39: Contacts/Companies `SegmentedControl` with "Soon", 2×2 source cards, **`UploadDropZone`** = fork of `file-upload` driven by a real XHR PUT to the signed URL with progress (`upload-client.ts`), client-side parse via dynamic import, auto-advance), `step-map.tsx` (1015:41: info `Banner`, one row per Preb field with column `Select` + clear + example value, live summary card enrichable / missing (view first 5) / duplicates / email-only, "First row contains headers" `Switch` re-parses, Next → `parseList`), `step-configure.tsx` (1015:43: three `CheckboxCard`s with credit chips, list name, rows presets + input, **estimate card** "Typically ~M · up to N · you have A" with `ProgressBar`, shortfall `Banner` + Buy credits placeholder, Start enrichment).
+- ✅ `/lists/[id]` placeholder (breadcrumb, status chip, counters) so `startList` has a landing page until day 4. `/api/jobs/tick` stub (checks `CRON_SECRET`, returns `ran:false`) until day 3.
+- ✅ `npm run build` ✓ · `npm run lint` ✓ (only the upstream data-table warning) · `npx tsc --noEmit` ✓. Installed `papaparse`, `xlsx`, `@types/papaparse`.
+
+### Browser verification (Chrome, signed in with Google)
+- ✅ Google sign-in → `/onboarding` (prefilled name + workspace) → `/lists`; trial shows **25 credits** (day-1 auth smoke test passes for Google; magic link still untested).
+- ✅ Header: credits dropdown (25/25, trial chip, expiry Nov 6), account menu, theme toggle, `N` and `/` shortcuts, Lists tab.
+- ✅ Wizard with a semicolon CSV (BOM, German headers, duplicate by LinkedIn, row missing company): auto-map correct, summary 2/4 enrichable · 1 missing · 1 duplicate, `parseList` stored cleaned domain + canonical LinkedIn, counters trigger filled the list.
+- ✅ Configure: estimate, shortfall banner with 60 rows + mobile (needs 323 more, Start disabled), clears when rows reduced.
+- ✅ Start → `/lists/[id]` Queued, credits 25 → 23 (hold). Card: loader rim, gauge sweep, Rename (toast), search/filter via URL + no-match state + Clear filters, Stop (queued → stopped, hold released, back to 25), Delete (rows + Storage file removed).
+- ✅ Draft cleanup on Go back and on navigating away mid-wizard (row, contacts and file removed).
+- ✅ Dark mode (no flash on load), light mode, 390 px width without horizontal scroll.
+
+**Bugs found and fixed during the walkthrough**
+- Server page imported `initialsOf` from a client module → moved to `src/utils/initials.ts`.
+- Google avatar didn't load → `Avatar` now uses `referrerPolicy="no-referrer"` and falls back to initials on error (Avatar is now a client component).
+- `N` ignored while a React Aria button had focus (it stops keydown propagation) → shortcut listener uses the capture phase.
+- Auto-map put "Full Name" into Last name (substring "lname") → exact matches for all fields first, substring fallback only with synonyms ≥ 6 chars. Checked against 5 header sets.
+- Mobile header showed wordmark + icon (theme-logo CSS overrode `hidden`) → wordmark wrapped in a responsive span.
+- Root-layout inline `<script>` warning → `next/script` `beforeInteractive`.
+- Polish: shimmer timer removed from card strip, softer loader rim, consistent select widths in mapping, singular/plural copy, stop toast wording, Download disabled until export exists (`EXPORT_READY` flag in `list-card.tsx`, flip on day 4), name-field hints.
+
+### Magic link (fixed after CTO test)
+- Sign-in by email failed with "We couldn't send the link right now": the Resend SDK could not resolve `@react-email/render` (only nested under `@react-email/components`). Fix: `@react-email/render` installed directly and `sendEmail` now renders `html` + `text` itself; `sendMagicLink` logs the underlying error. A rendered test email was accepted by Resend (id `01a11636…`). **CTO to re-test the magic link once** (click the link → `/auth/confirm` → `/lists`).
+
+- Logo missing in the email: it pointed at `localhost`. Fixed: `public/logoName.png` + `logo.png` uploaded to the new public Storage bucket `brand` (migration 0004, `scripts/upload-brand-assets.ts`); `EmailLayout` uses `brandAssetUrl()` (optional `EMAIL_ASSET_BASE_URL` override). Verified: the public URL serves `image/png`.
+
+### Work-email policy (new CTO requirement, day 2)
+- `src/lib/auth/work-email.ts`: ~100 free‑mail/disposable domains (+ sub‑domain match). `sendMagicLink` rejects before creating the user; the Google callback deletes a just‑created free‑mail user (no invite) and redirects to `/login?error=work_email`. Exceptions: `ADMIN_EMAILS` (the CTO's gmail stays valid) and addresses with a workspace invite. Existing accounts keep working.
+- DB defense in depth (migration 0004): `public.is_free_email_domain()`; `handle_new_user` never grants a trial to a free‑mail domain (even via an invite‑less bypass). Plan § Decisions 2a, `.env.example`, `setup_manual` M7b updated.
+
+### M6 tunnel + leftovers
+- ✅ **M6 done by the agent**: `cloudflared` quick tunnel → `NEXT_PUBLIC_APP_URL` in `.env.local` (URL changes on every tunnel restart — update `.env.local` and the dev server reloads). `next.config.ts` allows `*.trycloudflare.com` via `allowedDevOrigins` (dev only). Verified through the tunnel: `/login` 200, `/api/jobs/tick` 401 without secret.
+- `appOrigin()` (auth redirects) now prefers the request origin when it is localhost or the configured app URL, else falls back to `NEXT_PUBLIC_APP_URL` — sign-in from localhost stays on localhost while webhooks use the tunnel; forged Host headers can't redirect sign-in links.
+- ⚠️ **Leftover test account** `arun.gupta494@gmx.de` (created at 11:52 by the first, failing magic-link attempt, before the work-email rule; own "Gmx" workspace with 25 trial credits, never signed in). The agent's delete was blocked by the permission classifier → **CTO deletes it** in Supabase → Authentication → Users (delete user) and Table editor → `workspaces` row "Gmx".
+- Magic link verified with logo (gmx.de mail received). Blocking of new free-mail sign-ups verified in the browser.
+
+### Still not verified
+- Magic-link end-to-end click-through with the logo visible (send fixed, logo fixed; confirm step not yet exercised).
+- XLSX upload (parser path is shared with CSV; test on day 7 QA).
+
+### Deviations / notes
+- Settings/Billing menu items navigate to `/lists?settings=profile|billing` (ignored for now); wire to the forked `settings-modal` on day 5/6. "Buy credits" shows an info toast until Checkout exists.
+- Email-only rows are counted as "email-only (reverse lookup coming soon)" and stored `skipped/email_only` — day 7 flips them to reverse mode.
+- Cross-workspace cache hits are not pre-filled (day 3 engine serves them from cache and charges normally, F2). Same-workspace hits are free and pre-filled.
+- XLSX preview parses on the main thread via dynamic import (no web worker) — fine up to 10k rows; revisit if it stutters.
+- `row_limit` is stored on the list; the day-3 dispatcher must respect it (submit at most `row_limit` pending rows).
+- `generateLink`-style sign-in bypass was **not** used for testing; sign-in stays manual.
+- M5 steps 2–4 (domain, env vars) and the first preview deploy are still pending — Vercel CLI isn't installed locally (`npm i -g vercel`, then `vercel link`).
+
+### Manual tasks status
+| Task | Status |
+|---|---|
+| M1 Google OAuth redirect URI | ✅ |
+| M2 Supabase providers / URLs / secret key | ✅ |
+| M3 FullEnrich account + API key | ✅ (buy 500‑credit plan before day 3) |
+| Stripe sandbox key + test catalogue | ✅ |
+| M4 Stripe dashboard (Tax, portal branding) | ⬜ (day 5) |
+| M5 Vercel project + domain + env | ⚠️ project created; CLI install, domain, env vars, first deploy pending |
+| M6 Local tunnel | ✅ (quick tunnel; URL changes per restart) |
+| M7 Resend domain check | ✅ |
+| M8 Legal pages (Leon) | ⬜ |
+
+### Next: Day 3 — Enrichment engine
+0. Re-test magic-link sign-in end-to-end (send is fixed), then start the engine.
+1. `lib/jobs/{rate-limit,dispatch,reconcile,settle}.ts` + real `/api/jobs/tick` (FOR UPDATE SKIP LOCKED, ≤40 submits + ≤10 GETs/min, batches ≤100, respects `row_limit`, pause on credits ≤0, 402 → `paused_upstream`), `/api/jobs/daily`, `vercel.ts` crons.
+2. `/api/webhooks/fullenrich` (HMAC‑SHA1 on raw body, `webhook_events` idempotency, contact upsert via `mapRecord`, batch terminal → settle: `consume_credits`, adjust, cache write‑through, hold release, list finalise).
+3. Stop semantics (`stopping` → `stopped` when in-flight batches settle), M6 tunnel + zero‑credit contact E2E, MSW tests.
+
 ## Day 1 — 2026-10-07 · Foundation, auth, migration (code complete; E2E untested)
 
 ### Done

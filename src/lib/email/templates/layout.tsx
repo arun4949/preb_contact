@@ -23,6 +23,14 @@ export function appUrl(path = "") {
   return `${base}${path}`;
 }
 
+/** Public URL for brand assets (uploaded by `scripts/upload-brand-assets.ts`). */
+export function brandAssetUrl(name: string) {
+  const explicit = process.env.EMAIL_ASSET_BASE_URL?.replace(/\/$/, "");
+  if (explicit) return `${explicit}/${name}`;
+  const supabase = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/\/$/, "");
+  return `${supabase}/storage/v1/object/public/brand/${name}`;
+}
+
 export function EmailLayout({ preview, children }: { preview: string; children: ReactNode }) {
   return (
     <Html lang="en">
@@ -38,7 +46,7 @@ export function EmailLayout({ preview, children }: { preview: string; children: 
               padding: 32,
             }}
           >
-            <Img src={appUrl("/logoName.png")} alt="Preb" height={24} style={{ height: 24, marginBottom: 24 }} />
+            <Img src={brandAssetUrl("logoName.png")} alt="Preb" width={79} height={24} style={{ width: 79, height: 24, marginBottom: 24 }} />
             {children}
           </Section>
           <Text style={{ fontSize: 12, lineHeight: "18px", color: EMAIL_COLORS.tertiary, margin: "16px 0 0" }}>

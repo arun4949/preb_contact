@@ -7,18 +7,20 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "stripe:catalogue": "tsx scripts/stripe-catalogue.ts",
+    "stripe:catalogue": "tsx --env-file=.env.local scripts/stripe-catalogue.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@internationalized/date": "^3.12.4",
     "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.1.0",
     "@remixicon/react": "^4.9.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.2",
     "@tanstack/react-table": "^8.21.3",
     "motion": "^12.43.0",
     "next": "16.3.8",
+    "papaparse": "^5.7.0",
     "prism-react-renderer": "^2.4.1",
     "react": "19.2.8",
     "react-aria-components": "^1.21.1",
@@ -27,11 +29,13 @@
     "resend": "^6.32.1",
     "server-only": "^0.0.1",
     "stripe": "^23.0.0",
-    "tailwind-merge": "^3.7.0"
+    "tailwind-merge": "^3.7.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/papaparse": "^5.5.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

@@ -20,6 +20,7 @@ const ERRORS: Record<string, string> = {
   oauth: "Google sign-in didn't complete. Please try again.",
   callback: "We couldn't finish signing you in. Please try again.",
   link: "That sign-in link is invalid or has expired. Request a new one below.",
+  work_email: "Please sign in with your work email. Personal and disposable mailboxes can't start a Preb workspace.",
 };
 
 export function LoginCard({ next, error }: { next: string; error?: string }) {
@@ -84,6 +85,7 @@ export function LoginCard({ next, error }: { next: string; error?: string }) {
           name="email"
           type="email"
           label="Work email"
+          defaultValue={state.status === "error" ? state.email : undefined}
           placeholder="you@company.com"
           autoComplete="email"
           inputDir="ltr"

@@ -2,6 +2,7 @@ import "server-only";
 
 import type { ReactElement } from "react";
 import { Resend } from "resend";
+import { render } from "@react-email/render";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/types";
 
@@ -56,7 +57,10 @@ export async function sendEmail({
   workspaceId?: string | null;
   from?: string;
 }): Promise<{ id: string | null }> {
-  const { data, error } = await resend().emails.send({ from, to, subject, react });
+  // Render here rather than passing `react` to the SDK: its internal renderer
+  // lookup fails when @react-email/render is only a nested dependency.
+  const [html, text] = await Promise.all([render(react), render(react, { plainText: true })]);
+  const { data, error } = await resend().emails.send({ from, to, subject, html, text });
   if (error) throw new Error(`Email send failed: ${error.message}`);
 
   const admin = createAdminClient();

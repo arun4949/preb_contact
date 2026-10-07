@@ -13,6 +13,7 @@ Accounts to reuse: Stripe *Preb.co* (live, `acct_1TbKWFI8j3KU4u56`, old scheduli
 **Decided**
 1. **Billing = subscription tiers** mirroring FullEnrich Pro (monthly + annual), USD, Stripe Checkout; credits granted on `invoice.paid`, monthly grants expire +3 months, annual grants issued up front and expire +12 months; no overage.
 2. **Trial = 25 credits, no card**, once per workspace; abuse guard (see Credits).
+2a. **Work email required** (added day 2): magic link and Google sign‑up reject free‑mail and disposable domains (`src/lib/auth/work-email.ts`); exceptions = `ADMIN_EMAILS` and invited members (no trial anyway). Defense in depth: `public.is_free_email_domain()` and `handle_new_user` never grant a trial to a free‑mail domain (migration 0004).
 3. **Enrichment fields mirror FullEnrich exactly**: work email (1 cr), personal email (3 cr), phone (10 cr for a mobile; landlines/VoIP returned free; no separate "private phone" exists). Plus **Reverse Email Lookup** (email → profile, 1 cr) as an input mode for email‑only rows. People/Company Search (prospecting) = post‑MVP.
 4. **Hosting = Vercel, `app.preb.co`**; webhooks primary, 1‑minute cron safety net.
 
@@ -328,6 +329,8 @@ Only these need your hands. Each is 5–15 minutes. Saved to `docs/setup_manual.
 
 ## Changes
 - Day 1: email strategy → Resend‑only, templates in app (`generateLink` + react‑email); M2 steps 5–6 (SMTP/templates) dropped; new table `email_sends` (migration 0003); Stripe test catalogue moved to a script (`npm run stripe:catalogue`) because the MCP has no sandbox access.
+- Day 2 (auth): work‑email policy for sign‑up (app + DB, migration 0004); emails render HTML in `sendEmail` (`@react-email/render` direct dependency); email logo served from the public Storage bucket `brand` (`scripts/upload-brand-assets.ts`, optional `EMAIL_ASSET_BASE_URL` override).
+- Day 2: `file-upload` forked to `components/application/upload-drop-zone` (real XHR progress to a signed Storage URL); mapping model = Preb field → column index (unmapped columns are passthrough automatically); email‑only rows stored as `skipped/email_only` until reverse mode (day 7); same‑workspace cache hits pre‑filled at parse time, cross‑workspace left to the engine; `row_limit` stored on `lists` for the dispatcher; Settings/Billing menu items point at `?settings=` until the modal fork (day 5/6).
 
 ## Verification
 

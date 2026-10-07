@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "@/styles/globals.css";
 import { Providers } from "./providers";
 
@@ -24,10 +25,10 @@ const THEME_SCRIPT = `try{if(localStorage.getItem("boardui:theme")==="dark")docu
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" dir="ltr" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-      </head>
       <body className="flex min-h-full flex-col bg-background-full text-text-primary">
+        <Script id="theme-init" strategy="beforeInteractive">
+          {THEME_SCRIPT}
+        </Script>
         <Providers>{children}</Providers>
       </body>
     </html>
