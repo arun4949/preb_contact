@@ -2,6 +2,51 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Day 6 — 2026-10-07 · Team, emails, polish (complete; invite E2E verified)
+
+### Done
+- ✅ **Settings › Members** `components/application/settings/settings-members.tsx` (nav row enabled in `settings-modal.tsx`, page key `workspace`; account menu gained a **Members** item): invite row (`Input` email + role `Select` Member/Admin + **Send invite**, Enter submits), members card (avatar, name · you, email, role `Select` for admins on non-owner rows, `Remove` / `Leave`; owner shown as a chip, fixed), pending invites card (role · expires, Expired chip, **Resend** / **Revoke**), `ConfirmDialog` for remove/leave/revoke. Members (non-admin) see the list read-only and can leave. Data via server actions on open, same pattern as Billing.
+- ✅ **Server actions** `src/lib/workspace/actions.ts`: `fetchMembers`, `inviteMember` (owners/admins; rejects own address, existing members, invalid email; re-issues an existing pending invite with the new role; limits: 10 invites/h/workspace via `email_sends` + 10/h/address), `resendInvite` (fresh token + 7-day expiry, old link dies), `revokeInvite`, `changeMemberRole` (admin ↔ member only, never self/owner; RLS enforces the same), `removeMember` (self = leave; owner can't leave; resets the removed user's `default_workspace_id` to another membership or null).
+- ✅ **Emails**: `templates/invite.tsx` (inviter, workspace, role, 7-day note) sent from `inviteMember`/`resendInvite`; `templates/welcome.tsx` sent once from `completeOnboarding` (first name, workspace, trial credits, CTA → `/lists/new`) — invitees skip onboarding and get no welcome (they got the invite). Copy of list-finished / list-paused / credits-low reviewed, unchanged.
+- ✅ **Invite page**: an already-accepted invite whose user is a member now redirects to `/lists` (new users are joined by the sign-up trigger before they ever reach the page, so they used to see "no longer valid").
+- 🐞 **Fixed (found in the E2E)**: `/auth/confirm` and `/auth/callback` redirected to `https://localhost:3000` behind the tunnel (`request.nextUrl.origin` is rebuilt from `x-forwarded-proto` + the internal host). New `lib/auth/origin.ts: redirectOrigin()` — localhost → plain http, configured app host → `NEXT_PUBLIC_APP_URL`, anything else → request origin. Callback's dev-only branch removed.
+- ✅ **Error routes**: `app/(app)/error.tsx` (card with Try again (`retry`) + Your lists, shows the digest, reports to Sentry), `app/global-error.tsx` (inline-styled last resort), `app/not-found.tsx` (brand shell + empty state). Next 16 passes `retry`, not `reset`.
+- ✅ **Sentry** `@sentry/nextjs` 11: `src/instrumentation.ts` (`register` inits only when `SENTRY_DSN` is set; `onRequestError = captureRequestError`), `src/instrumentation-client.ts` (`NEXT_PUBLIC_SENTRY_DSN`, `onRouterTransitionStart`). No `withSentryConfig`/source-map upload (v11 moved it; add on day 7 if needed). `.env.example`: `NEXT_PUBLIC_SENTRY_DSN`.
+- ✅ **`/admin/ops`** `app/(app)/admin/ops/page.tsx`: `ADMIN_EMAILS` only (others get 404), service-role reads: FullEnrich balance, lists running, stuck batches (submitted > 30 min), webhook problems (errored or unprocessed > 10 min), paused/failed lists per workspace, last provider call, emails sent in 24 h by kind. Not linked from the UI.
+- ✅ **Migration 0008** (`credits_available_membership`, applied via MCP): `credits_available(ws)` returns 0 for authenticated callers who are not members (service role unchanged) — day-1 advisor item.
+- ✅ **Dark mode**: Members, Billing and the plan picker checked in dark (no raw colors). **Mobile**: Chrome here refuses windows < ~1000 px, so the 500 px check is by CSS review only: rail collapses to icons at `<sm`, invite row stacks (`flex-col sm:flex-row`), member rows truncate. Re-check on a phone on day 7.
+- ✅ `npm run build` ✓ · lint ✓ (2 upstream warnings) · tsc ✓ · `npm test` ✓.
+
+### E2E (sandbox, 2026-10-07 afternoon)
+- Invite `ar.gupta494+invite@gmail.com` as member → email via Resend → first link was dead because the quick tunnel had rotated (`cloudflared` restarted: `.env.local` `NEXT_PUBLIC_APP_URL` updated, `npm run stripe:webhook` re-pointed the Stripe endpoint) → **Resend** sent a fresh link → CTO signed in with a magic link in incognito → sign-up trigger joined the workspace and marked the invite accepted → Members page shows 2 members, pending list empty → role Member → Admin → Member (toasts, RLS ok) → CTO confirmed the invitee sees the workspace lists through the tunnel. Test member left in place for the day-7 RLS two-workspace test.
+
+### Open / notes
+- A member removed from their only workspace has no workspace: `getSessionContext()` returns null and the app shell bounces to `/login` (loop). Acceptable for MVP (invited users always have the inviter's workspace); fix on day 7 if time: onboarding for workspace-less users.
+- Ownership transfer is out of scope (owner role is fixed; RLS forbids changing it).
+- Welcome email only for workspace owners (sent at the end of onboarding).
+- Sentry env vars are unset locally; nothing is reported until `SENTRY_DSN`/`NEXT_PUBLIC_SENTRY_DSN` land in Vercel (M5).
+- Quick-tunnel URL changed again today → whenever `cloudflared` restarts: update `NEXT_PUBLIC_APP_URL`, rerun `npm run stripe:webhook`.
+
+### Manual tasks status
+| Task | Status |
+|---|---|
+| M1 Google OAuth redirect URI | ✅ |
+| M2 Supabase providers / URLs / secret key | ✅ |
+| M3 FullEnrich account + API key | ✅ key; 500-credit plan purchase unconfirmed |
+| M4 Stripe dashboard | ✅ test mode, webhook re-pointed to today's tunnel |
+| M5 Vercel project + domain + env | ⚠️ CLI install, domain, env vars (incl. `CRON_SECRET`, `STRIPE_WEBHOOK_SECRET`, `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`), first deploy pending |
+| M6 Local tunnel | ✅ (rotated today; see note) |
+| M7 Resend domain check | ✅ |
+| M8 Legal pages (Leon) | ⬜ |
+
+### Next: Day 7 — Reverse mode (if on track), QA, deploy
+0. Pending from day 6: none blocking. Optional: workspace-less user onboarding; Sentry source maps.
+1. Morning: reverse email lookup mode (F5) — else defer.
+2. Afternoon QA per plan: 50-row CSV with bad rows/duplicates/XLSX, ledger math vs `cost.credits`, webhook replay, cron reconcile with tunnel down, stop list, pause/resume on credits, **RLS two-workspace test** (use the `+invite` member: sign in as it in a second workspace), `get_advisors`, Lighthouse, phone-width pass of settings modal + plan picker.
+3. Go-live: live Stripe catalogue + webhook, prod env (incl. Sentry DSNs), `vercel --prod`, Supabase redirect URLs (M2 step 4, M4 step 5, M5 step 6).
+
+---
+
 ## Day 5 — 2026-10-07 · Billing (complete; full sandbox E2E verified)
 
 ### Done

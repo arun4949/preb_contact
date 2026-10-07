@@ -6,12 +6,13 @@ import { createPortal } from "react-dom";
 import { RiBankCardLine, RiCheckboxCircleFill, RiCloseLine, RiTeamLine, RiUser3Line } from "@remixicon/react";
 import { cx } from "@/utils/cx";
 import { SettingsBilling } from "./settings-billing";
+import { SettingsMembers } from "./settings-members";
 import { SettingsProfile, type SettingsProfileProps } from "./settings-profile";
 
 /**
  * Preb fork of the BoardUI settings modal (Figma "Settings/Profile" 4081:13943
  * shell; Billing content per Preb 1015:37 / plan § 6). Pages: Profile ·
- * Workspace (day 6) · Billing. Opened from the account menu, the credits
+ * Members · Billing. Opened from the account menu, the credits
  * dropdown and every "Buy credits" CTA via `?settings=<page>`.
  *
  * Shell (1:1 with Figma):
@@ -67,7 +68,7 @@ const NAV_GROUPS: { label: string; items: NavEntry[] }[] = [
   {
     label: "Workspace",
     items: [
-      { label: "Members", icon: RiTeamLine, soon: true },
+      { label: "Members", icon: RiTeamLine, page: "workspace" },
       { label: "Billing", icon: RiBankCardLine, page: "billing" },
     ],
   },
@@ -277,6 +278,8 @@ export function SettingsModal({
             >
               {page === "billing" ? (
                 <SettingsBilling onChoosePlan={onChoosePlan} refreshKey={billingRefreshKey} />
+              ) : page === "workspace" ? (
+                <SettingsMembers />
               ) : (
                 <SettingsProfile {...profile} onSaved={showSavedToast} />
               )}

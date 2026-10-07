@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { getSessionContext } from "@/lib/supabase/queries";
+import { sendEmail } from "@/lib/email/resend";
+import { WelcomeEmail } from "@/lib/email/templates/welcome";
 
 export interface OnboardingState {
   status: "idle" | "error";
@@ -31,6 +33,25 @@ export async function completeOnboarding(_prev: OnboardingState, formData: FormD
 
   if (profileResult.error || workspaceResult.error) {
     return { status: "error", message: "Something went wrong saving your details. Please try again." };
+  }
+
+  // Welcome email, once, after the workspace is named. Never blocks onboarding.
+  if (!session.profile.onboarded_at) {
+    try {
+      await sendEmail({
+        to: session.email,
+        kind: "welcome",
+        workspaceId: session.workspace.id,
+        subject: "Welcome to Preb — your workspace is ready",
+        react: WelcomeEmail({
+          firstName: fullName.split(/\s+/)[0] ?? "",
+          workspaceName: session.role === "owner" ? workspaceName : session.workspace.name,
+          trialCredits: session.creditsAvailable,
+        }),
+      });
+    } catch (error) {
+      console.error("[completeOnboarding] welcome email failed", error instanceof Error ? error.message : error);
+    }
   }
 
   redirect("/lists");

@@ -326,6 +326,7 @@ export type Database = {
           id: string
           input_hash: string | null
           job_title: string | null
+          kind: Database["public"]["Enums"]["list_mode"]
           last_name: string | null
           linkedin_url: string | null
           list_id: string
@@ -360,6 +361,7 @@ export type Database = {
           id?: string
           input_hash?: string | null
           job_title?: string | null
+          kind?: Database["public"]["Enums"]["list_mode"]
           last_name?: string | null
           linkedin_url?: string | null
           list_id: string
@@ -394,6 +396,7 @@ export type Database = {
           id?: string
           input_hash?: string | null
           job_title?: string | null
+          kind?: Database["public"]["Enums"]["list_mode"]
           last_name?: string | null
           linkedin_url?: string | null
           list_id?: string
@@ -458,10 +461,12 @@ export type Database = {
           found_work_email: number
           has_header: boolean
           id: string
+          identified_rows: number
           mode: Database["public"]["Enums"]["list_mode"]
           name: string
           not_found: number
           processed_rows: number
+          reverse_lookup: boolean
           risky_email: number
           row_limit: number | null
           started_at: string | null
@@ -492,10 +497,12 @@ export type Database = {
           found_work_email?: number
           has_header?: boolean
           id?: string
+          identified_rows?: number
           mode?: Database["public"]["Enums"]["list_mode"]
           name?: string
           not_found?: number
           processed_rows?: number
+          reverse_lookup?: boolean
           risky_email?: number
           row_limit?: number | null
           started_at?: string | null
@@ -526,10 +533,12 @@ export type Database = {
           found_work_email?: number
           has_header?: boolean
           id?: string
+          identified_rows?: number
           mode?: Database["public"]["Enums"]["list_mode"]
           name?: string
           not_found?: number
           processed_rows?: number
+          reverse_lookup?: boolean
           risky_email?: number
           row_limit?: number | null
           started_at?: string | null

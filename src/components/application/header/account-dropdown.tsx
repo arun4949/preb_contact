@@ -7,8 +7,7 @@ import {
   RiFeedbackLine,
   RiLogoutBoxRLine,
   RiQuestionLine,
-  RiSettings3Line,
-} from "@remixicon/react";
+  RiSettings3Line, RiTeamLine } from "@remixicon/react";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Dropdown, DropdownDivider, DropdownGroup, DropdownItem, DropdownPopover, DropdownTrigger } from "@/components/base/dropdown/dropdown";
 import { ThemeToggle } from "@/components/application/theme/theme-toggle";
@@ -28,7 +27,7 @@ export function AccountDropdown({ name, email, avatarUrl, workspaceName }: Accou
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const router = useRouter();
-  const go = (page: "profile" | "billing") => {
+  const go = (page: "profile" | "workspace" | "billing") => {
     setOpen(false);
     router.push(`/lists?settings=${page}`);
   };
@@ -52,6 +51,10 @@ export function AccountDropdown({ name, email, avatarUrl, workspaceName }: Accou
           <DropdownItem onSelect={() => go("profile")}>
             <RiSettings3Line className="size-5 text-foreground-icon-secondary" aria-hidden />
             <span className="text-body-medium">Settings</span>
+          </DropdownItem>
+          <DropdownItem onSelect={() => go("workspace")}>
+            <RiTeamLine className="size-5 text-foreground-icon-secondary" aria-hidden />
+            <span className="text-body-medium">Members</span>
           </DropdownItem>
           <DropdownItem onSelect={() => go("billing")}>
             <RiBankCardLine className="size-5 text-foreground-icon-secondary" aria-hidden />

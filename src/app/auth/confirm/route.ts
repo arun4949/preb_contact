@@ -1,10 +1,12 @@
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { redirectOrigin } from "@/lib/auth/origin";
 
 /** Magic-link / invite return: verify the token hash, then continue to `next`. */
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = request.nextUrl;
+  const { searchParams } = request.nextUrl;
+  const origin = redirectOrigin(request);
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
   const nextParam = searchParams.get("next") ?? "/lists";

@@ -18,7 +18,7 @@ export default async function InvitePage({ params }: PageProps<"/invite/[token]"
   const admin = createAdminClient();
   const { data: invite } = await admin
     .from("workspace_invites")
-    .select("id, email, role, expires_at, accepted_at, invited_by, workspace:workspaces(name)")
+    .select("id, workspace_id, email, role, expires_at, accepted_at, invited_by, workspace:workspaces(name)")
     .eq("token_hash", hashInviteToken(token))
     .maybeSingle();
   const { data: inviter } = invite
@@ -35,6 +35,21 @@ export default async function InvitePage({ params }: PageProps<"/invite/[token]"
       </main>
     </div>
   );
+
+  // New users are joined by the sign-up trigger before they ever see this
+  // page: an accepted invite for someone who is already a member just goes home.
+  if (invite?.accepted_at) {
+    const user = await getUser();
+    if (user) {
+      const { data: membership } = await admin
+        .from("workspace_members")
+        .select("user_id")
+        .eq("workspace_id", invite.workspace_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (membership) redirect("/lists");
+    }
+  }
 
   if (!invite || invite.accepted_at || new Date(invite.expires_at) < new Date()) {
     return shell(
