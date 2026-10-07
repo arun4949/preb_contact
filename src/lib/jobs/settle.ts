@@ -1,5 +1,6 @@
 import "server-only";
 
+import { maybeNotifyLowCredits } from "@/lib/billing/low-credits";
 import { notifyListFinished } from "./notify";
 import { countContacts, countUpstreamRows, log, logError, releaseHolds, type Admin } from "./shared";
 
@@ -10,6 +11,10 @@ export async function settleBatch(admin: Admin, batchId: string): Promise<{ char
   const row = data?.[0];
   if (!row) return null;
   log("settle.batch", { batchId, ...row });
+  if (row.charged > 0) {
+    const { data: batch } = await admin.from("enrichment_batches").select("workspace_id").eq("id", batchId).maybeSingle();
+    if (batch) await maybeNotifyLowCredits(admin, batch.workspace_id);
+  }
   return row;
 }
 

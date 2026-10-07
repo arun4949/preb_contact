@@ -1,36 +1,18 @@
 "use client";
 
 import { useDirection } from "@/components/foundations/direction/direction";
-import { useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import { createPortal } from "react-dom";
-import {
-  RiBankCardLine,
-  RiBookOpenLine,
-  RiCheckboxCircleFill,
-  RiCloseLine,
-  RiCodeBlock,
-  RiDatabase2Line,
-  RiGitMergeLine,
-  RiOrganizationChart,
-  RiPaletteLine,
-  RiPlugLine,
-  RiSchoolLine,
-  RiSettings6Line,
-  RiSettingsLine,
-  RiToolsFill,
-  RiStore2Line,
-} from "@remixicon/react";
+import { RiBankCardLine, RiCheckboxCircleFill, RiCloseLine, RiTeamLine, RiUser3Line } from "@remixicon/react";
 import { cx } from "@/utils/cx";
-import { SettingsGeneral } from "./settings-general";
-import { SettingsProfile } from "./settings-profile";
-import { SettingsStorage } from "./settings-storage";
-import { SettingsTools } from "./settings-tools";
+import { SettingsBilling } from "./settings-billing";
+import { SettingsProfile, type SettingsProfileProps } from "./settings-profile";
 
 /**
- * Figma sources: Board UI → "Settings/Profile" (node 4081:13943) and
- * "Settings/General" (node 4079:13037).
- *
- * The app-wide settings modal, opened from any sidebar's "Settings" item.
+ * Preb fork of the BoardUI settings modal (Figma "Settings/Profile" 4081:13943
+ * shell; Billing content per Preb 1015:37 / plan § 6). Pages: Profile ·
+ * Workspace (day 6) · Billing. Opened from the account menu, the credits
+ * dropdown and every "Buy credits" CTA via `?settings=<page>`.
  *
  * Shell (1:1 with Figma):
  *   backdrop  color/bg_separator — black at 20%.
@@ -47,7 +29,7 @@ import { SettingsTools } from "./settings-tools";
  * and the modal unmounts only after the exit transition finishes.
  */
 
-export type SettingsPage = "general" | "profile" | "storage" | "tools" | "marketplace";
+export type SettingsPage = "profile" | "workspace" | "billing";
 
 export interface SettingsModalProps {
   /** Controlled open state, owned by the host page, sidebar, or menu. */
@@ -56,10 +38,11 @@ export interface SettingsModalProps {
   onClose: () => void;
   /** Page selected each time the modal opens. */
   defaultPage?: SettingsPage;
-  /** Optional product artwork used by the animated Current plan card. */
-  planArtSrc?: string;
-  /** Optional marketplace pane, including its own fixed header and scroll region. */
-  marketplace?: ReactNode;
+  profile: Omit<SettingsProfileProps, "onSaved">;
+  /** Billing → "Choose / Change plan" opens the plan picker (owned by the host). */
+  onChoosePlan: () => void;
+  /** Bumped by the host after a Checkout return so Billing reloads. */
+  billingRefreshKey?: number;
 }
 
 type IconComponent = ComponentType<{
@@ -72,53 +55,37 @@ interface NavEntry {
   icon: IconComponent;
   /** Only pages that exist are navigable; the rest render as static rows. */
   page?: SettingsPage;
+  /** Shown but disabled (ships on a later sprint day). */
+  soon?: boolean;
 }
 
 const NAV_GROUPS: { label: string; items: NavEntry[] }[] = [
   {
-    label: "Settings",
-    items: [
-      { label: "General", icon: RiSettings6Line, page: "general" },
-      { label: "Profile", icon: RiSchoolLine, page: "profile" },
-      { label: "Marketplace", icon: RiStore2Line, page: "marketplace" },
-      { label: "Appearance", icon: RiPaletteLine },
-      { label: "Billing", icon: RiBankCardLine },
-      { label: "Rules and Workflows", icon: RiOrganizationChart },
-      { label: "Tools", icon: RiToolsFill, page: "tools" },
-      { label: "Storage", icon: RiDatabase2Line, page: "storage" },
-    ],
+    label: "Account",
+    items: [{ label: "Profile", icon: RiUser3Line, page: "profile" }],
   },
   {
-    label: "Desktop app",
+    label: "Workspace",
     items: [
-      { label: "General", icon: RiSettingsLine },
-      { label: "Plugins", icon: RiPlugLine },
-      { label: "Developer", icon: RiCodeBlock },
-    ],
-  },
-  {
-    label: "Customize",
-    items: [
-      { label: "Skills", icon: RiBookOpenLine },
-      { label: "Git", icon: RiGitMergeLine },
+      { label: "Members", icon: RiTeamLine, soon: true },
+      { label: "Billing", icon: RiBankCardLine, page: "billing" },
     ],
   },
 ];
 
-const PAGE_TITLES: Record<SettingsPage, string> = {
-  general: "General",
-  profile: "Profile",
-  storage: "Storage",
-  tools: "Tools",
-  marketplace: "Marketplace",
+const PAGE_TITLES: Record<SettingsPage, { title: string; subtitle: string }> = {
+  profile: { title: "Profile", subtitle: "Your name and sign-in address." },
+  workspace: { title: "Members", subtitle: "Invite teammates and manage roles." },
+  billing: { title: "Billing", subtitle: "Plan, credits, invoices and payment method." },
 };
 
 export function SettingsModal({
   isOpen,
   onClose,
-  defaultPage = "general",
-  planArtSrc,
-  marketplace,
+  defaultPage = "profile",
+  profile,
+  onChoosePlan,
+  billingRefreshKey,
 }: SettingsModalProps) {
   const direction = useDirection();
   const [page, setPage] = useState<SettingsPage>(defaultPage);
@@ -185,7 +152,8 @@ export function SettingsModal({
   if (!mounted || typeof document === "undefined") return null;
 
   return createPortal(
-    <div dir={direction} className="fixed inset-0 z-100 flex items-center justify-center p-4" role="presentation">
+    // z-90: dialogs opened from inside (plan picker, z-100) must stack above.
+    <div dir={direction} className="fixed inset-0 z-90 flex items-center justify-center p-4" role="presentation">
       {/* Backdrop — dark-mode modal reference uses black at 70%. */}
       <button
         type="button"
@@ -237,14 +205,15 @@ export function SettingsModal({
             <div key={group.label} className="flex w-full flex-col gap-1.5 pt-1">
               <span className="hidden ps-2 text-body-medium text-text-secondary sm:block">{group.label}</span>
               <div className="flex w-full flex-col gap-1">
-                {group.items.filter(item => item.page !== "marketplace" || marketplace != null).map((item) => {
+                {group.items.map((item) => {
                   const selected = item.page !== undefined && item.page === page;
                   return (
                     <button
                       key={`${group.label}:${item.label}`}
                       type="button"
-                      aria-label={item.label}
-                      title={item.label}
+                      aria-label={item.soon ? `${item.label} (coming soon)` : item.label}
+                      title={item.soon ? "Coming soon" : item.label}
+                      disabled={item.soon}
                       aria-current={selected ? "page" : undefined}
                       onClick={
                         item.page
@@ -260,6 +229,7 @@ export function SettingsModal({
                         selected
                           ? "bg-background-secondary-hover"
                           : "hover:bg-background-secondary-hover/60",
+                        item.soon && "cursor-not-allowed opacity-50 hover:bg-transparent",
                       )}
                     >
                       <item.icon className="size-5 shrink-0 text-foreground-icon-secondary" aria-hidden />
@@ -281,17 +251,11 @@ export function SettingsModal({
 
         {/* Content pane — fixed title row, scrollable page below */}
         <div className="flex min-w-0 flex-1 flex-col">
-          {page === "marketplace" && marketplace != null ? marketplace : <>
-          {/* Storage keeps a tighter title gap: its page already carries
-              10px of scroll-safe headroom for the upload progress badge, so
-              the shared pb-3 read as a double margin above the dropzone. */}
-          <div
-            className={cx(
-              "flex shrink-0 items-center justify-between px-8 pt-8",
-              page === "storage" ? "pb-1.5" : "pb-3",
-            )}
-          >
-            <h2 className="text-title-3-medium text-text-primary">{PAGE_TITLES[page]}</h2>
+          <div className="flex shrink-0 items-start justify-between gap-4 px-8 pt-8 pb-3">
+            <div className="flex flex-col gap-0.5">
+              <h2 className="text-title-3-medium text-text-primary">{PAGE_TITLES[page].title}</h2>
+              <p className="text-body-2-regular text-text-secondary">{PAGE_TITLES[page].subtitle}</p>
+            </div>
             <button
               type="button"
               aria-label="Close settings"
@@ -311,14 +275,10 @@ export function SettingsModal({
               className="h-full overflow-y-auto px-8 pb-8"
               onScroll={(e) => setContentScrolled(e.currentTarget.scrollTop > 0)}
             >
-              {page === "profile" ? (
-                <SettingsProfile onSaved={showSavedToast} />
-              ) : page === "storage" ? (
-                <SettingsStorage />
-              ) : page === "tools" ? (
-                <SettingsTools />
+              {page === "billing" ? (
+                <SettingsBilling onChoosePlan={onChoosePlan} refreshKey={billingRefreshKey} />
               ) : (
-                <SettingsGeneral planArtSrc={planArtSrc} />
+                <SettingsProfile {...profile} onSaved={showSavedToast} />
               )}
             </div>
             {/* Progressive top fade — eases in once the page is scrolled so
@@ -332,7 +292,6 @@ export function SettingsModal({
               )}
             />
           </div>
-          </>}
         </div>
       </div>
 

@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { RiCoinLine } from "@remixicon/react";
 import { Chip } from "@/components/base/badges/chip";
 import { Dropdown, DropdownPopover, DropdownTrigger } from "@/components/base/dropdown/dropdown";
 import { ProgressBar } from "@/components/base/progress-bar/progress-bar";
-import { buttonStyles } from "@/components/base/buttons/button";
+import { ButtonLink, buttonStyles } from "@/components/base/buttons/button";
 import { cx } from "@/utils/cx";
 import type { CreditSummary } from "@/lib/supabase/queries";
 
@@ -63,14 +62,13 @@ export function CreditsDropdown({ summary }: { summary: CreditSummary }) {
               : "No credits yet — choose a plan to get started."}
           </p>
         </div>
-        <div className="border-t border-separator-border px-2 py-2">
-          <Link
-            href="/lists?settings=billing"
-            onClick={() => setOpen(false)}
-            className="flex w-full items-center justify-center rounded-2lg px-3 py-2 text-body-medium text-accent-600 outline-none transition-colors hover:bg-dropdown-item-hover-background focus-visible:ring-2 focus-visible:ring-border-focus-ring"
-          >
-            Manage credits
-          </Link>
+        <div className="flex items-center gap-2 border-t border-separator-border px-3 py-3">
+          <ButtonLink href="/lists?settings=billing&plan=1" size="small" className="flex-1" onClick={() => setOpen(false)}>
+            {summary.isTrial ? "Choose a plan" : "Buy credits"}
+          </ButtonLink>
+          <ButtonLink href="/lists?settings=billing" variant="secondary" size="small" className="flex-1" onClick={() => setOpen(false)}>
+            Manage
+          </ButtonLink>
         </div>
       </DropdownPopover>
     </Dropdown>

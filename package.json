@@ -9,7 +9,9 @@
     "lint": "eslint",
     "stripe:catalogue": "tsx --env-file=.env.local scripts/stripe-catalogue.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "stripe:portal": "tsx --env-file=.env.local scripts/stripe-portal.ts",
+    "stripe:webhook": "tsx --env-file=.env.local scripts/stripe-webhook.ts"
   },
   "dependencies": {
     "@internationalized/date": "^3.12.4",

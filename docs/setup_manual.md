@@ -37,11 +37,13 @@ These are the only tasks Claude Code cannot do through MCP. Tick them off as you
 
 ## M4 · Stripe dashboard — items the API cannot toggle · needed day 5 (step 5 on day 7)
 
-- [ ] 1. Log in to [https://dashboard.stripe.com](https://dashboard.stripe.com) (account **Preb.co**). Switch **Test mode** on (toggle top right) while we build. Claude creates products, prices, portal configuration and webhooks via MCP in test mode first.
-- [ ] 2. **Settings → Tax**: enable **Stripe Tax**. Add US registrations if you have any; otherwise leave collection off (calculation still shows correct totals). Set the default product tax code to *Software as a service (B2B)* `txcd_10103001`.
-- [ ] 3. **Settings → Billing → Customer portal**: verify *Business information* (name Preb, support email, Terms and Privacy URLs from Leon's site) and *Branding* (new logo, accent colour).
-- [ ] 4. **Settings → Business → Branding / Public details**: upload the new Preb logo, set statement descriptor `PREB.CO`.
-- [ ] 5. (Day 7) switch Test mode off; Claude creates the live catalogue and webhook; you run one real Checkout with a real card and refund it.
+- [x] 1. Log in to [https://dashboard.stripe.com](https://dashboard.stripe.com) (account **Preb.co**). Switch **Test mode** on (toggle top right) while we build. Claude creates products, prices, portal configuration and webhooks via MCP in test mode first.
+- [x] 2. ~~**Settings → Tax**: enable **Stripe Tax**.~~ **Dropped (CTO, day 4):** Preb runs under the German Kleinunternehmerregelung (§19 UStG), no VAT is charged, Stripe Tax stays off. Revisit if revenue passes the §19 thresholds.
+- [x] 3. (Done from the old Pre app, CTO day 4.) **Settings → Billing → Customer portal**: verify *Business information* (name Preb, support email, Terms and Privacy URLs from Leon's site) and *Branding* (new logo, accent colour).
+- [x] 4. (Done from the old Pre app, CTO day 4.) **Settings → Business → Branding / Public details**: upload the new Preb logo, set statement descriptor `PREB.CO`.
+- [ ] 4a. (Day 5, test mode) In the repo: `npm run stripe:webhook` → paste the printed `STRIPE_WEBHOOK_SECRET=whsec_…` into `.env.local` and restart `next dev`. Re-run it whenever the tunnel URL changes (it re-points the endpoint; the secret stays). Then `npm run stripe:portal` to sync the Preb portal configuration (payment method, invoices, cancel at period end; plan switching happens in the app).
+- [ ] 4b. (Day 5) Pay one sandbox Checkout (Settings › Billing › Choose a plan, card `4242 4242 4242 4242`, any future date/CVC) and confirm the grant appears in Settings › Billing and the header balance.
+- [ ] 5. (Day 7) switch Test mode off; with the live key in the env run `npm run stripe:catalogue`, `npm run stripe:portal`, `npm run stripe:webhook` (live secret → Vercel env); you run one real Checkout with a real card and refund it.
 
 
 

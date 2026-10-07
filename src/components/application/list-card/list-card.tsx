@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   RiAlertLine,
   RiArrowRightSLine,
@@ -16,21 +15,15 @@ import {
   RiUserUnfollowLine,
 } from "@remixicon/react";
 import { Chip } from "@/components/base/badges/chip";
-import { Button } from "@/components/base/buttons/button";
-import { ConfirmDialog, Dialog } from "@/components/base/dialog/dialog";
+import { Button, ButtonLink } from "@/components/base/buttons/button";
 import { Dropdown, DropdownDivider, DropdownGroup, DropdownItem, DropdownPopover, DropdownTrigger } from "@/components/base/dropdown/dropdown";
-import { Input } from "@/components/base/input/input";
-import { useToast } from "@/components/base/toast/toast";
 import { AgentThinking } from "@/components/application/agent-thinking/agent-thinking";
 import { ComposerLoader } from "@/components/application/composer-loader/composer-loader";
 import { ContactGauge } from "@/components/application/contact-gauge/contact-gauge";
-import { deleteList, renameList, stopList } from "@/lib/lists/actions";
 import type { ListRow } from "@/lib/supabase/queries";
 import { cx } from "@/utils/cx";
+import { ListDialogs, type ListDialogKind } from "./list-dialogs";
 import { LIST_STATUS_META } from "./list-status";
-
-/** Flip on when `/api/lists/[id]/export` exists (sprint day 4). */
-const EXPORT_READY = false;
 const fmt = (n: number) => n.toLocaleString("en-US");
 const pct = (n: number, of: number) => (of > 0 ? `${Math.round((n / of) * 100)}%` : "0%");
 const fmtDate = (iso: string | null) =>
@@ -41,8 +34,6 @@ export interface ListCardProps {
   ownerName: string | null;
   canDelete: boolean;
 }
-
-type DialogKind = "rename" | "stop" | "delete" | null;
 
 /** Dashboard card (Figma 1015:30): status strip, title, gauge, metric rows, Download, overflow menu. */
 export function ListCard({ list, ownerName, canDelete }: ListCardProps) {
@@ -55,23 +46,7 @@ export function ListCard({ list, ownerName, canDelete }: ListCardProps) {
   const href = `/lists/${list.id}`;
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [dialog, setDialog] = useState<DialogKind>(null);
-  const [name, setName] = useState(list.name);
-  const [pending, start] = useTransition();
-  const toast = useToast();
-  const router = useRouter();
-
-  const run = (fn: () => Promise<{ ok: boolean; error?: string }>, success: string | (() => string)) =>
-    start(async () => {
-      const res = await fn();
-      if (res.ok) {
-        toast.success(typeof success === "function" ? success() : success);
-        setDialog(null);
-        router.refresh();
-      } else {
-        toast.error(res.error ?? "Something went wrong");
-      }
-    });
+  const [dialog, setDialog] = useState<ListDialogKind>(null);
 
   const strip = (
     <div className="flex h-11 items-center justify-between gap-2 ps-4 pe-2">
@@ -103,7 +78,7 @@ export function ListCard({ list, ownerName, canDelete }: ListCardProps) {
         </DropdownTrigger>
         <DropdownPopover aria-label="List actions" placement="bottom end" className="w-[200px]">
           <DropdownGroup>
-            <DropdownItem onSelect={() => { setMenuOpen(false); setName(list.name); setDialog("rename"); }}>
+            <DropdownItem onSelect={() => { setMenuOpen(false); setDialog("rename"); }}>
               <RiPencilLine className="size-5 text-foreground-icon-secondary" aria-hidden />
               <span className="text-body-medium">Rename</span>
             </DropdownItem>
@@ -173,50 +148,20 @@ export function ListCard({ list, ownerName, canDelete }: ListCardProps) {
         </ul>
 
         <div className="mt-auto flex flex-col gap-2 pt-1">
-          <Button variant="secondary" leadingIcon={RiDownloadLine} className="w-full" disabled={!done || !EXPORT_READY} title={done ? (EXPORT_READY ? undefined : "CSV export is coming soon") : "Available when the list finishes"}>
-            Download All ({fmt(list.enrichable_rows || list.total_rows)})
-          </Button>
+          {done ? (
+            <ButtonLink href={`/api/lists/${list.id}/export?segment=all`} variant="secondary" leadingIcon={RiDownloadLine} className="w-full" download>
+              Download All ({fmt(list.total_rows)})
+            </ButtonLink>
+          ) : (
+            <Button variant="secondary" leadingIcon={RiDownloadLine} className="w-full" disabled title="Available when the list finishes">
+              Download All ({fmt(list.total_rows)})
+            </Button>
+          )}
           {ownerName ? <p className="text-center text-caption-1-regular text-text-tertiary">Created by {ownerName}</p> : null}
         </div>
       </div>
 
-      <Dialog
-        isOpen={dialog === "rename"}
-        onOpenChange={(o) => !o && setDialog(null)}
-        title="Rename list"
-        size="sm"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setDialog(null)}>Cancel</Button>
-            <Button onClick={() => run(() => renameList(list.id, name), "List renamed")} disabled={pending || !name.trim()}>
-              {pending ? "Saving…" : "Save"}
-            </Button>
-          </>
-        }
-      >
-        <Input label="Name" value={name} onChange={setName} autoFocus maxLength={120} />
-      </Dialog>
-
-      <ConfirmDialog
-        isOpen={dialog === "stop"}
-        onOpenChange={(o) => !o && setDialog(null)}
-        title="Stop this list?"
-        description="Contacts already in progress will finish and be charged. Nothing new will be submitted."
-        confirmLabel="Stop list"
-        tone="primary"
-        isPending={pending}
-        onConfirm={() => run(() => stopList(list.id), list.status === "queued" ? "List stopped" : "List is stopping — in-flight contacts will finish")}
-      />
-
-      <ConfirmDialog
-        isOpen={dialog === "delete"}
-        onOpenChange={(o) => !o && setDialog(null)}
-        title="Delete this list?"
-        description="The list, its rows and the uploaded file are removed permanently. Credits already used are not refunded."
-        confirmLabel="Delete list"
-        isPending={pending}
-        onConfirm={() => run(() => deleteList(list.id), "List deleted")}
-      />
+      <ListDialogs list={list} dialog={dialog} onClose={() => setDialog(null)} />
     </article>
   );
 }

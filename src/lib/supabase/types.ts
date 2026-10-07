@@ -716,41 +716,50 @@ export type Database = {
       }
       workspaces: {
         Row: {
+          cancel_at_period_end: boolean
           created_at: string
           current_period_end: string | null
           id: string
+          low_credits_notified_at: string | null
           name: string
           owner_id: string
           plan_key: string | null
           slug: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
+          subscription_status: string | null
           trial_granted_at: string | null
           updated_at: string
         }
         Insert: {
+          cancel_at_period_end?: boolean
           created_at?: string
           current_period_end?: string | null
           id?: string
+          low_credits_notified_at?: string | null
           name: string
           owner_id: string
           plan_key?: string | null
           slug: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          subscription_status?: string | null
           trial_granted_at?: string | null
           updated_at?: string
         }
         Update: {
+          cancel_at_period_end?: boolean
           created_at?: string
           current_period_end?: string | null
           id?: string
+          low_credits_notified_at?: string | null
           name?: string
           owner_id?: string
           plan_key?: string | null
           slug?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          subscription_status?: string | null
           trial_granted_at?: string | null
           updated_at?: string
         }

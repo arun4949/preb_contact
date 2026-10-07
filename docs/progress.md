@@ -2,6 +2,109 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Day 5 — 2026-10-07 · Billing (complete; full sandbox E2E verified)
+
+### Done
+- ✅ **Migration 0007** (`supabase/migrations/0007_billing.sql`, applied via MCP, types patched): `workspaces.subscription_status`, `cancel_at_period_end`, `low_credits_notified_at` + index on `stripe_customer_id`.
+- ✅ **Stripe layer** `src/lib/stripe/`: `client.ts` (lazy singleton, `isLiveMode()`, § 19 UStG invoice footer), `catalogue.ts` (plans resolved by lookup key `preb_<plan_key>` in chunks of 10, cached 10 min; prices are the Stripe amounts, never computed), `checkout.ts` (`ensureCustomer` with `metadata.workspace_id` + invoice footer; subscription Checkout with billing address required, tax-id collection, promo codes, **no `automatic_tax`**), `portal.ts` (config by env `STRIPE_PORTAL_CONFIG_ID` or `metadata.preb_managed`; `switchPlanFlow` = portal `subscription_update_confirm` deep link), `webhooks.ts` (pure: `decideGrant`, `subscriptionPatch`, line/customer helpers; `STRIPE_EVENTS`).
+- ✅ **Webhook** `/api/webhooks/stripe`: `constructEvent` signature, `livemode` must match the key, idempotent by `event.id` in `webhook_events (provider='stripe')`, 500 on processing errors so Stripe retries. `invoice.paid` → `grant_credits` (idempotent on invoice id): `subscription_create`/`subscription_cycle` = full plan, `subscription_update` = credit *difference* from the proration lines (upgrades only), expiry +3 m monthly / +12 m annual, resets `low_credits_notified_at`. `customer.subscription.created/updated/deleted` → `plan_key` (from the price lookup key), `subscription_status`, `cancel_at_period_end`, `current_period_end` (item level, API 2026-09-30); stale events for a replaced subscription are ignored. `checkout.session.completed` only links the customer.
+- ✅ **Server actions** `src/lib/billing/actions.ts`: `fetchBillingOverview`, `fetchPlanCatalogue`, `startCheckout(planKey)` (owners/admins; new subscriber → Checkout, existing → portal switch-plan flow, prorated and invoiced immediately), `openBillingPortal`. `src/lib/billing/queries.ts` builds the overview (plan, subscription, grants with expiry, ledger last 50 through RLS, zero-delta reconciliation rows hidden).
+- ✅ **Low-credit email** `lib/billing/low-credits.ts` + template `credits-low.tsx` (kind `credits_low`): after every charged settlement, when `available < 10 %` of the plan and not yet notified (flag claimed atomically; trials skipped — they get the paused email). Next grant resets the flag.
+- ✅ **UI**: `billing/plan-picker-dialog.tsx` modelled on the upstream "Buy a plan" card (CTO request, end of day 5): `SegmentedControl` Monthly/Annual with "Save ~10 %", one BoardUI **`Slider`** (installed via MCP) across the 7 tiers plus a final ">10k / >120k" stop that turns the card into "Talk to us" (mailto sales@preb.co); headline shows credits / period · $/month (annual: billed-yearly total + saving) · Current chip; tick labels are clickable; meta row with rollover (3 / 12 months) and per-item prices derived from the plan ($/credit × 1 / 3 / 10). Primary button reads "Continue to checkout · 1.5k credits" / "Switch plan · …"; existing subscribers then get the confirm step. Tiers map by position between intervals. **Settings modal forked** (`settings/settings-modal.tsx`: pages Profile · Members (disabled, day 6) · Billing; title + subtitle; template pages General/Storage/Tools deleted; z-90 so dialogs stack above). `settings-billing.tsx` (plan card with status chip, renew/cancel date, **Manage billing** → portal, Change/Choose plan; balance card with `ProgressBar` + per-grant expiry rows; credit-history `Table` with list links). `settings-profile.tsx` rewritten against real data (name commits on Enter/blur via `account/actions.ts: updateProfileName`, email read-only). `settings-host.tsx` mounted in `(app)/layout.tsx` (Suspense): URL-driven `?settings=profile|billing`, `&plan=1` opens the picker, `&checkout=success|cancelled|switched` → toast + 3 delayed `router.refresh()`s so the webhook grant shows up without a reload.
+- ✅ **CTAs**: credits dropdown → "Choose a plan / Buy credits" (`&plan=1`) + "Manage"; wizard shortfall banner opens the picker in place (copy warns the upload must be redone after Checkout — drafts are discarded on unmount, by design); paused-list panel → "Buy credits"; account menu Settings/Billing already used `?settings=`.
+- ✅ **Scripts**: `npm run stripe:portal` (creates/updates the `preb_managed` portal configuration: customer update incl. tax id, invoice history, payment method, cancel **at period end** with reasons, switch among all 14 Preb prices with `always_invoice` proration, default return URL) and `npm run stripe:webhook [-- --rotate]` (creates/re-points the endpoint `${NEXT_PUBLIC_APP_URL}/api/webhooks/stripe` for the 5 events, prints `STRIPE_WEBHOOK_SECRET`). `.env.example` gained `STRIPE_PORTAL_CONFIG_ID` (optional).
+- ✅ Bug fixed on the way: `lists-toolbar.tsx` rebuilt the URL from its own filters on every sync and dropped `settings`/`plan` (also fired once after mount under StrictMode) → it now preserves foreign params and only syncs when the search actually changed.
+- ✅ Tests: `lib/stripe/webhooks.test.ts` (grant decisions for create/cycle/upgrade/downgrade/unknown, lookup-key mapping, subscription patch). `npm test` 37 ✓ · `npm run build` ✓ · `npm run lint` ✓ (2 upstream TanStack warnings) · `npx tsc --noEmit` ✓.
+
+### Browser verification (Chrome, localhost, Stripe **sandbox**)
+- ✅ `?settings=billing`: trial plan card, balance 25/25 with expiry row, credit history (+25 Welcome trial). Profile page shows real name/email.
+- ✅ Plan picker: live prices from Stripe ($33 … $574/mo; annual $359 … $6,265 billed yearly with "save $…"), selection, Monthly→Annual keeps the tier (Pro 1k → Pro 12k), Continue enabled only with a selection.
+- ✅ **Continue → Stripe Checkout** (sandbox): "Preb Pro 12k (annual) $676/year", promo code field, address + "I'm buying as a business" (tax id), email prefilled. Not paid (see pending).
+- ✅ **Manage billing → Stripe customer portal** opened with the existing Preb configuration (headline, billing info, invoice history).
+- ✅ Return URLs: `checkout=success` → toast "Payment received", `checkout=cancelled` strips the param; modal stays open.
+- Side effect: a sandbox customer "Arun Gupta's workspace" now exists on your workspace row (`stripe_customer_id`), harmless.
+
+### Sandbox E2E (agent, after the CTO registered the webhook) — 2026-10-07 afternoon
+- ✅ **Checkout + grant**: Pro 500 monthly paid with test card 4242 → `checkout.session.completed`, `customer.subscription.created`, `invoice.paid` all 200 → +500 credits (`Pro 500 · monthly`, expires 2027-01-07), plan `pro_500_m` active, renews 2026-11-07. Billing page and header (525) updated without a reload.
+- ✅ **Cancel / reactivate in the portal**: works after a fix (below). Billing page shows "cancels on Nov 7, 2026"; reactivating clears it. Subscription left **active** (not cancelling).
+- ✅ **Low-credit email**: simulated with a temporary 490-credit hold → one `credits_low` email sent via Resend, second call suppressed by the flag. Hold removed and flag reset afterwards (balance 525, no open holds).
+- ✅ 7 Stripe webhook events, 0 errors. `npm test` 38 ✓ · lint ✓ · tsc ✓.
+- 🐞 **Fixed**: the portal schedules a period-end cancel via `subscription.cancel_at` (API 2026-09-30) and leaves `cancel_at_period_end` false, so the first cancel was not reflected. `subscriptionPatch` now treats either as scheduled (+ unit test).
+- ✅ **Plan switch moved in-app** (the customer portal accepts at most 10 products; the catalogue has 14, so `npm run stripe:portal` failed with "A PortalConfiguration can display a maximum of 10 products"). New `lib/stripe/subscription.ts`: `previewSwitch` (`invoices.createPreview`, `always_invoice`, fixed `proration_date`) + `applySwitch` (`subscriptions.update`, same proration date, `payment_behavior: pending_if_incomplete` → 3-D Secure/failed payment keeps the old plan and returns the hosted invoice URL). Actions `previewPlanSwitch` / `confirmPlanSwitch` (owners/admins, quote valid 30 min). Plan picker gets a "Confirm plan change" step: charged today, unused time credited, credits added now. Portal script now sets `subscription_update: disabled` (portal = payment method, invoices, cancel at period end); the portal switch-flow helper was removed.
+- ✅ **Upgrade verified**: Pro 500 → Pro 750 quoted **$16.00**, charged to the saved test card, `invoice.paid` (`subscription_update`) granted **+250** ("Upgrade to Pro 750", expiry +3 m), plan mirrored to `pro_750_m`.
+- ✅ **Downgrade verified**: Pro 750 → Pro 500 quoted $0.00 today, $16.00 credited to future invoices, no credits added; plan mirrored back to `pro_500_m`, balance unchanged (775).
+- 🐞 **Fixed**: the settings host cancelled its own post-return refresh timers (effect cleanup ran when the `checkout` param was stripped) — Billing/header now update by themselves after Checkout or a switch (verified on the downgrade).
+- Final sandbox state: Pro 500 monthly, active, not cancelling, 775 credits, 11 Stripe events, 0 failed. `npm test` 38 ✓ · lint ✓ · tsc ✓ · build ✓.
+
+### Decisions / notes
+- `MARGIN_MULTIPLIER` left at **×1.15**, rounded to whole dollars (the sandbox catalogue was created with it; Annual ≈ 10 % under 12× monthly, mirroring the upstream). Change it in `.env.local` + `npm run stripe:catalogue` before the live catalogue on day 7 if you want different numbers.
+- Plan changes happen in-app with an exact Stripe quote; upgrades are invoiced immediately (`always_invoice`) so credits arrive at once; downgrades grant nothing, keep existing credits and leave a Stripe customer balance. Cancel = at period end via the portal; credits keep their own expiry.
+- Portal business-profile URLs point at `https://preb.co/privacy|terms` (Leon's pages, M8).
+- Row selection / bulk actions and the Members page remain for day 6/7.
+
+### Manual tasks status
+| Task | Status |
+|---|---|
+| M1 Google OAuth redirect URI | ✅ |
+| M2 Supabase providers / URLs / secret key | ✅ |
+| M3 FullEnrich account + API key | ✅ key; 500-credit plan purchase unconfirmed |
+| M4 Stripe dashboard | ✅ test mode, webhook live, full billing E2E passed (optional: rerun `npm run stripe:portal` to refresh headline/return URL) |
+| M5 Vercel project + domain + env | ⚠️ CLI install, domain, env vars (incl. `CRON_SECRET`, `STRIPE_WEBHOOK_SECRET`), first deploy pending |
+| M6 Local tunnel | ✅ (URL changes per restart → re-run `npm run stripe:webhook`) |
+| M7 Resend domain check | ✅ |
+| M8 Legal pages (Leon) | ⬜ |
+
+### Next: Day 6 — Team, emails, polish
+0. Nothing pending from day 5. (Optional: `npm run stripe:portal` now succeeds and refreshes the portal headline/return URL.)
+1. Settings › Members page (members table with role `Select` + remove, invite row + pending invites with Resend/Revoke), invite acceptance E2E; enable the nav row in `settings-modal.tsx`.
+2. Emails: `welcome`, `invite` on `EmailLayout`; review copy of list-finished/paused/credits-low.
+3. Dark-mode + mobile pass (settings modal at 500 px, plan picker), motion polish, `error.tsx`/`not-found.tsx` routes, Sentry, `/admin/ops`.
+4. Day-1 advisor item: membership check on `credits_available`.
+
+## Day 4 — 2026-10-07 · List detail & export (complete, browser-verified)
+
+### Done
+- ✅ **List detail page** `(app)/lists/[id]/page.tsx` (+ `loading.tsx` skeletons): server component reads `?page&size&sort&dir&q&email&phone`, loads list (RLS + workspace check), one server-paginated contacts page and the ETA, and renders the client shell `components/application/list-detail/list-detail.tsx`. Drafts redirect to the wizard, foreign lists → 404.
+- ✅ **Enriching view** (queued / enriching / stopping / paused_* / failed): `enrichment-progress.tsx` = controlled fork of BoardUI `AgentProgress` (steps *Validating rows · Submitting · Finding emails · Verifying deliverability · [Finding mobile numbers] · Finalising*, completed count derived from `submitted_rows` / `processed_rows`, paused state shows a static ring). `enriching-panel.tsx`: big count-up `128 / 415 contacts`, ETA from observed throughput (`getListEta`: settled non-cache batches, else processed/elapsed), rotating `AgentThinking` messages, "we'll email you" line, paused/failed copy. Table below with `Skeleton` cells for pending rows. **Live updates**: Supabase Realtime on the `lists` row + a 5 s `router.refresh()` poll while running (skipped when the tab is hidden, never stacked). Verified: counters and steps moved on their own after a DB update.
+- ✅ **Completed view** (Figma 1015:31): `list-stats.tsx` (4 plain `StatCards`: Contacts · Valid · Risky · Mobile phones / Personal emails), `contacts-toolbar.tsx` (debounced search → URL, `/` shortcut, **Column settings** dropdown with checkbox rows incl. "From your file" pass-through columns, persisted in `localStorage` via `useSyncExternalStore` in `columns.ts`, Filters button < lg), `filter-rail.tsx` (Email status stacked bar `chart-1`/`chart-3` + Valid/Risky/Not found pills, Phone status Found/Not found, Duplicates removed, Already enriched; rail ≥ lg, BoardUI `Sheet` below), `contacts-table.tsx` (react-aria `Table` + TanStack for column plumbing, manual sort/pagination; columns Name (initials avatar + LinkedIn link) · Job title · Company (logo with fallback + domain link) · Location · Work email (`StatusDot` green/yellow + copy-on-hover) · Personal email · Phone (`Chip` Mobile/Landline + copy) · Status (Enriched / **Already enriched** for `cached` / Not found / Skipped · reason / Pending) · extra columns from `raw`; sticky Name column on horizontal scroll; footer with range, page-size `Select` 25/50/100, `Pagination`; inline `EmptyState`).
+- ✅ **Header** `list-detail-header.tsx`: breadcrumb, click-to-rename title, status chip, credits-used pill (`credits_used`, now ledger-accurate), **Download** dropdown (All / Valid emails / Risky emails / Not found, disabled until done), Stop (running/paused), overflow Rename · Delete (→ `/lists`). Dialogs extracted to `list-card/list-dialogs.tsx` and shared with the dashboard card.
+- ✅ **Export** `/api/lists/[id]/export?segment=all|valid|risky|not_found` (`lib/lists/segments.ts`, `lib/csv/export.ts`): session client (RLS), streams 1,000-row pages, BOM + CRLF, formula-injection guard, original columns in file order then `Preb: Work email / status / Personal email / status / Phone / Phone type / Job title / Company / Company domain / Location / LinkedIn URL / Status / Credits`; Status carries skip reasons (`stopped`, `row_limit`, `provider_lost`, `no_result`, `missing_fields`, `email_only`, `duplicate`). Segments match the rail: valid = DELIVERABLE/HIGH_PROBABILITY, risky = CATCH_ALL, not found = processed rows without a work email.
+- ✅ Dashboard card: `EXPORT_READY` flag removed — **Download All** is a real `ButtonLink` (`download`) once the list is completed/stopped.
+- ✅ Shared pure module `lib/lists/contact-query.ts` (query types, `parseContactQuery`, `SORT_COLUMNS`) so client components never import the `server-only` `lib/lists/queries.ts` (`getListContacts`, `getListEta`, `extraColumns`, `originalColumns`, `applySegment`).
+- ✅ Tests: `lib/lists/contact-query.test.ts` (URL parser defaults/limits, CSV escaping + formula guard, file names, status mapping). `npm test` 29 ✓ · `npm run build` ✓ · `npm run lint` ✓ (2 upstream TanStack warnings) · `npx tsc --noEmit` ✓.
+
+### Browser verification (Chrome, fixture lists seeded via SQL — 40 synthetic rows: valid/risky/not-found/cached/skipped, mobile + landline phones, 2 pass-through columns)
+- ✅ Completed view: stat cards, filter pills (Risky → 5 rows, URL `?email=risky`), Reset, search "hopper" → 1 row, sort by company desc + 50/page via URL, column settings (core + "Notes"/"Source" from the file, Reset to defaults), Download menu with 4 segments, status chips incl. Already enriched / Not found, copy buttons on hover.
+- ✅ Enriching view: progress steps, 5 / 12 count, "About 6 minutes left", skeleton cells for pending rows; after a DB update the page refreshed itself to 8 / 12 and advanced a step (realtime + poll).
+- ✅ Dark mode; 500 px width: header collapses, panel stacks, Filters button opens the sheet, table scrolls horizontally with the sticky Name column, no page-level horizontal scroll.
+- ✅ **CSV download verified by the CTO** on the fixture list "[QA] Day 4 fixture — completed" (delete it from the card menu if still present).
+
+### Deviations / notes
+- Not-found segment/filter is defined on the **work email** (processed rows with no work email), consistent with the card and rail counters; personal-email-only hits count as "not found" for email but still export.
+- Column visibility is per browser (localStorage), as planned; no server persistence.
+- Row selection checkboxes (Figma) were left out — nothing acts on a selection yet (bulk export of selected rows can come with day 7 polish).
+- Reconciler/realtime: the browser subscribes to `postgres_changes` on `lists` only (publication from day 1); `list_contacts` is polled.
+- `getListEta` uses `enrichment_batches` through RLS (members can select batches) — no admin client in the page.
+
+### Manual tasks status
+| Task | Status |
+|---|---|
+| M1 Google OAuth redirect URI | ✅ |
+| M2 Supabase providers / URLs / secret key | ✅ |
+| M3 FullEnrich account + API key | ✅ key; 500-credit plan purchase unconfirmed |
+| Stripe sandbox key + test catalogue | ✅ |
+| M4 Stripe dashboard | ✅ test mode connected to the Stripe MCP; no Stripe Tax (§19 UStG); portal + branding from the old Pre app |
+| M5 Vercel project + domain + env | ⚠️ CLI install, domain, env vars (incl. `CRON_SECRET`), first deploy pending |
+| M6 Local tunnel | ✅ (URL changes per restart) |
+| M7 Resend domain check | ✅ |
+| M8 Legal pages (Leon) | ⬜ |
+
+### Next: Day 5 — Billing
+0. M4 done. Billing decisions: no `automatic_tax` (Kleinunternehmerregelung); add the §19 UStG note to invoices; create a **Preb-specific portal configuration via API** (products/prices of the new catalogue, cancel at period end) instead of relying on the old Pre app default.
+1. `lib/stripe/{client,checkout,portal,webhooks}.ts`, `/api/webhooks/stripe` (grants via `grant_credits`, upgrades, cancel), Checkout (subscription, tax, address), Portal config.
+2. Plan picker `Dialog` (`SegmentedControl` monthly/annual, 7 plans from `lib/credits/plans.ts`), Billing settings page in the forked `settings-modal`, credits dropdown wiring, "Buy credits" CTAs (wizard shortfall banner, paused list panel, `/lists?settings=billing` links), low-credit email.
+3. Decide `MARGIN_MULTIPLIER` (catalogue was created at ×1.15).
+
 ## Day 3 — 2026-10-07 · Enrichment engine (complete, live E2E verified)
 
 ### Done

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState, useTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { RiSearchLine } from "@remixicon/react";
 import { Input } from "@/components/base/input/input";
 import { Kbd } from "@/components/base/kbd/kbd";
@@ -28,12 +28,17 @@ const STATUS_OPTIONS = [
 export function ListsToolbar({ status, owner, q, members }: ListsToolbarProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [pending, start] = useTransition();
   const [search, setSearch] = useState(q);
-  const first = useRef(true);
 
   const apply = (next: Partial<{ status: string; owner: string; q: string }>) => {
-    const params = new URLSearchParams();
+    // Only the filter keys are ours; `settings`, `plan`, `checkout` etc. belong
+    // to the settings host and must survive a filter change.
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("status");
+    params.delete("owner");
+    params.delete("q");
     const s = next.status ?? status;
     const o = next.owner ?? owner;
     const query = next.q ?? search;
@@ -45,14 +50,11 @@ export function ListsToolbar({ status, owner, q, members }: ListsToolbarProps) {
   };
 
   useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
-    }
+    if (search.trim() === q.trim()) return; // nothing to sync (also skips the mount run)
     const t = setTimeout(() => apply({ q: search }), 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
+  }, [search, q]);
 
   const ownerItems = [
     { id: "all", label: "Everyone" },

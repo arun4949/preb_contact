@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getCreditSummary, getSessionContext } from "@/lib/supabase/queries";
 import { AppHeader } from "@/components/application/header/app-header";
+import { SettingsHost } from "@/components/application/settings/settings-host";
 
 /**
  * Signed-in shell. `proxy.ts` already bounced anonymous requests to /login;
@@ -21,6 +23,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         credits={credits}
       />
       <main className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col px-4 py-8 md:px-6 lg:px-10">{children}</main>
+      <Suspense fallback={null}>
+        <SettingsHost profile={{ name: session.profile.full_name ?? "", email: session.email, avatarUrl: session.profile.avatar_url }} />
+      </Suspense>
     </div>
   );
 }

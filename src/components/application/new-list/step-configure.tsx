@@ -9,6 +9,7 @@ import { Chip } from "@/components/base/badges/chip";
 import { Input } from "@/components/base/input/input";
 import { ProgressBar } from "@/components/base/progress-bar/progress-bar";
 import { useToast } from "@/components/base/toast/toast";
+import { PlanPickerDialog } from "@/components/application/billing/plan-picker-dialog";
 import { estimateCredits, type EnrichmentField } from "@/lib/credits/estimate";
 import { CREDIT_COST } from "@/lib/fullenrich/mapping";
 import { startList, type ParseSummary } from "@/lib/lists/actions";
@@ -38,6 +39,7 @@ export function StepConfigure({ listId, defaultName, summary, creditsAvailable, 
   const [fields, setFields] = useState<EnrichmentField[]>(["work_email"]);
   const [name, setName] = useState(defaultName);
   const [rowsText, setRowsText] = useState(String(summary.enrichable));
+  const [picker, setPicker] = useState(false);
 
   const billable = Math.max(0, summary.enrichable - summary.cached);
   const rowsWanted = Math.max(0, Math.min(Number(rowsText.replace(/[^\d]/g, "")) || 0, summary.enrichable));
@@ -148,7 +150,7 @@ export function StepConfigure({ listId, defaultName, summary, creditsAvailable, 
             tone="warning"
             title={`You need ${fmt(short)} more credits to start`}
             actions={
-              <Button variant="secondary" size="small" onClick={() => toast.info("Plans and checkout arrive with billing (sprint day 5).")}>
+              <Button variant="secondary" size="small" onClick={() => setPicker(true)}>
                 Buy credits
               </Button>
             }
@@ -163,6 +165,11 @@ export function StepConfigure({ listId, defaultName, summary, creditsAvailable, 
           {pending ? "Starting…" : "Start enrichment"}
         </Button>
       </div>
+      <PlanPickerDialog
+        isOpen={picker}
+        onClose={() => setPicker(false)}
+        reason={`You need ${fmt(short)} more credits to start this list. Checkout opens in this tab — you will upload the file again afterwards.`}
+      />
     </div>
   );
 }
