@@ -912,3 +912,91 @@ input[type="search"]::-webkit-search-cancel-button {
     box-shadow: inset 0 0 0 2px var(--color-border-button-hover);
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Preb app additions: dialog / sheet motion, skeleton shimmer, page enter.
+ * --------------------------------------------------------------------------- */
+@keyframes dialog-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes dialog-backdrop-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes dialog-panel-in {
+  from { opacity: 0; transform: scale(0.85); filter: blur(4px); }
+  to { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+@keyframes dialog-panel-out {
+  from { opacity: 1; transform: scale(1); filter: blur(0); }
+  to { opacity: 0; transform: scale(0.85); filter: blur(4px); }
+}
+@keyframes sheet-in-end {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes sheet-out-end {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+@keyframes sheet-in-start {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+@keyframes sheet-out-start {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+.animate-dialog-backdrop-in { animation: dialog-backdrop-in 300ms ease-out both; }
+.animate-dialog-backdrop-out { animation: dialog-backdrop-out 300ms ease-out both; }
+.animate-dialog-panel-in { animation: dialog-panel-in 300ms cubic-bezier(0.32, 0.72, 0, 1) both; }
+.animate-dialog-panel-out { animation: dialog-panel-out 300ms cubic-bezier(0.32, 0.72, 0, 1) both; }
+.animate-sheet-in-end { animation: sheet-in-end 300ms cubic-bezier(0.32, 0.72, 0, 1) both; }
+.animate-sheet-out-end { animation: sheet-out-end 300ms cubic-bezier(0.32, 0.72, 0, 1) both; }
+.animate-sheet-in-start { animation: sheet-in-start 300ms cubic-bezier(0.32, 0.72, 0, 1) both; }
+.animate-sheet-out-start { animation: sheet-out-start 300ms cubic-bezier(0.32, 0.72, 0, 1) both; }
+/* Sheets mirror in RTL: the inline-end edge is the physical left. */
+[dir="rtl"] .animate-sheet-in-end { animation-name: sheet-in-start; }
+[dir="rtl"] .animate-sheet-out-end { animation-name: sheet-out-start; }
+[dir="rtl"] .animate-sheet-in-start { animation-name: sheet-in-end; }
+[dir="rtl"] .animate-sheet-out-start { animation-name: sheet-out-end; }
+
+@keyframes skeleton-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+.skeleton-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-background-secondary-default) 0%,
+    var(--color-background-tertiary-default) 50%,
+    var(--color-background-secondary-default) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-page-enter { animation: page-enter 200ms ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-dialog-backdrop-in,
+  .animate-dialog-backdrop-out,
+  .animate-dialog-panel-in,
+  .animate-dialog-panel-out,
+  .animate-sheet-in-end,
+  .animate-sheet-out-end,
+  .animate-sheet-in-start,
+  .animate-sheet-out-start,
+  .animate-page-enter {
+    animation-duration: 1ms;
+  }
+  .skeleton-shimmer {
+    animation: none;
+    background-image: none;
+  }
+}

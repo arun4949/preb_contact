@@ -13,6 +13,17 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    // BoardUI-installed sources that sync state inside effects by design
+    // (open/close transitions). The settings pages are forked on day 6 and
+    // the date picker / plan art are removed with them.
+    files: [
+      "src/components/base/date-picker/**",
+      "src/components/application/settings/settings-modal.tsx",
+      "src/components/application/settings/plan-art-flame.tsx",
+    ],
+    rules: { "react-hooks/set-state-in-effect": "off" },
+  },
 ]);
 
 export default eslintConfig;

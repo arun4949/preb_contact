@@ -31,7 +31,7 @@ Accounts to reuse: Stripe *Preb.co* (live, `acct_1TbKWFI8j3KU4u56`, old scheduli
 - BoardUI **data‑table is a demo component** (`DataTableExample`, hardcoded data) → forked into a generic server‑paginated table. ✔
 - BoardUI has **no modal/dialog, toast API, drawer, empty state, skeleton, progress bar, stepper** → built once as base components following BoardUI's own patterns (see UI system). ✔
 - Wiza layouts: **Figma + markdown together** (spec in `docs/screens.md` links each node; agent pulls screenshots via Figma MCP while building). Nothing to move. ✔
-- Magic link via Resend = **Supabase Custom SMTP** (manual, M2). Google SSO = add new callback URL to old client (manual, M1). ✔
+- **All email is ours, via Resend** (changed day 1): Supabase Auth never sends mail. Magic links are minted with `auth.admin.generateLink()` in our server action and delivered with a react‑email template through Resend; invites and every other notification likewise. No Supabase SMTP, no dashboard templates. Google SSO = add new callback URL to old client (manual, M1). ✔
 
 ## Product scope
 
@@ -200,7 +200,7 @@ src/app/(app)/layout.tsx (header, providers) · onboarding · lists · lists/new
 src/app/api/webhooks/{fullenrich,stripe}/route.ts · api/jobs/{tick,daily}/route.ts · api/lists/[id]/export/route.ts
 src/lib/fullenrich/{client,types,mapping,signature,cost}.ts
 src/lib/credits/{estimate,plans,server}.ts · src/lib/stripe/{client,checkout,portal,webhooks}.ts
-src/lib/csv/{parse,automap,normalize,export,xlsx}.ts · src/lib/email/{resend,templates/*}.tsx
+src/lib/csv/{parse,automap,normalize,export,xlsx}.ts · src/lib/email/resend.ts (send + per‑address rate limit via `email_sends`) · src/lib/email/templates/{layout,magic-link,…}.tsx
 src/lib/supabase/{admin,queries}.ts · src/lib/jobs/{dispatch,reconcile,settle,rate-limit}.ts
 src/components/base/{dialog,sheet,empty-state,skeleton,progress-bar,stepper,banner,toast}/
 src/components/application/{header,list-card,contact-gauge,enrichment-progress,mapping-table,data-table,settings/*}
@@ -215,7 +215,7 @@ Env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABA
 - Write `docs/product_mvp.md`, `docs/screens.md`, `docs/fullenrich.md`, `docs/setup_manual.md`, `.env.example`, sample CSV.
 - Install BoardUI set (table above) + build base components (dialog, toast provider, empty‑state, skeleton, progress‑bar, stepper, banner). Replace starter layout/page; root layout with `DirectionProvider`, theme, ToastProvider, fonts, metadata, Preb logo.
 - Migration 0001 (tables, RLS, helpers, `handle_new_user`, credit functions, counters trigger, storage bucket, realtime). `generate_typescript_types`.
-- Auth: login, callback, confirm, invite route, proxy redirects, onboarding screen. **You do M1–M3** in parallel.
+- Auth: login, callback, confirm, invite route, proxy redirects, onboarding screen. Magic‑link email via `generateLink` + react‑email + Resend (`email_sends` log, 5/h/address). **You do M1–M3** in parallel.
 - FullEnrich client + key verify. Stripe products/prices created in **test mode** via MCP (30 min) so billing can be tested from day 3.
 
 **Day 2 — Shell, dashboard, wizard**
@@ -233,7 +233,7 @@ Env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABA
 - Checkout (subscription, tax, address), Portal config, Stripe webhook (grants, upgrades, cancel), plan picker dialog, Billing settings page, credits dropdown wiring, "Buy credits" CTAs, low‑credit email. Decide `MARGIN_MULTIPLIER`. **M4**.
 
 **Day 6 — Team, emails, polish**
-- Workspace settings (members, invites, roles), invite acceptance E2E; emails via react‑email (invite, list finished, list paused, credits low, ops alert, welcome); dark‑mode pass; mobile pass; motion polish; error/loading routes; Sentry; `/admin/ops`.
+- Workspace settings (members, invites, roles), invite acceptance E2E; emails via react‑email on the day‑1 `EmailLayout` (invite, list finished, list paused, credits low, ops alert, welcome; magic link exists); dark‑mode pass; mobile pass; motion polish; error/loading routes; Sentry; `/admin/ops`.
 
 **Day 7 — Reverse mode (if on track), QA, deploy**
 - Morning: reverse email lookup mode (F5) — else defer. Afternoon: E2E runs (50‑row CSV with bad rows, duplicates, XLSX), ledger math vs `cost.credits`, webhook replay, cron reconcile with tunnel down, stop list, pause/resume on credits, RLS two‑workspace test, `get_advisors`, Lighthouse. Go‑live: live Stripe catalogue + webhook, prod env, `vercel --prod`, Supabase redirect URLs (**M2 step 4, M4 step 5, M5 step 6**).
@@ -286,14 +286,13 @@ Only these need your hands. Each is 5–15 minutes. Saved to `docs/setup_manual.
 5. Copy *Client ID* and *Client secret* for M2 step 3.
 6. *OAuth consent screen*: app name/logo "Preb", publishing status **In production** (otherwise only test users can sign in).
 
-**M2 · Supabase dashboard — providers, SMTP, URLs (day 1; step 4b on day 7)**
+**M2 · Supabase dashboard — providers, URLs, secret key (day 1; step 4b on day 7)**
 1. https://supabase.com/dashboard → project *preb-contact* (`zigocelujwbasujrozpk`).
-2. *Authentication → Sign In / Providers → Email*: Email provider **on**; *Confirm email* can stay on (magic link confirms); OTP expiry 3600 s. Save.
+2. *Authentication → Sign In / Providers → Email*: Email provider **on** (needed to verify magic‑link tokens; Supabase never sends the email itself). OTP expiry 3600 s. Save.
 3. *Authentication → Sign In / Providers → Google*: **Enable**, paste Client ID + secret from M1. Save.
 4. *Authentication → URL Configuration*: Site URL `http://localhost:3000` now (4b: change to `https://app.preb.co` on day 7). Redirect URLs: add `http://localhost:3000/**`, `https://app.preb.co/**`, and the Vercel preview pattern `https://*-<your-team>.vercel.app/**`. Save.
-5. *Project Settings → Authentication → SMTP Settings* (or *Authentication → Emails → SMTP*): **Enable Custom SMTP**. Sender `login@preb.co`, name `Preb`, host `smtp.resend.com`, port `465`, user `resend`, password = Resend API key (I create a *Sending access* key via Resend MCP and hand it to you). Raise email rate limit to 100/h. Save.
-6. *Authentication → Emails → Templates*: paste the *Magic Link* and *Invite user* HTML I provide on day 1. Save.
-7. *Project Settings → API Keys*: copy the **secret/service_role key** into `.env.local` as `SUPABASE_SECRET_KEY`. Never commit. Just tell me when done.
+5. *Project Settings → API Keys*: copy the **secret/service_role key** into `.env.local` as `SUPABASE_SECRET_KEY`. Never commit. Just tell me when done.
+6. Leave *SMTP Settings* and *Email Templates* untouched — we don't use them. The Resend key (`RESEND_API_KEY`, sending‑only, preb.co) is already in `.env.local`.
 
 **M3 · FullEnrich — account & API key (day 1)**
 1. Sign up at https://app.fullenrich.com with a company email (50 trial credits). Before day 3 buy the smallest Pro plan (500 cr / $29) so real results and webhooks can be tested.
@@ -322,15 +321,18 @@ Only these need your hands. Each is 5–15 minutes. Saved to `docs/setup_manual.
 3. Set it as `NEXT_PUBLIC_APP_URL` in `.env.local`, restart `npm run dev`. The URL changes on each tunnel restart.
 
 **M7 · Resend (one check; rest via MCP)**
-1. https://resend.com/domains → `preb.co` shows **Verified** (DKIM, SPF) and a return‑path/MX record exists. Disable open/click tracking for transactional mail. I create API keys and templates through the MCP.
+1. https://resend.com/domains → `preb.co` shows **Verified** (DKIM, SPF) and a return‑path/MX record exists. Open/click tracking are already off. The sending‑only key `preb-supabase-smtp` (rename to `preb-app` if you like) is in `.env.local` as `RESEND_API_KEY`; the live Vercel env gets the same key on day 2 (M5 step 4).
 
 **M8 · Legal (Leon, before launch)**
 - Privacy policy: enrichment from third‑party providers, retention until list deletion, processors (FullEnrich, Supabase, Stripe, Resend, Vercel, Sentry), US sales, data‑deletion path (delete list / request workspace deletion). Terms: credit expiry (3 / 12 months, trial 30 days), credits consumed are non‑refundable, personal email data for recruiting use only. Links go to the login footer, signup consent checkbox, Configure‑step notice, and Stripe portal config.
 
+## Changes
+- Day 1: email strategy → Resend‑only, templates in app (`generateLink` + react‑email); M2 steps 5–6 (SMTP/templates) dropped; new table `email_sends` (migration 0003); Stripe test catalogue moved to a script (`npm run stripe:catalogue`) because the MCP has no sandbox access.
+
 ## Verification
 
 - `npm run build`, `npm run lint`, `npx next typegen`, Vitest green; Playwright smoke green.
-- Auth: magic link arrives from `login@preb.co`; Google login; onboarding once; invite acceptance joins existing workspace without a second workspace/trial; unauthenticated redirect with `next`.
+- Auth: magic link arrives from `notifications@preb.co`; Google login; onboarding once; invite acceptance joins existing workspace without a second workspace/trial; unauthenticated redirect with `next`.
 - Enrichment: 50‑row CSV (incl. zero‑credit contact, 3 invalid rows, 2 duplicates, 1 cached) → mapping auto‑detects → estimate shown → start → progress animates, table fills → completion email → export (All/Valid) opens with appended columns and passthrough columns; `lists.credits_used` = Σ batch `cost.credits`; `credits_available` = grants − consumed; `adjust` rows explain any per‑contact vs batch delta.
 - Failure paths: webhook replay → no double counting; tunnel down → cron reconciles within 15 min; start with insufficient credits → blocked with CTA; credits run out mid‑list → `paused_credits`, resumes after test Checkout; upstream 402 simulated via MSW → `paused_upstream` + ops email; stop list → no new submissions, in‑flight settle; 429 → backoff.
 - Billing: test Checkout → `invoice.paid` → grant with expiry; upgrade → difference granted; Portal opens; cancel → `plan_key` cleared; `expire_grants()` zeroes an artificially expired grant.

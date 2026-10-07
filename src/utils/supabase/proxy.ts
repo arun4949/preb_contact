@@ -1,10 +1,24 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import type { Database } from "@/lib/supabase/types";
+
+/** Paths that never require a session. Webhooks, cron and auth callbacks pass through untouched. */
+const PUBLIC_PREFIXES = ["/login", "/auth/", "/invite/", "/api/webhooks/", "/api/jobs/", "/samples/"];
+
+function isPublic(pathname: string) {
+  return PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(p));
+}
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
+  const { pathname, search } = request.nextUrl;
 
-  const supabase = createServerClient(
+  // No session work at all for provider callbacks and cron.
+  if (pathname.startsWith("/api/webhooks/") || pathname.startsWith("/api/jobs/")) {
+    return response;
+  }
+
+  const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
@@ -27,7 +41,25 @@ export async function updateSession(request: NextRequest) {
 
   // Don't put code between createServerClient and getClaims(): this call
   // refreshes an expired session and writes the new cookies via setAll.
-  await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
+  const signedIn = Boolean(data?.claims);
+
+  if (!signedIn && !isPublic(pathname)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = "";
+    if (pathname !== "/") url.searchParams.set("next", pathname + search);
+    const redirect = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+    return redirect;
+  }
+
+  if (signedIn && pathname === "/login") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/lists";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
 
   return response;
 }
