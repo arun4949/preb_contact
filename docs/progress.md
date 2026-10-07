@@ -2,6 +2,60 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Day 3 — 2026-10-07 · Enrichment engine (complete, live E2E verified)
+
+### Done
+- ✅ **Migrations 0005 + 0006** (`supabase/migrations/0005_engine.sql`, applied via MCP, types regenerated): `claim_rate_slot(provider, kind)` (40 submits + 10 GETs per calendar minute, one atomic slot per call), `claim_pending_contacts(list, batch, limit)` (`FOR UPDATE SKIP LOCKED`, marks `submitted` + `batch_id`), `settle_batch(batch)` (settles exactly once: charges the provider's `cost.credits` — fallback derived sum — via `consume_credits`, logs `adjust` −shortfall "Overdraft absorbed" and a 0-delta `adjust` when provider ≠ derived, **shrinks the list's open hold by the charged amount** so `credits_available` never double-counts), plus engine indexes.
+- ✅ **Engine** `src/lib/jobs/`: `shared.ts` (admin types, structured `log`, hold/credit helpers, `spendableCredits` = available + own hold), `rate-limit.ts`, `payload.ts` (pure builders, `ENRICH_FIELD_MAP`), `results.ts` (`contactPatchFromRecord`, `applyRecords` idempotent upsert + cache write-through, `applyTerminalResult`: leftover `submitted` → `failed/no_result`, or back to `pending` on CREDITS_INSUFFICIENT), `settle.ts` (`settleBatch`, `settlePending` safety net, `finalizeList`: enriching→completed / stopping→stopped, `row_limit` → remaining pending `skipped/row_limit`, hold release, finished email), `dispatch.ts` (runnable = queued|enriching|paused_credits, paused_upstream retried every 15 min; ≤4 batches/list/tick, ≤100 rows, respects `row_limit`; **cross-workspace cache hits (F2)** served through a synthetic `provider='cache'` batch and charged via `settle_batch`; credits ≤0 → `paused_credits` + email once; 429 → stop run; 402 → `paused_upstream` + ops email; 3 rejected batches/h → list `failed` + ops email), `reconcile.ts` (stale unsubmitted batches released after 5 min; poll after 15 min without webhook, ≤1 GET/10 min/batch, ≤10/tick; handles in_progress/402 partial/404 lost), `tick.ts` (`runTick`: settle → reconcile → dispatch → finalize, each step isolated), `daily.ts` (`expire_grants`, orphan holds, upstream balance alert < max(`UPSTREAM_LOW_BALANCE`=200, 2× largest open hold), drafts > 24 h deleted incl. Storage, processed `webhook_events` > 30 d deleted), `notify.ts` (never throws).
+- ✅ **Routes**: `/api/jobs/tick` (GET cron / POST from `after()`, `CRON_SECRET`, `maxDuration 60`, 207 when a step errored), `/api/jobs/daily`, `/api/webhooks/fullenrich` (raw body → HMAC-SHA1 `timingSafeEqual` → 401; contact events `status IN_PROGRESS` vs terminal batch events; idempotent by `webhook_events (provider, external_id)` = `<id>:<contact_id>:contact` / `<id>:batch:<STATUS>`; unknown batch → 200 ignored; processing error → 500 so the provider retries).
+- ✅ **Emails** on `EmailLayout`: `list-finished.tsx`, `list-paused.tsx` (Buy credits → `/lists?settings=billing`), `ops-alert.tsx`. Ops address = `OPS_ALERT_EMAIL` → first of `ADMIN_EMAILS`.
+- ✅ `vercel.ts` (`@vercel/config`): crons `* * * * *` tick, `0 3 * * *` daily (Pro plan, F4). `.env.local` gained `CRON_SECRET` (generated) and `OPS_ALERT_EMAIL`.
+- ✅ **Tests**: `vitest` + `msw` installed (`npm test`, `vitest.config.mts`, `server-only` aliased to `src/test/server-only.ts`). 24 tests: signature, mapping/credits, payload builders, result patches, MSW provider client (200 / 429 / 400 in_progress / 402 partial / 404). Fixtures in `src/lib/fullenrich/__fixtures__/records.ts`.
+- ✅ **SQL smoke test** (DO block, rolled back): rate caps enforced, claim marks 2 rows + counters, `settle_batch` charged 3 vs derived 2 → adjust row, hold 5 → 2, `credits_available` unchanged, idempotent on re-run.
+- ✅ `npm run build` ✓ · `npm run lint` ✓ (upstream data-table warning only) · `npx tsc --noEmit` ✓ · `npm test` ✓. `@types/node` bumped to ^22 (vitest 5 peer).
+
+### Credit model as implemented (differs slightly from the plan text)
+- Hold = typical estimate at start; **each settled batch reduces the hold by the charged amount**; the rest is released when the list ends. The dispatcher lets a list spend `credits_available + its own open hold`. Ledger `consume` rows total the provider-charged amount; `credits_used` on the list is the per-contact derived sum (display), the ledger is the truth.
+- Same-workspace cache hits stay free (parse time). Cross-workspace hits are charged at the derived per-contact cost (no provider cost to reconcile against).
+
+### Live E2E (tunnel + real provider, then signed local webhooks)
+- ✅ **Zero-credit contact, real provider**: tick → batch accepted → per-contact webhook + batch FINISHED webhook through the tunnel → settled → list `completed` in 13 s, hold released, "list is enriched" email sent. Contact enriched with DELIVERABLE work + personal email and MOBILE phone.
+- ✅ **Pause/resume**: workspace at 0 spendable → list `paused_credits` + paused email; after credits freed, the next tick resumed it (served free from own-workspace cache) → `completed`.
+- ✅ **Stop**: list `stopping` with one in-flight batch + one pending row → batch webhook settled it → `stopped`, hold released, pending row never sent (now `skipped/stopped`), stopped email.
+- ✅ **Webhook security**: wrong signature → 401; valid → 200; replay → 200 `duplicate:true`, no double processing.
+- ✅ **Reconciler, real provider GET**: batch silent for 20 min → polled → 404 → row `failed/provider_lost`, list completes; crashed batch without provider id → rows released after 5 min and re-dispatched.
+- Test lists deleted afterwards. The provider cache entry for the test contact stays (useful for future free tests).
+
+**Bugs found and fixed during E2E**
+- Provider charged 0 (upstream 3-month dedup) but `credits_used` showed 14 (derived) → **migration 0006**: `settle_batch` re-allocates the authoritative charge onto the batch's contacts in row order, so Σ contact cost = ledger consumption. Existing batch corrected.
+- Same-workspace cache hits found at dispatch time were charged → now `cached` and free, like parse-time hits (cross-workspace hits still charged, F2).
+- Stopped lists kept never-sent rows as `pending` → `finalizeList` and `stopList` mark them `skipped/stopped`.
+- Reconcile summary didn't count lost (404) batches as resolved.
+
+### Open items
+- Advisors (security): new engine functions are clean. Pre-existing from day 1: `credits_available` is callable by any signed-in user for any workspace id (leaks a balance number only) → add a membership check on day 7. Info-only "RLS enabled, no policy" on the four service-only tables (intended).
+- Not exercised live: upstream 402 / `paused_upstream` and 429 (covered by MSW tests and code paths only); real per-contact charging against a paid contact (SQL smoke test covers the ledger math).
+- The quick-tunnel URL changes on every `cloudflared` restart → update `NEXT_PUBLIC_APP_URL` each time.
+
+### Manual tasks status
+| Task | Status |
+|---|---|
+| M1 Google OAuth redirect URI | ✅ |
+| M2 Supabase providers / URLs / secret key | ✅ |
+| M3 FullEnrich account + API key | ✅ key; 500-credit plan purchase unconfirmed (50 trial credits suffice for the zero-credit E2E) |
+| Stripe sandbox key + test catalogue | ✅ |
+| M4 Stripe dashboard (Tax, portal branding) | ⬜ (day 5) |
+| M5 Vercel project + domain + env | ⚠️ `vercel.ts` ready; CLI install, domain, env vars (incl. `CRON_SECRET`), first deploy pending |
+| M6 Local tunnel | ✅ quick tunnel running; URL updated by the CTO |
+| M7 Resend domain check | ✅ |
+| M8 Legal pages (Leon) | ⬜ |
+
+### Next: Day 4 — List detail & export
+1. `EnrichmentProgress` fork for the enriching view (realtime on `lists` + polling table), completed view with forked generic `DataTable` (server pagination/sorting), filter rail/sheet, search, column settings, stat cards.
+2. Export route `/api/lists/[id]/export` (segments; original + appended columns; skip reasons incl. `stopped`, `row_limit`, `provider_lost`); flip `EXPORT_READY` in `list-card.tsx`.
+3. Show "Already enriched" for `cached` rows and `credits_used` from the list (now equals the ledger).
+
+
 ## Day 2 — 2026-10-07 · Shell, dashboard, wizard (complete, browser-verified)
 
 ### Done

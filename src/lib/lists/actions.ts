@@ -316,6 +316,7 @@ export async function stopList(listId: string): Promise<Result> {
   if (error) return { ok: false, error: "Could not stop the list." };
   if (next === "stopped") {
     const admin = createAdminClient();
+    await admin.from("list_contacts").update({ status: "skipped", skip_reason: "stopped" }).eq("list_id", list.id).eq("status", "pending");
     await admin.from("credit_holds").update({ released_at: new Date().toISOString() }).eq("list_id", list.id).is("released_at", null);
   }
   revalidatePath("/lists");

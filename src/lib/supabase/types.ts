@@ -761,6 +761,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_pending_contacts: {
+        Args: { p_batch_id: string; p_limit: number; p_list_id: string }
+        Returns: Database["public"]["Tables"]["list_contacts"]["Row"][]
+        SetofOptions: {
+          from: "*"
+          to: "list_contacts"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      claim_rate_slot: {
+        Args: { p_kind: string; p_provider: string }
+        Returns: boolean
+      }
       consume_credits: {
         Args: {
           amount: number
@@ -785,9 +799,18 @@ export type Database = {
       }
       is_workspace_admin: { Args: { ws: string }; Returns: boolean }
       is_workspace_member: { Args: { ws: string }; Returns: boolean }
+      is_free_email_domain: { Args: { p_email: string }; Returns: boolean }
       recompute_list_counters: {
         Args: { p_list_id: string }
         Returns: undefined
+      }
+      settle_batch: {
+        Args: { p_batch_id: string }
+        Returns: {
+          charged: number
+          consumed: number
+          derived: number
+        }[]
       }
     }
     Enums: {
