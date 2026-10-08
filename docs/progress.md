@@ -18,6 +18,17 @@ Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠�
 - ✅ **Stripe live (M4 step 5) done via MCP** on the Preb.co live account: 14 products (`metadata.app=preb`, `plan_key`) + 14 prices with lookup keys `preb_<plan_key>` (same amounts as the sandbox, margin ×1.15) + default prices; portal configuration `bpc_1UOEiNI8j3KU4u56WUE4Nfuj` (`preb_managed`, not the account default); webhook endpoint `we_1UOEiOI8j3KU4u56RryzXz3O` → `https://preb.co/api/webhooks/stripe` (5 events). Secret handed to the CTO for the Vercel env. The old Pre app's live objects (products, two webhooks at `app.preb.co`, default portal config) were **not touched** — CTO rule: never delete them, the old app keeps running on `app.preb.co`.
 - ⚠️ CTO status: Vercel domains added but `preb.co` currently 308-redirects to `www.preb.co` with `www` as production — must be flipped (apex = production). Google origin `https://preb.co` added (redirect URIs need nothing). Supabase redirect `https://preb.co/**` added; **Site URL still `localhost:3000`** → set to `https://preb.co`. Vercel env + deploy + real Checkout pending.
 
+### Launch QA on https://preb.co (production deploy `662bc7e`, 2026-10-08 ~10:50 UTC)
+- ✅ CTO: domains `preb.co` + `www.preb.co` both serve Production (no www→apex redirect yet, see Open), Supabase Site URL `https://preb.co`, 12 env vars in Vercel Production (optional ones use code defaults: `MARGIN_MULTIPLIER` 1.15, `UPSTREAM_LOW_BALANCE` 200, portal config found by metadata), redeployed.
+- ✅ **Crons run**: Supabase edge logs show the tick's service-role queries every minute since 10:52 UTC (first minute after the deploy).
+- ✅ Routes: `/` → `/login`; protected pages → `/login?next=…`; `/terms` → branded 404; HSTS on. Tick/daily without or with a wrong bearer → 401; Stripe webhook unsigned/bad signature → 400 (secret configured); FullEnrich webhook unsigned → 401.
+- ✅ **Lighthouse on prod `/login`**: mobile perf 94 (LCP 3.0 s, CLS 0, TBT 0) · desktop 100 · a11y 100 · best practices 100 · SEO 92 (robots.txt redirected to login → fixed below).
+- ✅ Stripe live endpoint `https://preb.co/api/webhooks/stripe` enabled; Resend `preb.co` verified; advisors unchanged (by-design WARNs only).
+- 🐞 **Fixed (launch blocker)**: dev and prod share one Supabase DB, so the CTO workspace still carried the **sandbox** subscription (`sub_1UNw0i…`, active, `pro_500_m`). With the live key the picker would offer "Switch plan" and fail on Stripe. New `activeSubscriptionId()` in `lib/stripe/subscription.ts` treats an id that does not exist in the current Stripe mode (`resource_missing`) or is canceled as "no subscription" — **read-only, never clears the column**, so dev on the test key can't wipe a live subscription. Used by the plan picker, `startCheckout`, plan switch and the billing overview (foreign subscription → shown as no plan). Customers already self-heal (`ensureCustomer`). Tests: `subscription.test.ts` (5).
+- ✅ `src/app/robots.ts` (allow `/login`, disallow app/api/auth/invite paths) + `/robots.txt` public in the proxy.
+- ✅ After the fixes: lint (2 upstream warnings) · tsc · **44 tests** · build green. **Needs a push/deploy by the CTO.**
+- ⬜ Signed-in checks on prod (Google + magic link on the real host, lists, wizard, one small real list via the cron, `/admin/ops`, billing page) — waiting for the CTO to sign in in the agent's Chrome tab.
+
 ### Manual tasks status
 | Task | Status |
 |---|---|
@@ -27,6 +38,10 @@ Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠�
 | M4 step 5 live Stripe (catalogue, portal, webhook → `preb.co`) | ✅ via MCP · real Checkout + refund ⬜ |
 | M5 Vercel: domain `preb.co` + `www`, DNS (keep Resend records), production env, deploy, crons | ⬜ (project exists; CTO-only) |
 | M8 Legal pages | postponed (post-MVP website) |
+
+### Open
+- **Shared database**: dev (`.env.local`, Stripe test key) and production use the same Supabase project. Test-mode Stripe ids and sandbox credit grants (the CTO workspace's +500 "Pro 500" grant was paid with a test card) live next to real data; the FullEnrich key is the same real account in both. Recommend a separate Supabase project (or branch) for dev after launch.
+- `www.preb.co` serves the app itself instead of redirecting to the apex: sessions are per host and Supabase only allows `https://preb.co/**` redirects. Recommend setting www → 308 → `preb.co` in Vercel.
 
 ### Next (new chat after the CTO reports the production deploy)
 1. Post-deploy QA on `https://preb.co`: sign-in (magic link + Google) on the real host, Lighthouse, phone-width pass, one real list end to end with the Vercel cron dispatching (no tunnel), Stripe live webhook receives the real Checkout, `/admin/ops` sanity. `qa:replay-webhook` only if the prod service key is available locally.

@@ -3,6 +3,7 @@ import "server-only";
 import { createClient } from "@/utils/supabase/server";
 import { getPlan, type Plan } from "@/lib/credits/plans";
 import { getCataloguePlan, type CataloguePlan } from "@/lib/stripe/catalogue";
+import { activeSubscriptionId } from "@/lib/stripe/subscription";
 import type { SessionContext } from "@/lib/supabase/queries";
 import type { Tables } from "@/lib/supabase/types";
 
@@ -61,7 +62,19 @@ export async function getBillingOverview(session: SessionContext): Promise<Billi
       .limit(LEDGER_PAGE),
   ]);
 
-  const base = getPlan(ws.plan_key);
+  // A subscription stored by the other Stripe mode (dev and prod share the
+  // database) does not exist for this key: show the workspace as plan-less.
+  let foreignSubscription = false;
+  if (ws.stripe_subscription_id && ws.subscription_status !== "canceled") {
+    try {
+      foreignSubscription = !(await activeSubscriptionId(ws));
+    } catch {
+      // Stripe unreachable: show what the database says.
+    }
+  }
+  const planKey = foreignSubscription ? null : ws.plan_key;
+
+  const base = getPlan(planKey);
   let plan: BillingOverview["plan"] = base ?? null;
   if (base) {
     try {
@@ -76,10 +89,10 @@ export async function getBillingOverview(session: SessionContext): Promise<Billi
     role: session.role,
     canManage: session.role !== "member",
     available: available ?? 0,
-    isTrial: !ws.plan_key,
+    isTrial: !planKey,
     hasCustomer: Boolean(ws.stripe_customer_id),
     plan,
-    subscription: ws.stripe_subscription_id
+    subscription: ws.stripe_subscription_id && !foreignSubscription
       ? { status: ws.subscription_status, cancelAtPeriodEnd: ws.cancel_at_period_end, currentPeriodEnd: ws.current_period_end }
       : null,
     grants: (grants ?? []).map((g) => ({ id: g.id, amount: g.amount, remaining: g.remaining, expiresAt: g.expires_at, source: g.source, note: g.note })),

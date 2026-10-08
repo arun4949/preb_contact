@@ -6,7 +6,7 @@ import { appOrigin } from "@/lib/jobs/shared";
 import { getCatalogue, getCataloguePlan, type CataloguePlan } from "@/lib/stripe/catalogue";
 import { createCheckoutSession, ensureCustomer } from "@/lib/stripe/checkout";
 import { createPortalSession } from "@/lib/stripe/portal";
-import { applySwitch, previewSwitch, type SwitchPreview } from "@/lib/stripe/subscription";
+import { activeSubscriptionId, applySwitch, previewSwitch, type SwitchPreview } from "@/lib/stripe/subscription";
 import { getBillingOverview, type BillingOverview } from "./queries";
 
 type Result<T = undefined> = { ok: true; data: T } | { ok: false; error: string };
@@ -34,13 +34,13 @@ export interface PlanCatalogue {
 export async function fetchPlanCatalogue(): Promise<Result<PlanCatalogue>> {
   const session = await requireSession();
   try {
-    const plans = await getCatalogue();
+    const [plans, subscriptionId] = await Promise.all([getCatalogue(), activeSubscriptionId(session.workspace)]);
     return {
       ok: true,
       data: {
         plans,
-        currentPlanKey: session.workspace.plan_key,
-        hasSubscription: Boolean(session.workspace.stripe_subscription_id) && session.workspace.subscription_status !== "canceled",
+        currentPlanKey: subscriptionId ? session.workspace.plan_key : null,
+        hasSubscription: Boolean(subscriptionId),
         canManage: session.role !== "member",
       },
     };
@@ -56,12 +56,12 @@ export async function startCheckout(planKey: string): Promise<Result<never>> {
   const plan = await getCataloguePlan(planKey);
   if (!plan) return { ok: false, error: "That plan is not available." };
   const ws = session.workspace;
-  if (ws.stripe_subscription_id && ws.subscription_status !== "canceled") {
-    return { ok: false, error: "You already have a subscription — use Switch plan." };
-  }
 
   let url: string | null = null;
   try {
+    if (await activeSubscriptionId(ws)) {
+      return { ok: false, error: "You already have a subscription — use Switch plan." };
+    }
     const customerId = await ensureCustomer(ws, session.email);
     const checkout = await createCheckoutSession(ws, customerId, plan, {
       successUrl: `${BILLING_RETURN()}&checkout=success`,
@@ -80,11 +80,17 @@ async function requireSwitchable(planKey: string) {
   const session = await requireSession();
   if (session.role === "member") return { error: "Only owners and admins can change the plan." } as const;
   const ws = session.workspace;
-  if (!ws.stripe_subscription_id || ws.subscription_status === "canceled") return { error: "No active subscription to switch." } as const;
+  let subscriptionId: string | null;
+  try {
+    subscriptionId = await activeSubscriptionId(ws);
+  } catch {
+    return { error: "Could not reach billing. Please try again." } as const;
+  }
+  if (!subscriptionId) return { error: "No active subscription to switch." } as const;
   if (ws.plan_key === planKey) return { error: "You are already on this plan." } as const;
   const plan = await getCataloguePlan(planKey);
   if (!plan) return { error: "That plan is not available." } as const;
-  return { session, plan, subscriptionId: ws.stripe_subscription_id } as const;
+  return { session, plan, subscriptionId } as const;
 }
 
 export interface PlanSwitchPreview extends SwitchPreview {

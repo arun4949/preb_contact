@@ -13,6 +13,25 @@ import type { CataloguePlan } from "./catalogue";
  * `subscription_update`), downgrades leave a Stripe customer balance.
  */
 
+/**
+ * The workspace's subscription id when it exists in the current Stripe mode
+ * and is not canceled, else null. Dev (test key) and production (live key)
+ * share one database, so a stored id can belong to the other mode: it is
+ * treated as "no subscription" for this request and never cleared, because
+ * the other environment still owns it. Other Stripe errors propagate.
+ */
+export async function activeSubscriptionId(ws: { stripe_subscription_id: string | null; subscription_status: string | null }): Promise<string | null> {
+  const id = ws.stripe_subscription_id;
+  if (!id || ws.subscription_status === "canceled") return null;
+  try {
+    const sub = await stripe().subscriptions.retrieve(id);
+    return sub.status === "canceled" ? null : sub.id;
+  } catch (error) {
+    if ((error as { code?: string }).code === "resource_missing") return null;
+    throw error;
+  }
+}
+
 export interface SwitchPreview {
   /** What the saved payment method is charged now, USD cents (0 when the change is credited). */
   amountDueCents: number;
