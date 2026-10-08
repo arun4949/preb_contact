@@ -1,6 +1,6 @@
 import "server-only";
 
-import { mapRecord } from "@/lib/fullenrich/mapping";
+import { mapRecord, type RecordKind } from "@/lib/fullenrich/mapping";
 import type { EnrichmentRecord, EnrichmentResult, EnrichmentStatus } from "@/lib/fullenrich/types";
 import type { Database, Json, TablesUpdate } from "@/lib/supabase/types";
 import { log, type Admin, type BatchRow } from "./shared";
@@ -22,9 +22,12 @@ export function batchStatusFromProvider(status: EnrichmentStatus): BatchStatus {
 }
 
 /** Column patch for one provider record (pure, shared with the parse-time cache fill). */
-export function contactPatchFromRecord(record: EnrichmentRecord, now = new Date().toISOString()): TablesUpdate<"list_contacts"> {
-  const m = mapRecord(record);
+export function contactPatchFromRecord(record: EnrichmentRecord, now = new Date().toISOString(), kind: RecordKind = "enrich"): TablesUpdate<"list_contacts"> {
+  const m = mapRecord(record, kind);
+  const names: TablesUpdate<"list_contacts"> =
+    kind === "reverse" && m.found ? { first_name: m.first_name, last_name: m.last_name, full_name: m.full_name } : {};
   return {
+    ...names,
     status: m.found ? "enriched" : "not_found",
     work_email: m.work_email,
     work_email_status: m.work_email_status,
@@ -52,19 +55,22 @@ export function contactPatchFromRecord(record: EnrichmentRecord, now = new Date(
  */
 export async function applyRecords(
   admin: Admin,
-  batch: Pick<BatchRow, "id" | "workspace_id" | "list_id">,
+  batch: Pick<BatchRow, "id" | "workspace_id" | "list_id" | "kind">,
   records: readonly EnrichmentRecord[],
   fields: readonly string[],
 ): Promise<{ applied: number; cached: number }> {
   let applied = 0;
   let cached = 0;
   const now = new Date().toISOString();
+  const kind: RecordKind = batch.kind;
+  // Reverse results are cached under their own field tag so enrich lists never reuse them.
+  const cacheFields = kind === "reverse" ? ["reverse"] : [...fields];
   for (const record of records) {
     const contactId = record.custom?.contact_id;
     if (!contactId) continue;
     const { data: row, error } = await admin
       .from("list_contacts")
-      .update(contactPatchFromRecord(record, now))
+      .update(contactPatchFromRecord(record, now, kind))
       .eq("id", contactId)
       .eq("batch_id", batch.id)
       .select("input_hash")
@@ -75,11 +81,12 @@ export async function applyRecords(
     }
     if (!row) continue;
     applied += 1;
-    if (row.input_hash && record.contact_info) {
+    const cacheable = kind === "reverse" ? Boolean(record.profile) : Boolean(record.contact_info);
+    if (row.input_hash && cacheable) {
       const { error: cacheErr } = await admin.from("enrichment_cache").upsert(
         {
           input_hash: row.input_hash,
-          fields: [...fields],
+          fields: cacheFields,
           result: record as unknown as Json,
           source_workspace_id: batch.workspace_id,
           fetched_at: now,
@@ -99,7 +106,7 @@ export async function applyRecords(
  */
 export async function applyTerminalResult(
   admin: Admin,
-  batch: Pick<BatchRow, "id" | "workspace_id" | "list_id">,
+  batch: Pick<BatchRow, "id" | "workspace_id" | "list_id" | "kind">,
   result: EnrichmentResult,
   fields: readonly string[],
 ): Promise<{ status: BatchStatus; applied: number }> {

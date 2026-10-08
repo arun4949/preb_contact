@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { catchAllRecord, fullRecord, invalidRecord } from "./__fixtures__/records";
+import { catchAllRecord, fullRecord, invalidRecord, reverseMissRecord, reverseRecord } from "./__fixtures__/records";
 import { contactCredits, mapRecord, uiEmailStatus } from "./mapping";
 
 describe("mapping", () => {
@@ -18,6 +18,28 @@ describe("mapping", () => {
     expect(m.work_email).toBeNull();
     expect(m.work_email_status).toBe("INVALID");
     expect(m.found).toBe(false);
+  });
+
+  it("reverse lookup: 1 credit and names when a profile came back, nothing otherwise", () => {
+    expect(contactCredits(reverseRecord, "reverse")).toBe(1);
+    const m = mapRecord(reverseRecord, "reverse");
+    expect(m.found).toBe(true);
+    expect(m.first_name).toBe("Ada");
+    expect(m.last_name).toBe("Lovelace");
+    expect(m.full_name).toBe("Ada Lovelace");
+    expect(m.job_title).toBe("Analyst");
+    expect(m.company).toBe("Analytical Engine Co");
+    expect(m.linkedin_url).toBe("https://www.linkedin.com/in/ada/");
+    expect(m.work_email).toBeNull();
+
+    expect(contactCredits(reverseMissRecord, "reverse")).toBe(0);
+    const miss = mapRecord(reverseMissRecord, "reverse");
+    expect(miss.found).toBe(false);
+    expect(miss.first_name).toBeNull();
+
+    // An enrich record never charges the reverse credit and never overwrites names.
+    expect(mapRecord(fullRecord).first_name).toBeNull();
+    expect(contactCredits(reverseRecord)).toBe(0);
   });
 
   it("maps profile columns with input fallbacks", () => {

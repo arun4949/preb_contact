@@ -13,6 +13,7 @@ import { MAX_BYTES, MAX_ROWS, parseSpreadsheet, type FileType } from "@/lib/csv/
 import { normaliseRows, type RowSummary } from "@/lib/csv/normalize";
 import { estimateCredits, type EnrichmentField } from "@/lib/credits/estimate";
 import { mapRecord } from "@/lib/fullenrich/mapping";
+import { runTick } from "@/lib/jobs/tick";
 import type { EnrichmentRecord } from "@/lib/fullenrich/types";
 
 const BUCKET = "list-uploads";
@@ -127,7 +128,9 @@ export async function parseList(listId: string, mapping: ColumnMapping, hasHeade
   }
 
   const { rows, summary } = normaliseRows(sheet.rows, sheet.headers, safeMapping);
-  if (summary.enrichable === 0) return { ok: false, error: "No row has enough information to enrich. Check the mapping." };
+  if (summary.enrichable === 0 && summary.emailOnly === 0) {
+    return { ok: false, error: "No row has enough information to enrich. Check the mapping." };
+  }
 
   // Cache lookup (same workspace, < 90 days) → free, pre-filled rows.
   const hashes = new Map<string, string>();
@@ -163,6 +166,11 @@ export async function parseList(listId: string, mapping: ColumnMapping, hasHeade
       input_hash: hash,
       status: r.enrichable ? "pending" : "skipped",
       skip_reason: r.skipReason,
+      // Email-only rows wait as skipped until the user opts into reverse lookup in step 3.
+      kind: r.skipReason === "email_only" ? "reverse" : "enrich",
+      // Explicit: a bulk insert that mixes cache-hit rows (which set this) with
+      // plain rows would otherwise send NULL for the missing key, not the default.
+      credits_cost: 0,
     };
     const hit = hash && r.enrichable ? cacheHits.get(hash) : undefined;
     if (hit) {
@@ -195,7 +203,10 @@ export async function parseList(listId: string, mapping: ColumnMapping, hasHeade
   await admin.from("list_contacts").delete().eq("list_id", list.id);
   for (let i = 0; i < inserts.length; i += INSERT_BATCH) {
     const { error } = await admin.from("list_contacts").insert(inserts.slice(i, i + INSERT_BATCH));
-    if (error) return { ok: false, error: "Could not store the rows. Please try again." };
+    if (error) {
+      console.error(JSON.stringify({ scope: "lists", event: "parse.insert_failed", listId: list.id, error: error.message }));
+      return { ok: false, error: "Could not store the rows. Please try again." };
+    }
   }
 
   const { error: updErr } = await supabase
@@ -218,6 +229,8 @@ export interface StartListInput {
   fields: EnrichmentField[];
   /** Max rows to enrich (undefined = all enrichable rows). */
   rowLimit?: number | null;
+  /** Identify email-only rows via reverse email lookup (1 credit each when found). */
+  reverseLookup?: boolean;
 }
 
 export interface StartListError {
@@ -235,19 +248,21 @@ export async function startList(listId: string, input: StartListInput): Promise<
   if (!name) return { error: "Give the list a name." };
   const allowed: EnrichmentField[] = ["work_email", "personal_email", "mobile_phone"];
   const fields = allowed.filter((f) => input.fields.includes(f));
-  if (fields.length === 0) return { error: "Choose at least one thing to find." };
 
-  const { count: pendingCount } = await supabase
-    .from("list_contacts")
-    .select("id", { count: "exact", head: true })
-    .eq("list_id", list.id)
-    .eq("status", "pending");
+  const [{ count: pendingCount }, { count: emailOnlyCount }] = await Promise.all([
+    supabase.from("list_contacts").select("id", { count: "exact", head: true }).eq("list_id", list.id).eq("status", "pending"),
+    supabase.from("list_contacts").select("id", { count: "exact", head: true }).eq("list_id", list.id).eq("status", "skipped").eq("skip_reason", "email_only"),
+  ]);
   const pending = pendingCount ?? 0;
-  if (pending === 0) return { error: "There is nothing to enrich in this list." };
+  const reverseRows = input.reverseLookup ? emailOnlyCount ?? 0 : 0;
+  if (pending > 0 && fields.length === 0) return { error: "Choose at least one thing to find." };
+  if (pending === 0 && reverseRows === 0) return { error: "There is nothing to enrich in this list." };
 
   const rowLimit = input.rowLimit && input.rowLimit > 0 ? Math.min(Math.floor(input.rowLimit), MAX_ROWS) : null;
+  // The dispatcher sends enrich rows first, then email-only rows; the limit spans both.
   const rows = rowLimit ? Math.min(rowLimit, pending) : pending;
-  const estimate = estimateCredits(rows, fields);
+  const reverseWithinLimit = rowLimit ? Math.max(0, Math.min(reverseRows, rowLimit - rows)) : reverseRows;
+  const estimate = estimateCredits(rows, fields, reverseWithinLimit);
 
   const { data: available } = await supabase.rpc("credits_available", { ws: session.workspace.id });
   const balance = available ?? 0;
@@ -261,11 +276,27 @@ export async function startList(listId: string, input: StartListInput): Promise<
     .insert({ workspace_id: session.workspace.id, list_id: list.id, amount: estimate.typical });
   if (holdErr) return { error: "Could not reserve credits. Please try again." };
 
+  if (reverseRows > 0) {
+    // Opt-in: email-only rows join the queue as reverse-lookup contacts.
+    const { error: flipErr } = await admin
+      .from("list_contacts")
+      .update({ status: "pending", skip_reason: null, kind: "reverse" })
+      .eq("list_id", list.id)
+      .eq("status", "skipped")
+      .eq("skip_reason", "email_only");
+    if (flipErr) {
+      await admin.from("credit_holds").update({ released_at: new Date().toISOString() }).eq("list_id", list.id).is("released_at", null);
+      return { error: "Could not queue the email-only rows. Please try again." };
+    }
+  }
+
   const { error: updErr } = await supabase
     .from("lists")
     .update({
       name,
       enrich_fields: fields,
+      reverse_lookup: reverseRows > 0,
+      mode: pending === 0 && reverseRows > 0 ? "reverse" : "enrich",
       row_limit: rowLimit,
       credits_estimated: estimate.typical,
       credits_max: estimate.max,
@@ -278,12 +309,11 @@ export async function startList(listId: string, input: StartListInput): Promise<
     return { error: "Could not start the list. Please try again." };
   }
 
+  // Kick the engine right away (in-process, no network hop); the 1-minute
+  // cron is the safety net if this pass fails or the list is not picked up.
   after(async () => {
-    const secret = process.env.CRON_SECRET;
-    const origin = process.env.NEXT_PUBLIC_APP_URL;
-    if (!secret || !origin) return;
     try {
-      await fetch(`${origin.replace(/\/$/, "")}/api/jobs/tick`, { method: "POST", headers: { authorization: `Bearer ${secret}` } });
+      await runTick();
     } catch {
       // The cron tick picks the list up within a minute.
     }

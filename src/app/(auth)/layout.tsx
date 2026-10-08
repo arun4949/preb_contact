@@ -8,10 +8,10 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
         <LogoName height={28} />
       </Link>
       <main className="flex w-full flex-col items-center animate-page-enter">{children}</main>
-      <footer className="flex items-center gap-4 text-caption-1-regular text-text-tertiary">
-        <a href="https://preb.co/terms" className="hover:text-text-secondary">Terms</a>
+      <footer className="flex items-center gap-4 text-caption-1-regular text-text-secondary">
+        <a href="/terms" className="hover:text-text-primary">Terms</a>
         <span aria-hidden>·</span>
-        <a href="https://preb.co/privacy" className="hover:text-text-secondary">Privacy</a>
+        <a href="/privacy" className="hover:text-text-primary">Privacy</a>
       </footer>
     </div>
   );

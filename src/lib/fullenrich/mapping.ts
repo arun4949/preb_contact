@@ -19,8 +19,18 @@ export function isMobile(phone: EnrichedPhone | null | undefined): boolean {
 
 export const CREDIT_COST = { work_email: 1, personal_email: 3, mobile_phone: 10, reverse: 1 } as const;
 
+/** Which provider endpoint produced a record: person → contact data, or email → profile. */
+export type RecordKind = "enrich" | "reverse";
+
+/** Reverse lookup: a record counts as identified when the provider returned a profile. */
+export function isIdentified(record: EnrichmentRecord): boolean {
+  const p = record.profile;
+  return Boolean(p && (p.full_name || p.first_name || p.last_name || p.employment?.current || p.social_profiles?.professional_network?.url));
+}
+
 /** Per-contact cost derived from the record (reconciled to batch `cost.credits` later). */
-export function contactCredits(record: EnrichmentRecord): number {
+export function contactCredits(record: EnrichmentRecord, kind: RecordKind = "enrich"): number {
+  if (kind === "reverse") return isIdentified(record) ? CREDIT_COST.reverse : 0;
   const info = record.contact_info;
   if (!info) return 0;
   let credits = 0;
@@ -52,15 +62,22 @@ export interface MappedContactResult {
   location: string | null;
   linkedin_url: string | null;
   profile: PersonProfile | null;
+  /** Names from the profile — only set for reverse records (the user's own input wins otherwise). */
+  first_name: string | null;
+  last_name: string | null;
+  full_name: string | null;
   credits_cost: number;
   found: boolean;
 }
 
-export function mapRecord(record: EnrichmentRecord): MappedContactResult {
+export function mapRecord(record: EnrichmentRecord, kind: RecordKind = "enrich"): MappedContactResult {
   const info = record.contact_info;
   const profile = record.profile ?? null;
   const current = profile?.employment?.current;
   const company = current?.company;
+  const reverse = kind === "reverse";
+  const identified = reverse && isIdentified(record);
+  const split = identified && !profile?.first_name && profile?.full_name ? profile.full_name.trim().split(/\s+/) : null;
 
   const workEmail = info?.most_probable_work_email ?? null;
   const personalEmail = info?.most_probable_personal_email ?? null;
@@ -70,7 +87,7 @@ export function mapRecord(record: EnrichmentRecord): MappedContactResult {
   const showWork = workEmail && isBillableEmail(workEmail.status);
   const showPersonal = personalEmail && isBillableEmail(personalEmail.status);
 
-  const found = Boolean(showWork || showPersonal || phone);
+  const found = reverse ? identified : Boolean(showWork || showPersonal || phone);
 
   return {
     work_email: showWork ? workEmail.email : null,
@@ -86,7 +103,10 @@ export function mapRecord(record: EnrichmentRecord): MappedContactResult {
     location: formatLocation(profile ?? undefined),
     linkedin_url: profile?.social_profiles?.professional_network?.url ?? record.input.professional_network_url ?? null,
     profile,
-    credits_cost: contactCredits(record),
+    first_name: identified ? profile?.first_name ?? split?.[0] ?? null : null,
+    last_name: identified ? profile?.last_name ?? (split && split.length > 1 ? split.slice(1).join(" ") : null) : null,
+    full_name: identified ? (profile?.full_name ?? ([profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || null)) : null,
+    credits_cost: contactCredits(record, kind),
     found,
   };
 }

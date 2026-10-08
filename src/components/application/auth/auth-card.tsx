@@ -319,7 +319,7 @@ export function AuthCard({
         {/* The split layout carries its terms line under the card instead,
             through `footnote`, so it does not crowd the CTA. */}
         {signup && !footnote ? (
-          <p className="text-caption-1-regular text-text-tertiary">
+          <p className="text-caption-1-regular text-text-secondary">
             By creating an account you agree to our Terms of Service and Privacy Policy.
           </p>
         ) : null}
@@ -381,7 +381,7 @@ export function AuthCard({
   return localize(
     <div className="flex w-full flex-col items-center gap-4">
       {card}
-      <p className="max-w-[520px] text-center text-caption-1-regular text-text-tertiary">
+      <p className="max-w-[520px] text-center text-caption-1-regular text-text-secondary">
         {footnote}
       </p>
     </div>

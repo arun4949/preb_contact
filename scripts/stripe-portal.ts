@@ -35,7 +35,7 @@ async function main() {
       },
       subscription_update: { enabled: false },
     },
-    default_return_url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://app.preb.co"}/lists?settings=billing`,
+    default_return_url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://preb.co"}/lists?settings=billing`,
     metadata: { preb_managed: "true" },
   };
 

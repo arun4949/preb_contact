@@ -7,6 +7,9 @@ export type Admin = SupabaseClient<Database>;
 export type ListRow = Tables<"lists">;
 export type BatchRow = Tables<"enrichment_batches">;
 export type ContactRow = Tables<"list_contacts">;
+export type ContactKind = Database["public"]["Enums"]["list_mode"];
+/** Dispatch order: person → contact data first, then email → profile. */
+export const CONTACT_KINDS: readonly ContactKind[] = ["enrich", "reverse"];
 
 export const PROVIDER = "fullenrich";
 /** Batches served from our own cache (cross-workspace hits, charged normally). */
@@ -66,6 +69,11 @@ export async function countContacts(
   let q = admin.from("list_contacts").select("id", { count: "exact", head: true }).eq("list_id", listId);
   q = Array.isArray(status) ? q.in("status", status) : q.eq("status", status);
   const { count } = await q;
+  return count ?? 0;
+}
+
+export async function countPendingOfKind(admin: Admin, listId: string, kind: ContactKind): Promise<number> {
+  const { count } = await admin.from("list_contacts").select("id", { count: "exact", head: true }).eq("list_id", listId).eq("status", "pending").eq("kind", kind);
   return count ?? 0;
 }
 

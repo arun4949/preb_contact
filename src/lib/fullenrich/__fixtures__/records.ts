@@ -35,6 +35,25 @@ export const fullRecord: EnrichmentRecord = {
   },
 };
 
+/** Reverse email lookup record: no contact_info, the profile is the result. */
+export const reverseRecord: EnrichmentRecord = {
+  input: { email: "ada@analytical.engine" },
+  custom: { contact_id: "c-9", list_id: "l-1", batch_id: "b-2" },
+  profile: {
+    full_name: "Ada Lovelace",
+    headline: "Mathematician",
+    location: { city: "London", country: "United Kingdom", country_code: "GB" },
+    social_profiles: { professional_network: { url: "https://www.linkedin.com/in/ada/" } },
+    employment: { current: { title: "Analyst", company: { name: "Analytical Engine Co", domain: "analytical.engine" } } },
+  },
+};
+
+/** Reverse lookup that identified nobody (silentFail keeps the row, profile missing). */
+export const reverseMissRecord: EnrichmentRecord = {
+  input: { email: "nobody@nowhere.test" },
+  custom: { contact_id: "c-10", list_id: "l-1", batch_id: "b-2" },
+};
+
 export const catchAllRecord: EnrichmentRecord = {
   input: { first_name: "Jane", last_name: "Doe", company_domain: "example.com" },
   custom: { contact_id: "c-2", list_id: "l-1", batch_id: "b-1" },

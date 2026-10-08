@@ -19,7 +19,7 @@ export const EMAIL_COLORS = {
 export const EMAIL_FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif";
 
 export function appUrl(path = "") {
-  const base = (process.env.NEXT_PUBLIC_APP_URL ?? "https://app.preb.co").replace(/\/$/, "");
+  const base = (process.env.NEXT_PUBLIC_APP_URL ?? "https://preb.co").replace(/\/$/, "");
   return `${base}${path}`;
 }
 

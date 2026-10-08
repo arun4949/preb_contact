@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { RiCoinLine } from "@remixicon/react";
+import { RiCoinLine, RiUserSearchLine } from "@remixicon/react";
 import { Banner } from "@/components/base/banner/banner";
 import { Button } from "@/components/base/buttons/button";
 import { CheckboxCard } from "@/components/base/checkbox/checkbox-card";
@@ -36,25 +36,45 @@ export interface StepConfigureProps {
 export function StepConfigure({ listId, defaultName, summary, creditsAvailable, onStarting }: StepConfigureProps) {
   const toast = useToast();
   const [pending, start] = useTransition();
-  const [fields, setFields] = useState<EnrichmentField[]>(["work_email"]);
+  const [fields, setFields] = useState<EnrichmentField[]>(summary.enrichable > 0 ? ["work_email"] : []);
   const [name, setName] = useState(defaultName);
-  const [rowsText, setRowsText] = useState(String(summary.enrichable));
+  // Reverse lookup is opt-in; a list made only of emails has nothing else to do, so it starts on.
+  const [reverse, setReverse] = useState(summary.enrichable === 0 && summary.emailOnly > 0);
+  const [rowsText, setRowsText] = useState(String(summary.enrichable + (summary.enrichable === 0 ? summary.emailOnly : 0)));
   const [picker, setPicker] = useState(false);
 
+  const reverseRowsAll = reverse ? summary.emailOnly : 0;
+  const totalRows = summary.enrichable + reverseRowsAll;
   const billable = Math.max(0, summary.enrichable - summary.cached);
-  const rowsWanted = Math.max(0, Math.min(Number(rowsText.replace(/[^\d]/g, "")) || 0, summary.enrichable));
-  const rows = Math.min(rowsWanted, billable);
-  const estimate = useMemo(() => estimateCredits(rows, fields), [rows, fields]);
+  const rowsWanted = Math.max(0, Math.min(Number(rowsText.replace(/[^\d]/g, "")) || 0, totalRows));
+  // The engine sends enrich rows first, then email-only rows; the row limit spans both.
+  const enrichRows = Math.min(rowsWanted, summary.enrichable);
+  const reverseRows = Math.min(reverseRowsAll, rowsWanted - enrichRows);
+  const rows = Math.min(enrichRows, billable);
+  const estimate = useMemo(() => estimateCredits(rows, fields, reverseRows), [rows, fields, reverseRows]);
   const short = Math.max(0, estimate.typical - creditsAvailable);
-  const canStart = fields.length > 0 && name.trim().length > 0 && rowsWanted > 0 && short === 0 && !pending;
+  const hasWork = summary.enrichable > 0 ? fields.length > 0 : reverse;
+  const canStart = hasWork && name.trim().length > 0 && rowsWanted > 0 && short === 0 && !pending;
 
   const toggle = (key: EnrichmentField, on: boolean) =>
     setFields((prev) => (on ? [...new Set([...prev, key])] : prev.filter((f) => f !== key)));
 
+  const toggleReverse = (on: boolean) => {
+    // Keep "all rows" selected when the user had not narrowed the count.
+    const nextTotal = summary.enrichable + (on ? summary.emailOnly : 0);
+    if (rowsWanted === totalRows) setRowsText(String(nextTotal));
+    setReverse(on);
+  };
+
   const submit = () =>
     start(async () => {
       onStarting();
-      const res = await startList(listId, { name, fields, rowLimit: rowsWanted < summary.enrichable ? rowsWanted : null });
+      const res = await startList(listId, {
+        name,
+        fields,
+        rowLimit: rowsWanted < totalRows ? rowsWanted : null,
+        reverseLookup: reverse,
+      });
       if (res?.error) toast.error(res.error);
     });
 
@@ -86,12 +106,38 @@ export function StepConfigure({ listId, defaultName, summary, creditsAvailable, 
         </div>
       </section>
 
+      {summary.emailOnly > 0 ? (
+        <section className="flex flex-col gap-3">
+          <div>
+            <h2 className="text-headline-medium text-text-primary">Email-only rows</h2>
+            <p className="text-body-regular text-text-secondary">
+              {fmt(summary.emailOnly)} {summary.emailOnly === 1 ? "row has" : "rows have"} an email address but no name or company. We can identify the person behind each one.
+            </p>
+          </div>
+          <CheckboxCard
+            isSelected={reverse}
+            onChange={toggleReverse}
+            title={
+              <span className="flex items-center gap-2">
+                <RiUserSearchLine className="size-4 text-foreground-icon-secondary" aria-hidden />
+                Identify email-only rows
+                <Chip variant="caption" color="soft">
+                  {CREDIT_COST.reverse} credit
+                </Chip>
+              </span>
+            }
+            description="Reverse lookup adds name, job title, company, location and LinkedIn. Charged only when a person is identified."
+            className={cx("items-start", reverse && "border-accent-600")}
+          />
+        </section>
+      ) : null}
+
       <section className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Input label="Name this list" placeholder="e.g. Sales Directors in NYC" value={name} onChange={setName} maxLength={120} isRequired />
         <div className="flex flex-col gap-1.5">
           <span className="text-body-medium text-text-primary">Rows to enrich</span>
           <div className="flex flex-wrap items-center gap-2">
-            {PRESETS.filter((p) => p < summary.enrichable).map((p) => (
+            {PRESETS.filter((p) => p < totalRows).map((p) => (
               <button
                 key={p}
                 type="button"
@@ -118,6 +164,7 @@ export function StepConfigure({ listId, defaultName, summary, creditsAvailable, 
           <p className="text-body-2-regular text-text-tertiary">
             {fmt(summary.enrichable)} enrichable rows
             {summary.cached > 0 ? ` · ${fmt(summary.cached)} already enriched (free)` : ""}
+            {reverse ? ` · ${fmt(summary.emailOnly)} email-only (reverse lookup)` : ""}
           </p>
         </div>
       </section>
@@ -155,7 +202,7 @@ export function StepConfigure({ listId, defaultName, summary, creditsAvailable, 
               </Button>
             }
           >
-            Reduce the rows to enrich or choose fewer fields to start now.
+            Reduce the rows to enrich, choose fewer fields{summary.emailOnly > 0 ? " or skip the reverse lookup" : ""} to start now.
           </Banner>
         ) : null}
       </section>

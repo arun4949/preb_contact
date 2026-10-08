@@ -15,7 +15,7 @@ Accounts to reuse: Stripe *Preb.co* (live, `acct_1TbKWFI8j3KU4u56`, old scheduli
 2. **Trial = 25 credits, no card**, once per workspace; abuse guard (see Credits).
 2a. **Work email required** (added day 2): magic link and Google sign‑up reject free‑mail and disposable domains (`src/lib/auth/work-email.ts`); exceptions = `ADMIN_EMAILS` and invited members (no trial anyway). Defense in depth: `public.is_free_email_domain()` and `handle_new_user` never grant a trial to a free‑mail domain (migration 0004).
 3. **Enrichment fields mirror FullEnrich exactly**: work email (1 cr), personal email (3 cr), phone (10 cr for a mobile; landlines/VoIP returned free; no separate "private phone" exists). Plus **Reverse Email Lookup** (email → profile, 1 cr) as an input mode for email‑only rows. People/Company Search (prospecting) = post‑MVP.
-4. **Hosting = Vercel, `app.preb.co`**; webhooks primary, 1‑minute cron safety net.
+4. **Hosting = Vercel, `preb.co`** (apex; changed from `app.preb.co` at go-live — no Framer site, the marketing site will be built in this app later); webhooks primary, 1‑minute cron safety net.
 
 **Flags for you (answer any time; defaults in bold)**
 - F1 **Hold sizing.** "Up to N credits" for all three fields = rows × 14, which blocks normal users (1,000 rows → 14,000 credits). Default: start requires `available ≥ expected cost` (find‑rate weighted: email 0.8, personal 0.4, mobile 0.5); dispatcher stops submitting when available ≤ 0 and the list pauses with a "Buy credits" CTA; **auto‑resumes** when credits arrive (better than FullEnrich, which never resumes). One batch of overdraft is possible; we absorb it.
@@ -283,7 +283,7 @@ Only these need your hands. Each is 5–15 minutes. Saved to `docs/setup_manual.
 1. https://console.cloud.google.com → select the project holding the old Preb OAuth client → *APIs & Services → Credentials*.
 2. Open the existing *OAuth 2.0 Client ID* (type Web application).
 3. *Authorized redirect URIs → Add URI*: `https://zigocelujwbasujrozpk.supabase.co/auth/v1/callback`. Keep old URIs.
-4. *Authorized JavaScript origins*: add `https://app.preb.co` and `http://localhost:3000`. Save.
+4. *Authorized JavaScript origins*: add `https://preb.co` and `http://localhost:3000`. Save.
 5. Copy *Client ID* and *Client secret* for M2 step 3.
 6. *OAuth consent screen*: app name/logo "Preb", publishing status **In production** (otherwise only test users can sign in).
 
@@ -291,7 +291,7 @@ Only these need your hands. Each is 5–15 minutes. Saved to `docs/setup_manual.
 1. https://supabase.com/dashboard → project *preb-contact* (`zigocelujwbasujrozpk`).
 2. *Authentication → Sign In / Providers → Email*: Email provider **on** (needed to verify magic‑link tokens; Supabase never sends the email itself). OTP expiry 3600 s. Save.
 3. *Authentication → Sign In / Providers → Google*: **Enable**, paste Client ID + secret from M1. Save.
-4. *Authentication → URL Configuration*: Site URL `http://localhost:3000` now (4b: change to `https://app.preb.co` on day 7). Redirect URLs: add `http://localhost:3000/**`, `https://app.preb.co/**`, and the Vercel preview pattern `https://*-<your-team>.vercel.app/**`. Save.
+4. *Authentication → URL Configuration*: Site URL `http://localhost:3000` now (4b: change to `https://preb.co` at go-live). Redirect URLs: add `http://localhost:3000/**` and `https://preb.co/**`. Save.
 5. *Project Settings → API Keys*: copy the **secret/service_role key** into `.env.local` as `SUPABASE_SECRET_KEY`. Never commit. Just tell me when done.
 6. Leave *SMTP Settings* and *Email Templates* untouched — we don't use them. The Resend key (`RESEND_API_KEY`, sending‑only, preb.co) is already in `.env.local`.
 
@@ -310,9 +310,9 @@ Only these need your hands. Each is 5–15 minutes. Saved to `docs/setup_manual.
 
 **M5 · Vercel — project, domain, env (day 2; step 6 on day 7)**
 1. `npm i -g vercel` → `vercel login` (browser) → in the repo `vercel link` → create project `preb-app` in your team. Plan must be **Pro** (1‑minute cron, F4).
-2. Vercel → project → *Settings → Domains → Add* `app.preb.co`; note the CNAME target `cname.vercel-dns.com`.
-3. At the DNS provider of preb.co: add **CNAME** `app` → `cname.vercel-dns.com`. Framer keeps apex/www. Wait for the green check.
-4. *Settings → Environment Variables*: paste values from `.env.example` for Production and Preview (secrets you hold: Supabase secret key, FullEnrich key, Stripe secret, Resend key, Sentry DSN).
+2. Vercel → project → *Settings → Domains → Add* `preb.co` (+ `www.preb.co` redirecting to it); apex uses an **A** record.
+3. DNS for preb.co: move off Framer if needed, keep/re-create the Resend records, add the Vercel records. Wait for the green check.
+4. *Settings → Environment Variables*: production only (no preview environment for now); values from `.env.local` with `NEXT_PUBLIC_APP_URL=https://preb.co` and live Stripe keys. Details in `docs/setup_manual.md` M5.
 5. After the first deploy check *Settings → Cron Jobs* lists `/api/jobs/tick` (every minute) and `/api/jobs/daily` and both are enabled.
 6. Day 7: `vercel --prod`.
 
@@ -335,6 +335,8 @@ Only these need your hands. Each is 5–15 minutes. Saved to `docs/setup_manual.
 - Day 3: engine primitives in SQL (migration 0005 `claim_rate_slot`, `claim_pending_contacts`, `settle_batch`; 0006 allocates the provider-charged amount onto contacts so Σ contact cost = ledger); hold shrinks per settled batch, list may spend `available + own hold`; cross-workspace cache served via synthetic `provider='cache'` batches, same-workspace hits free at dispatch too; never-sent rows of a stopped list → `skipped/stopped`; `vercel.ts` crons; Vitest + MSW (`npm test`); new env `CRON_SECRET`, `OPS_ALERT_EMAIL`, optional `UPSTREAM_LOW_BALANCE`.
 
 - Day 6: migration 0008 (`credits_available` returns 0 for non-member callers); Members page = `settings-members.tsx` + `lib/workspace/actions.ts` (invites re-issued with a fresh token on resend, 10/h/workspace); welcome email sent at the end of onboarding (owners only); auth redirects use `lib/auth/origin.ts: redirectOrigin()` (trusted hosts only — fixes `https://localhost` behind the tunnel); Sentry via `instrumentation*.ts` only, no `withSentryConfig` (v11 API differs; source maps deferred); `/admin/ops` under `(app)/admin/ops`; new env `NEXT_PUBLIC_SENTRY_DSN`.
+- Go-live: production domain is the apex `preb.co` (Framer dropped; website to be built in-app post-MVP). Terms/Privacy links point to `/terms` and `/privacy` (public prefixes in the proxy; pages come with the website). Email/portal fallbacks and manual-task docs updated. Vercel: production environment only, CTO-operated (agent has read-only access at most).
+- Day 7: reverse email lookup = opt-in per list for email-only rows (not a separate list type): migration 0009 (`list_contacts.kind`, `lists.reverse_lookup`, `lists.identified_rows`, `claim_pending_contacts(..., p_kind)`), dispatcher batches per kind, 1 credit × 0.7 find rate in the estimate; migration 0010 covering FK indexes (advisor); 0011 identified counter incl. cached rows. `startList` kicks `runTick()` in-process instead of POSTing its own URL. `parseList` sets `credits_cost: 0` explicitly (mixed cache-hit batches sent NULL). New `npm run qa:replay-webhook`. Go-live (M5) moved to a follow-up session.
 
 ## Verification
 

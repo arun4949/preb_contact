@@ -2,6 +2,85 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Go-live prep — 2026-10-08 · domain change to `preb.co` (code done) · deploy by CTO
+
+### Decisions (CTO)
+- Production domain is the apex **`preb.co`**, not `app.preb.co`. Framer is dropped; the marketing website will be built in this app later (post-MVP). Future legal URLs: `/terms`, `/privacy` (pages postponed, out of MVP scope).
+- Vercel: **production environment only**, no preview for now. The agent gets no Vercel access (read-only MCP at most); the CTO does all Vercel/DNS/Stripe-live steps.
+- Stripe goes **live** at launch; Sentry DSNs stay unset for launch.
+
+### Done
+- ✅ Pre-deploy checks on the day-7 tree: lint (2 upstream warnings) · tsc · 39 tests · build all green.
+- ✅ Domain change: fallbacks `https://app.preb.co` → `https://preb.co` in `lib/email/templates/layout.tsx` (email links) and `scripts/stripe-portal.ts` (portal return URL). Auth footer links Terms/Privacy → relative `/terms`, `/privacy`; both added to `PUBLIC_PREFIXES` in `utils/supabase/proxy.ts` so visitors get the branded 404 instead of a login bounce until the pages exist. Everything else reads `NEXT_PUBLIC_APP_URL` (webhook URLs, auth redirects via `redirectOrigin()`), so no further code depends on the host.
+- ✅ Docs: `setup_manual.md` M1 4a (Google origin `https://preb.co`), M2 4b (Site URL + redirect `https://preb.co/**`), M4 step 5 (live Stripe via MCP), M5 rewritten (apex domain, DNS off Framer incl. Resend records, production-only env list, deploy, crons); `implementation_plan.md` decision 4 + manual steps + Changes line; `fullenrich.md` webhook URL example.
+- ✅ CTO rule: **`.env.local` is the single env source of truth**. `.env.example`, a short-lived `.env.production.local` and `scripts/vercel-env-push.sh` were deleted; the CTO enters production values in Vercel by hand.
+- ✅ Re-verified after the change: lint · tsc · tests · build green.
+- ✅ **Stripe live (M4 step 5) done via MCP** on the Preb.co live account: 14 products (`metadata.app=preb`, `plan_key`) + 14 prices with lookup keys `preb_<plan_key>` (same amounts as the sandbox, margin ×1.15) + default prices; portal configuration `bpc_1UOEiNI8j3KU4u56WUE4Nfuj` (`preb_managed`, not the account default); webhook endpoint `we_1UOEiOI8j3KU4u56RryzXz3O` → `https://preb.co/api/webhooks/stripe` (5 events). Secret handed to the CTO for the Vercel env. The old Pre app's live objects (products, two webhooks at `app.preb.co`, default portal config) were **not touched** — CTO rule: never delete them, the old app keeps running on `app.preb.co`.
+- ⚠️ CTO status: Vercel domains added but `preb.co` currently 308-redirects to `www.preb.co` with `www` as production — must be flipped (apex = production). Google origin `https://preb.co` added (redirect URIs need nothing). Supabase redirect `https://preb.co/**` added; **Site URL still `localhost:3000`** → set to `https://preb.co`. Vercel env + deploy + real Checkout pending.
+
+### Manual tasks status
+| Task | Status |
+|---|---|
+| M1 4a Google origin `https://preb.co` | ✅ |
+| M2 4b Supabase Site URL + redirect `https://preb.co/**` | ⚠️ redirect added, Site URL still localhost |
+| M3, M6, M7 | ✅ |
+| M4 step 5 live Stripe (catalogue, portal, webhook → `preb.co`) | ✅ via MCP · real Checkout + refund ⬜ |
+| M5 Vercel: domain `preb.co` + `www`, DNS (keep Resend records), production env, deploy, crons | ⬜ (project exists; CTO-only) |
+| M8 Legal pages | postponed (post-MVP website) |
+
+### Next (new chat after the CTO reports the production deploy)
+1. Post-deploy QA on `https://preb.co`: sign-in (magic link + Google) on the real host, Lighthouse, phone-width pass, one real list end to end with the Vercel cron dispatching (no tunnel), Stripe live webhook receives the real Checkout, `/admin/ops` sanity. `qa:replay-webhook` only if the prod service key is available locally.
+2. Optional backlog unchanged: onboarding for workspace-less users; Sentry source maps; pre-fill reverse rows from the same-workspace cache at parse time.
+
+---
+
+## Day 7 — 2026-10-07 · Reverse mode, QA (complete) · deploy pending (M5)
+
+### Done (morning)
+- ✅ **Reverse email lookup (F5)** as an opt-in for email-only rows inside a normal list (no separate list type): **migration 0009** (`list_contacts.kind enrich|reverse`, `lists.reverse_lookup`, `lists.identified_rows` counter, `claim_pending_contacts(..., p_kind)`, `recompute_list_counters` counts identified rows), applied via MCP, types patched.
+- ✅ **Ingest**: `parseList` stores email-only rows as `skipped/email_only` with `kind = reverse`; a file with only emails is no longer rejected. `startList` gains `reverseLookup`: flips those rows to `pending`, sets `reverse_lookup` (and `mode = reverse` when the list has no enrichable rows), estimate = enrich estimate + email-only rows × 1 credit × 0.7 find rate (`REVERSE_FIND_RATE`); the row limit spans both kinds (enrich rows first).
+- ✅ **Engine**: dispatcher runs one pass per contact kind (`CONTACT_KINDS`), batches never mix, `batch.kind` drives the endpoint (`startReverseEmailLookup`) and the result mapping. `mapRecord(record, kind)`: a reverse record is *found* when a profile came back (`isIdentified`), costs 1 credit, fills `first_name/last_name/full_name` from the profile (enrich records never overwrite the user's names). Cache write-through tags reverse results with `fields = ['reverse']`; cross-workspace cache serve works per kind. Webhook/reconcile unchanged (they pass the batch row, which carries `kind`).
+- ✅ **UI**: Configure step (Figma 1015:43 re-pulled) gets an "Email-only rows" section with a `CheckboxCard` "Identify email-only rows · 1 credit" (on by default only when the list has no other rows); rows-to-enrich presets/limit/estimate include them; map step says "can be identified in the next step"; skip label "Email only (reverse lookup not selected)"; list stats show an **Identified** card for reverse-only lists.
+- ✅ Tests: `mapping.test.ts` reverse hit/miss (+ no cross-charging). `npm test` 39 ✓ · `npx tsc --noEmit` ✓ · `npm run lint` ✓ (2 upstream warnings) · `npm run build` ✓.
+- ✅ `get_advisors`: no new findings from 0009. Performance INFO "unindexed foreign keys" → **migration 0010** (4 covering indexes). Remaining WARNs are by design: `credits_available`/`is_workspace_*` are meant to be callable by signed-in users (0008 hardened `credits_available`); leaked-password protection is moot (no passwords).
+
+### Reverse-lookup live E2E (afternoon, tunnel current)
+- ✅ Mixed list `reverse-test` (1 enrichable + 3 email-only + 1 dup + 1 empty): map step 1/3/1/1, Configure shows the Email-only card; toggling it → rows 4, estimate ~3 (1×0.8 + 3×0.7) up to 4. Start → two provider batches (`enrich` ×1, `reverse` ×3), contact events applied one by one, batch FINISHED `cost.credits = 2` → ledger −2, hold released, balance 775 → 773, `identified_rows` 2, 1 reverse miss → `not_found`. Names/title/location/LinkedIn filled from the profile; table and export show them. The provider did not identify `gregoire@fullenrich.com` but did identify the two others.
+- ✅ Reverse-only list `reverse-cache` (2 emails, no other columns): map step accepts 0 enrichable rows, Configure defaults the card on and needs no field, `mode = reverse`; both rows served from the **same-workspace cache** (free, status `cached`, no ledger row), completed within one tick; the page refreshed by itself.
+- 🐞 Fixed on the way: Name cell falls back to the email while a reverse row is pending; Identified card counted only `enriched`, not `cached` (migration **0011**); Identified delta label.
+- ⚠️ Once, the first run's page stayed on "Queued · 0/4" for ~40 s while the DB was already completed; a reload showed the finished view. Not reproduced on the second run (updated live). Likely the dev server recompiling after an edit mid-run; watch for it on the prod deploy.
+
+### QA (afternoon)
+- ✅ **Ledger math**: all settled batches have provider `cost.credits` = Σ contact `credits_cost` = Σ ledger `consume`; 0 `adjust` rows.
+- ✅ **RLS two-workspace** (simulated with `set role authenticated` + JWT claims): the Gmx owner sees 0 lists / contacts / batches of the main workspace and `credits_available` = 0 for it; the invited member sees the main workspace (3 lists, 48 contacts) and nothing of Gmx.
+- ✅ **Webhook replay**: `npm run qa:replay-webhook` (new `scripts/replay-webhook.ts`) re-posts the last stored batch event signed with the API key → `{ ok: true, duplicate: true }`, no ledger change; a bad signature → 401.
+- ✅ **Reconcile**: a fake `submitted` batch with a bogus provider id, 20 min old → tick polled it (404 path) → `failed`, `credits_cost 0`, settled. Row released. Fake batch deleted afterwards.
+- ✅ **Lighthouse** `/login` on the **dev server**: performance 69 (dev bundles are unminified; LCP 12.6 s is a dev artifact — re-run on the Vercel deploy), accessibility 92, best practices 100. Fixed the two a11y findings: toast viewport gets `role="region"` (aria-label on a plain div), auth captions/footer links moved from `text-text-tertiary` (2.6:1) to `text-text-secondary`.
+- ✅ **50-row XLSX** (`qa-50.xlsx`: 5 real + 5 LinkedIn-only, 10 duplicates, 15 missing, 10 email-only incl. 3 dups, 5 junk): parsed as 12 enrichable · 13 duplicates · 7 email-only · 18 missing (SheetJS turned the `=HYPERLINK` cell into an empty cell and wrote the accented fixture names as mojibake — fixture artifacts, the CSV path shows accents correctly). Started with reverse on and **row limit 15** (estimate ~12, up to 15) — see below.
+- ✅ **Row limit across kinds**: `qa-50` started with limit 15 → dispatcher sent 12 enrich + 3 reverse (two batches), `finalizeList` skipped the 4 remaining email-only rows as `row_limit`; header reads "0 / 15 contacts"; hold 12 (balance 773 → 761 while running).
+- 🐞 **Start kick**: the `after()` kick in `startList` POSTed to `NEXT_PUBLIC_APP_URL/api/jobs/tick` through the tunnel; when the tunnel died (below) the list sat `queued` until a manual tick. It now calls `runTick()` in-process; the 1-minute cron stays the safety net.
+- ✅ **Cron reconcile with the tunnel down (real, unplanned)**: the quick tunnel's hostname stopped resolving mid-afternoon while `cloudflared` kept running, so the two `qa-50` batches never received a webhook. Left alone for the reconciler (polls batches with no webhook after 15 min): at +15:40 the tick polled both batches (`polled 2, finished 2`) → enrich batch 12 records applied (9 work emails found, 3 not found; provider charged **8**, derivation said 9 → `adjust` note row, contact costs re-allocated to Σ 8), reverse batch 3 misses (0 credits), list `completed`, hold released, balance 773 → 765. Tunnel restarted afterwards (new URL in `.env.local`, Stripe endpoint re-pointed via `npm run stripe:webhook`).
+- 🐞 **Fixed (pre-existing, surfaced by cache hits)**: `parseList` bulk-inserts rows where cache-hit rows carry `credits_cost`/result columns and plain rows do not; PostgREST sends NULL (not the column default) for keys missing in a mixed batch → `credits_cost NOT NULL` violation → "Could not store the rows" and the wizard stayed on Map. Only happens once the workspace has same-workspace cache hits, so it never showed before today. Fix: explicit `credits_cost: 0` on every row; insert failures are now logged (`parse.insert_failed`).
+- ✅ **Dark mode**: Configure step incl. the Email-only card checked in dark (all semantic tokens). Dev server restarted by the agent during the hunt (CTO had allowed it); it now logs to the agent's scratchpad.
+- ⬜ Export download, stop list, pause/resume on credits: not re-run today (verified day 3/4); phone-width pass still blocked by Chrome's minimum window.
+
+### Manual tasks status
+| Task | Status |
+|---|---|
+| M1–M4, M6, M7 | ✅ (M6 tunnel rotated again today: `https://alphabetical-checking-functions-songs.trycloudflare.com`) |
+| M5 Vercel project + domain + env | ⚠️ pending — CLI not installed, env vars (`CRON_SECRET`, `STRIPE_WEBHOOK_SECRET`, `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, Supabase, FullEnrich, Resend), first deploy |
+| M8 Legal pages (Leon) | ⬜ |
+
+### Next: Go-live (needs the CTO)
+1. **M5**: `npm i -g vercel`, `vercel link`, set env vars (prod + preview), `vercel --prod`; then Supabase redirect URLs (M2 step 4), Stripe **live** catalogue + webhook pointed at `app.preb.co` (M4 step 5; `npm run stripe:catalogue` / `npm run stripe:webhook` with live keys), Sentry DSNs.
+2. After deploy: Lighthouse on the production URL (dev numbers are not representative), phone-width pass, `npm run qa:replay-webhook -- https://app.preb.co` (needs the prod service key locally — or skip), one real list end to end with the cron doing the dispatch (no `after()` kick needed).
+3. Optional backlog: onboarding for workspace-less users; Sentry source maps; pre-fill reverse rows from the same-workspace cache at parse time; XLSX fixture with real formula cells.
+
+### Open
+- Reverse rows are not pre-filled from the same-workspace cache at parse time (the user has not opted in yet at that point); the engine serves them from cache after start instead.
+
+---
+
 ## Day 6 — 2026-10-07 · Team, emails, polish (complete; invite E2E verified)
 
 ### Done

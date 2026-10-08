@@ -59,7 +59,8 @@ const WIDTHS: Record<string, string> = {
 };
 
 function displayName(c: ContactRow): string {
-  return c.full_name ?? [c.first_name, c.last_name].filter(Boolean).join(" ") ?? "";
+  // Email-only rows have no name until the reverse lookup identifies them: show the email.
+  return c.full_name ?? ([c.first_name, c.last_name].filter(Boolean).join(" ") || c.email_input || "");
 }
 
 function CopyButton({ value, label }: { value: string; label: string }) {

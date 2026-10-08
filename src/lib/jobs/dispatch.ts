@@ -12,7 +12,8 @@ import {
   BATCH_SIZE,
   CACHE_PROVIDER,
   CACHE_TTL_DAYS,
-  countContacts,
+  CONTACT_KINDS,
+  countPendingOfKind,
   countUpstreamRows,
   log,
   logError,
@@ -23,6 +24,7 @@ import {
   spendableCredits,
   webhookUrl,
   type Admin,
+  type ContactKind,
   type ListRow,
 } from "./shared";
 
@@ -87,10 +89,12 @@ async function dispatchList(admin: Admin, list: ListRow, hook: string, summary: 
     if (remaining <= 0) return; // finalize() skips the rest
   }
 
-  for (let round = 0; round < BATCHES_PER_LIST; round += 1) {
+  // One pass per contact kind: enrich rows go to the bulk endpoint, email-only
+  // rows (reverse lookup opted in) to the reverse endpoint. Batches never mix.
+  for (const kind of CONTACT_KINDS) for (let round = 0; round < BATCHES_PER_LIST; round += 1) {
     if (remaining <= 0) return;
-    const pendingCount = await countContacts(admin, list.id, "pending");
-    if (pendingCount === 0) return;
+    const pendingCount = await countPendingOfKind(admin, list.id, kind);
+    if (pendingCount === 0) break;
 
     // Credits: the list may spend the workspace balance plus its own hold.
     const spendable = await spendableCredits(admin, list);
@@ -113,7 +117,7 @@ async function dispatchList(admin: Admin, list: ListRow, hook: string, summary: 
     }
 
     // Cross-workspace cache (F2): served from our cache, charged normally, no provider call.
-    const cacheServed = await serveFromCache(admin, list, Math.min(BATCH_SIZE, remaining));
+    const cacheServed = await serveFromCache(admin, list, Math.min(BATCH_SIZE, remaining), kind);
     if (cacheServed > 0) {
       summary.fromCache += cacheServed;
       summary.batches += 1;
@@ -131,7 +135,7 @@ async function dispatchList(admin: Admin, list: ListRow, hook: string, summary: 
 
     const { data: batch, error: batchErr } = await admin
       .from("enrichment_batches")
-      .insert({ list_id: list.id, workspace_id: list.workspace_id, kind: list.mode, provider: PROVIDER, status: "submitted" })
+      .insert({ list_id: list.id, workspace_id: list.workspace_id, kind, provider: PROVIDER, status: "submitted" })
       .select("*")
       .single();
     if (batchErr || !batch) throw new Error(`Could not create batch: ${batchErr?.message}`);
@@ -140,6 +144,7 @@ async function dispatchList(admin: Admin, list: ListRow, hook: string, summary: 
       p_list_id: list.id,
       p_batch_id: batch.id,
       p_limit: Math.min(BATCH_SIZE, remaining),
+      p_kind: kind,
     });
     if (claimErr) throw new Error(`claim_pending_contacts failed: ${claimErr.message}`);
     if (!contacts || contacts.length === 0) {
@@ -149,7 +154,7 @@ async function dispatchList(admin: Admin, list: ListRow, hook: string, summary: 
 
     try {
       const { enrichment_id } =
-        list.mode === "reverse"
+        kind === "reverse"
           ? await startReverseEmailLookup(buildReversePayload(list, batch.id, contacts, hook))
           : await startBulkEnrichment(buildEnrichPayload(list, batch.id, contacts, hook));
 
@@ -161,7 +166,7 @@ async function dispatchList(admin: Admin, list: ListRow, hook: string, summary: 
       summary.submitted += contacts.length;
       remaining -= contacts.length;
       status = await markEnriching(admin, list.id, status);
-      log("dispatch.submitted", { listId: list.id, batchId: batch.id, enrichmentId: enrichment_id, contacts: contacts.length });
+      log("dispatch.submitted", { listId: list.id, batchId: batch.id, kind, enrichmentId: enrichment_id, contacts: contacts.length });
     } catch (error) {
       await revertBatchContacts(admin, batch.id);
       const provider = error instanceof ProviderError ? error : null;
@@ -242,12 +247,13 @@ function errorJson(error: unknown): Json {
  * 90 days from `enrichment_cache`. They go through a synthetic batch so the
  * settler charges them like provider rows. Returns the number served.
  */
-async function serveFromCache(admin: Admin, list: ListRow, limit: number): Promise<number> {
+async function serveFromCache(admin: Admin, list: ListRow, limit: number, kind: ContactKind): Promise<number> {
   const { data: pending } = await admin
     .from("list_contacts")
     .select("id, input_hash")
     .eq("list_id", list.id)
     .eq("status", "pending")
+    .eq("kind", kind)
     .not("input_hash", "is", null)
     .order("row_index")
     .limit(limit);
@@ -262,9 +268,10 @@ async function serveFromCache(admin: Admin, list: ListRow, limit: number): Promi
     .gte("fetched_at", since);
   const usable = new Map<string, EnrichmentRecord>();
   const ownHashes = new Set<string>();
+  const required = kind === "reverse" ? ["reverse"] : list.enrich_fields;
   for (const hit of hits ?? []) {
     // Only reuse when the cached run covered every field this list asks for.
-    if (!list.enrich_fields.every((f) => hit.fields.includes(f))) continue;
+    if (!required.every((f) => hit.fields.includes(f))) continue;
     usable.set(hit.input_hash, hit.result as unknown as EnrichmentRecord);
     if (hit.source_workspace_id === list.workspace_id) ownHashes.add(hit.input_hash);
   }
@@ -273,7 +280,7 @@ async function serveFromCache(admin: Admin, list: ListRow, limit: number): Promi
   const targets = (pending ?? []).filter((c) => c.input_hash && usable.has(c.input_hash));
   const { data: batch } = await admin
     .from("enrichment_batches")
-    .insert({ list_id: list.id, workspace_id: list.workspace_id, kind: list.mode, provider: CACHE_PROVIDER, status: "submitted" })
+    .insert({ list_id: list.id, workspace_id: list.workspace_id, kind, provider: CACHE_PROVIDER, status: "submitted" })
     .select("*")
     .single();
   if (!batch) return 0;
@@ -312,6 +319,6 @@ async function serveFromCache(admin: Admin, list: ListRow, limit: number): Promi
     .update({ status: "finished", contact_count: claimed.length, finished_at: new Date().toISOString(), raw: { source: "cache" } })
     .eq("id", batch.id);
   await settleBatch(admin, batch.id);
-  log("dispatch.cache_served", { listId: list.id, batchId: batch.id, contacts: claimed.length });
+  log("dispatch.cache_served", { listId: list.id, batchId: batch.id, kind, contacts: claimed.length });
   return claimed.length;
 }

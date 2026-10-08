@@ -9,6 +9,9 @@ export const FIND_RATE: Record<EnrichmentField, number> = {
   mobile_phone: 0.5,
 };
 
+/** Share of email-only rows the reverse lookup typically identifies. */
+export const REVERSE_FIND_RATE = 0.7;
+
 export interface CreditEstimate {
   /** Find-rate weighted expectation — what we hold and require before start. */
   typical: number;
@@ -17,12 +20,16 @@ export interface CreditEstimate {
   perRowMax: number;
 }
 
-export function estimateCredits(rows: number, fields: EnrichmentField[]): CreditEstimate {
+/**
+ * `rows` = enrich rows (person → contact data), `reverseRows` = email-only
+ * rows sent to the reverse lookup (1 credit when identified).
+ */
+export function estimateCredits(rows: number, fields: EnrichmentField[], reverseRows = 0): CreditEstimate {
   const perRowMax = fields.reduce((sum, f) => sum + CREDIT_COST[f], 0);
   const perRowTypical = fields.reduce((sum, f) => sum + CREDIT_COST[f] * FIND_RATE[f], 0);
   return {
-    typical: Math.ceil(rows * perRowTypical),
-    max: rows * perRowMax,
+    typical: Math.ceil(rows * perRowTypical + reverseRows * CREDIT_COST.reverse * REVERSE_FIND_RATE),
+    max: rows * perRowMax + reverseRows * CREDIT_COST.reverse,
     perRowMax,
   };
 }

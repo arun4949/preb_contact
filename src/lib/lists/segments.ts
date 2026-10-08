@@ -24,7 +24,7 @@ export function isSegment(value: string | null | undefined): value is Segment {
 /** Human labels for `skip_reason` (export + table status). */
 export const SKIP_REASON_LABEL: Record<string, string> = {
   missing_fields: "Missing name or company",
-  email_only: "Email only (reverse lookup coming soon)",
+  email_only: "Email only (reverse lookup not selected)",
   duplicate: "Duplicate",
   stopped: "List stopped",
   row_limit: "Over the row limit",

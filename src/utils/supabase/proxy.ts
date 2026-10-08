@@ -3,7 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/supabase/types";
 
 /** Paths that never require a session. Webhooks, cron and auth callbacks pass through untouched. */
-const PUBLIC_PREFIXES = ["/login", "/auth/", "/invite/", "/api/webhooks/", "/api/jobs/", "/samples/"];
+// /terms and /privacy: legal pages planned for the in-app website (post-MVP); public so they 404 instead of bouncing to login.
+const PUBLIC_PREFIXES = ["/login", "/auth/", "/invite/", "/api/webhooks/", "/api/jobs/", "/samples/", "/terms", "/privacy"];
 
 function isPublic(pathname: string) {
   return PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(p));

@@ -98,7 +98,7 @@ export function LoginCard({ next, error }: { next: string; error?: string }) {
         </Button>
       </form>
 
-      <p className="mt-6 text-caption-1-regular text-text-tertiary">
+      <p className="mt-6 text-caption-1-regular text-text-secondary">
         By continuing you agree to our Terms of Service and Privacy Policy.
       </p>
     </div>

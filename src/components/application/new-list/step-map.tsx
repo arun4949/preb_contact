@@ -157,7 +157,7 @@ export function StepMap({ listId, sheet, mapping, hasHeader, onMappingChange, on
             />
             <SummaryRow icon={RiFileCopy2Line} tone="muted" label={`${fmt(summary.duplicates)} ${summary.duplicates === 1 ? "duplicate" : "duplicates"} removed`} />
             {summary.emailOnly > 0 ? (
-              <SummaryRow icon={RiMailLine} tone="muted" label={`${fmt(summary.emailOnly)} email-only ${summary.emailOnly === 1 ? "row" : "rows"} (reverse lookup coming soon)`} />
+              <SummaryRow icon={RiMailLine} tone="muted" label={`${fmt(summary.emailOnly)} email-only ${summary.emailOnly === 1 ? "row" : "rows"} — can be identified in the next step`} />
             ) : null}
           </ul>
           {showMissing && missingRows.length > 0 ? (
@@ -173,7 +173,7 @@ export function StepMap({ listId, sheet, mapping, hasHeader, onMappingChange, on
           <Switch isSelected={hasHeader} onChange={onHeaderChange} size="sm">
             First row contains headers
           </Switch>
-          <Button onClick={submit} disabled={pending || summary.enrichable === 0} aria-busy={pending} className="w-full">
+          <Button onClick={submit} disabled={pending || (summary.enrichable === 0 && summary.emailOnly === 0)} aria-busy={pending} className="w-full">
             {pending ? "Preparing rows…" : "Next step"}
           </Button>
         </aside>

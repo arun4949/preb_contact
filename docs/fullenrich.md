@@ -13,8 +13,8 @@ Verified against https://docs.fullenrich.com (Oct 2026). Use **v2** only. Base U
 ```json
 {
   "name": "list_<listId>_batch_<n>",
-  "webhook_url": "https://app.preb.co/api/webhooks/fullenrich",
-  "webhook_events": { "contact_finished": "https://app.preb.co/api/webhooks/fullenrich" },
+  "webhook_url": "https://preb.co/api/webhooks/fullenrich",
+  "webhook_events": { "contact_finished": "https://preb.co/api/webhooks/fullenrich" },
   "data": [{
     "first_name": "John", "last_name": "Snow",
     "domain": "example.com", "company_name": "Example Inc",
