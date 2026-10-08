@@ -1,8 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
+import { Suspense } from "react";
 import "@/styles/globals.css";
 import { Providers } from "./providers";
+import { TermlyCMP } from "@/components/foundations/termly/termly-cmp";
+
+/* Termly CMP website (shared with the old Preb app's Termly instance). */
+const TERMLY_WEBSITE_UUID = "3c682d29-57d4-46b6-b071-9e88af258653";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 
@@ -30,6 +35,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           {THEME_SCRIPT}
         </Script>
         <Providers>{children}</Providers>
+        <Suspense fallback={null}>
+          <TermlyCMP websiteUUID={TERMLY_WEBSITE_UUID} autoBlock />
+        </Suspense>
       </body>
     </html>
   );

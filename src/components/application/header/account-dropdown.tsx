@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import {
   RiBankCardLine,
   RiFeedbackLine,
+  RiShieldCheckLine,
   RiLogoutBoxRLine,
   RiQuestionLine,
   RiSettings3Line, RiTeamLine } from "@remixicon/react";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Dropdown, DropdownDivider, DropdownGroup, DropdownItem, DropdownPopover, DropdownTrigger } from "@/components/base/dropdown/dropdown";
+import { openCookiePreferences } from "@/components/foundations/termly/termly-cmp";
 import { ThemeToggle } from "@/components/application/theme/theme-toggle";
 import { signOut } from "@/lib/auth/actions";
 import { initialsOf } from "@/utils/initials";
@@ -77,6 +79,15 @@ export function AccountDropdown({ name, email, avatarUrl, workspaceName }: Accou
             <RiFeedbackLine className="size-5 text-foreground-icon-secondary" aria-hidden />
             <span className="text-body-medium">Share feedback</span>
           </a>
+          <DropdownItem
+            onSelect={() => {
+              setOpen(false);
+              openCookiePreferences();
+            }}
+          >
+            <RiShieldCheckLine className="size-5 text-foreground-icon-secondary" aria-hidden />
+            <span className="text-body-medium">Cookie preferences</span>
+          </DropdownItem>
         </DropdownGroup>
         <DropdownDivider />
         <div className="flex items-center justify-between gap-2 p-2">

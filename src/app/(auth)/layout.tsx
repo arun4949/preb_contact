@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LogoName } from "@/components/foundations/brand/logo";
+import { CookiePreferencesLink } from "@/components/foundations/termly/termly-cmp";
 
 export default function AuthLayout({ children }: LayoutProps<"/">) {
   return (
@@ -12,6 +13,8 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
         <a href="/terms" className="hover:text-text-primary">Terms</a>
         <span aria-hidden>·</span>
         <a href="/privacy" className="hover:text-text-primary">Privacy</a>
+        <span aria-hidden>·</span>
+        <CookiePreferencesLink className="cursor-pointer hover:text-text-primary" />
       </footer>
     </div>
   );
