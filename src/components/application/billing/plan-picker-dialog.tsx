@@ -279,7 +279,9 @@ export function PlanPickerDialog({ isOpen, onClose, reason }: PlanPickerDialogPr
             <div className="flex flex-col gap-1">
               {/* Tick labels sit above the track, one per stop, centred on the stop. */}
               <div className="relative h-5 text-caption-1-medium text-text-tertiary">
-                {[...plans.map((p) => short(p.credits)), `>${short(plans[plans.length - 1]?.credits ?? LARGEST_MONTHLY)}`].map((label, i) => {
+                {/* The "Contact us" stop is a compact "+": with 12 stops the last tier sits 1/11 of the
+                    track from the end, too close for a ">200k" label (the headline spells it out). */}
+                {[...plans.map((p) => short(p.credits)), "+"].map((label, i) => {
                   const pct = (i / contactIndex) * 100;
                   const active = i === sliderIndex;
                   return (
@@ -294,7 +296,7 @@ export function PlanPickerDialog({ isOpen, onClose, reason }: PlanPickerDialogPr
                         // Edge labels hug the ends so nothing is clipped by the dialog padding.
                         i === 0 ? "translate-x-0" : i === contactIndex ? "-translate-x-full" : "-translate-x-1/2",
                         // Phone (12 stops): neighbouring labels collide. Keep the first stop, every
-                        // third stop and the selected stop; drop the rest and the end-hugging ">200k"
+                        // third stop and the selected stop; drop the rest and the end-hugging "+"
                         // (whose neighbour yields to it when "Contact us" is selected).
                         !active &&
                           i !== 0 &&

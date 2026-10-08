@@ -17,10 +17,13 @@ Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠�
 - ✅ **Migration 0012 applied** to the shared Supabase project. Grants remaining 1,289 → 2,578, ledger Σ 1,289 → 2,578, trial trigger grants 50, marker row present. Incident: `lists.credits_used` came out 4× (564) because the counters trigger had already re-derived it from the doubled `list_contacts.credits_cost` before the explicit doubling ran. Fixed with `recompute_list_counters()` on every list (now 282 = 2×141, 0 lists out of line) and the migration file no longer doubles `credits_used`.
 - ✅ **Live Stripe catalogue** (MCP, `app=preb` objects only): 22 products + EUR prices with lookup keys `preb_p2_*`, descriptions and default prices set, all 22 verified via `prices.list({lookup_keys})`. The 14 v1 USD products (`prod_VP2…`) archived and their prices (`price_1UOEh…`) deactivated; `preb_pro_*` keys no longer resolve. Old Pre app objects, webhook `we_1UOEiO…` and portal config untouched.
 
+- ✅ **Deployed by CTO; plan picker checked on preb.co (desktop).** Monthly 1k: "1,000 credits / month · €36.50 /month · €0.037 / credit", per-action lines 2 / 6 / 20 credits. Annual 12k: "€32.50 /month · €0.033 / credit · €390 billed yearly · save €48". `MARGIN_MULTIPLIER` confirmed absent from Vercel.
+- ✅ Fix: the end-hugging "Contact us" tick (">200k" / ">2.4M") overlapped the last tier label with 12 stops → now a compact "+" (the headline still reads "More than 200k credits"). Verified by previewing the label in the live dialog; needs a redeploy.
+
 ### Next (CTO)
-1. **Deploy now.** Production still runs the v1 code: it looks up `preb_pro_*` prices (all inactive → empty plan picker) and charges 1/3/10 against balances that are already doubled.
-2. Remove `MARGIN_MULTIPLIER` from the Vercel env if set.
-3. After deploy: open the plan picker on preb.co (11 tiers, €36.50 /month, €0.037 / credit), and a phone-width visual pass on the 12 slider stops.
+1. Redeploy for the "+" tick fix.
+2. Phone-width pass on the plan picker (the agent's browser window could not be resized).
+3. Known since v1, not changed: with no current plan the picker opens with nothing selected (empty headline, disabled checkout button) until a tier is clicked.
 
 ---
 
