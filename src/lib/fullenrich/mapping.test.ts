@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { catchAllRecord, fullRecord, invalidRecord, reverseMissRecord, reverseRecord } from "./__fixtures__/records";
-import { CREDIT_COST, CREDIT_MULTIPLIER, UPSTREAM_CREDIT_COST, contactCredits, mapRecord, toPrebCredits, uiEmailStatus } from "./mapping";
+import { CREDIT_COST, CREDIT_MULTIPLIER, UPSTREAM_CREDIT_COST, contactCredits, mapRecord, profileName, toPrebCredits, uiEmailStatus } from "./mapping";
 
 describe("mapping", () => {
   it("charges CREDIT_MULTIPLIER × the upstream cost table and converts batch costs", () => {
@@ -67,5 +67,13 @@ describe("mapping", () => {
     expect(noProfile.company_domain).toBe("example.com");
     expect(noProfile.job_title).toBeNull();
     expect(noProfile.found).toBe(true);
+  });
+
+  it("reads the person's name from the profile for LinkedIn-only inputs", () => {
+    const withName = { ...fullRecord, profile: { ...fullRecord.profile, first_name: "Leon", last_name: "Kranz", full_name: "Leon Kranz" } };
+    expect(profileName(withName as typeof fullRecord)).toEqual({ first_name: "Leon", last_name: "Kranz", full_name: "Leon Kranz" });
+    const onlyFull = { ...fullRecord, profile: { ...fullRecord.profile, first_name: undefined, last_name: undefined, full_name: "Ada King Lovelace" } };
+    expect(profileName(onlyFull as typeof fullRecord)).toEqual({ first_name: "Ada", last_name: "King Lovelace", full_name: "Ada King Lovelace" });
+    expect(profileName({ ...fullRecord, profile: undefined } as typeof fullRecord)).toBeNull();
   });
 });

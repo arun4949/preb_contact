@@ -91,6 +91,20 @@ export interface MappedContactResult {
   found: boolean;
 }
 
+/**
+ * The person's name from the provider profile, for rows that arrived without
+ * one (LinkedIn URL only). Never used to overwrite a name the user supplied.
+ */
+export function profileName(record: EnrichmentRecord): { first_name: string | null; last_name: string | null; full_name: string | null } | null {
+  const p = record.profile;
+  if (!p) return null;
+  const parts = !p.first_name && p.full_name ? p.full_name.trim().split(/\s+/) : null;
+  const first = p.first_name ?? parts?.[0] ?? null;
+  const last = p.last_name ?? (parts && parts.length > 1 ? parts.slice(1).join(" ") : null);
+  const full = p.full_name ?? ([first, last].filter(Boolean).join(" ") || null);
+  return full || first || last ? { first_name: first, last_name: last, full_name: full } : null;
+}
+
 export function mapRecord(record: EnrichmentRecord, kind: RecordKind = "enrich"): MappedContactResult {
   const info = record.contact_info;
   const profile = record.profile ?? null;

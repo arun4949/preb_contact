@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { RiExternalLinkLine, RiFileCopyLine, RiGroupLine, RiLinkedinBoxLine } from "@remixicon/react";
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
 import { Avatar } from "@/components/base/avatar/avatar";
+import { DotsIndicator } from "@/components/application/agent-thinking/agent-thinking";
 import { Chip } from "@/components/base/badges/chip";
 import { StatusDot } from "@/components/base/badges/status-dot";
 import { EmptyState } from "@/components/base/empty-state/empty-state";
@@ -63,7 +64,7 @@ function displayName(c: ContactRow): string {
   return c.full_name ?? ([c.first_name, c.last_name].filter(Boolean).join(" ") || c.email_input || "");
 }
 
-function CopyButton({ value, label }: { value: string; label: string }) {
+export function CopyButton({ value, label }: { value: string; label: string }) {
   const toast = useToast();
   return (
     <button
@@ -85,7 +86,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
   );
 }
 
-function EmailCell({ email, status, isPending }: { email: string | null; status: string | null; isPending: boolean }) {
+export function EmailCell({ email, status, isPending }: { email: string | null; status: string | null; isPending: boolean }) {
   if (!email) return isPending ? <Skeleton className="h-4 w-36" /> : <span className="text-text-tertiary">—</span>;
   const ui = uiEmailStatus(status as EmailStatus | null);
   return (
@@ -99,7 +100,7 @@ function EmailCell({ email, status, isPending }: { email: string | null; status:
   );
 }
 
-function PhoneCell({ phone, meta, isPending }: { phone: string | null; meta: ContactRow["phone_meta"]; isPending: boolean }) {
+export function PhoneCell({ phone, meta, isPending }: { phone: string | null; meta: ContactRow["phone_meta"]; isPending: boolean }) {
   if (!phone) return isPending ? <Skeleton className="h-4 w-28" /> : <span className="text-text-tertiary">—</span>;
   const type = (meta as EnrichedPhone | null)?.line_type;
   return (
@@ -117,11 +118,22 @@ function PhoneCell({ phone, meta, isPending }: { phone: string | null; meta: Con
   );
 }
 
-function StatusCell({ c }: { c: ContactRow }) {
+/** Animated "Running" pill (BoardUI agent-thinking dots) for rows in flight. */
+export function RunningChip() {
+  return (
+    <span role="status" className="inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 py-0.5 ps-1.5 pe-2 text-caption-1-medium text-accent-700">
+      <DotsIndicator variant="spin" />
+      Running
+    </span>
+  );
+}
+
+/** `running`: the run is active, so pending rows animate; otherwise they read "Waiting" (paused or queued behind credits). */
+export function StatusCell({ c, running = true }: { c: ContactRow; running?: boolean }) {
   const s = contactUiStatus(c);
   switch (s.kind) {
     case "pending":
-      return <Chip variant="caption" color="blue">Pending</Chip>;
+      return running ? <RunningChip /> : <Chip variant="caption" color="blue">Waiting</Chip>;
     case "enriched":
       return <Chip variant="caption" color="lime">Enriched</Chip>;
     case "cached":
@@ -218,7 +230,7 @@ export function ContactsTable({ rows, total, totalPages, query, onChange, visibi
         header: "Phone",
         cell: ({ row }) => <PhoneCell phone={row.original.phone} meta={row.original.phone_meta} isPending={running && contactUiStatus(row.original).kind === "pending"} />,
       },
-      { id: "status", header: "Status", cell: ({ row }) => <StatusCell c={row.original} /> },
+      { id: "status", header: "Status", cell: ({ row }) => <StatusCell c={row.original} running={running} /> },
     ];
     const extraDefs: ColumnDef<ContactRow>[] = extras.map((h) => ({
       id: extraColumnId(h),

@@ -467,6 +467,7 @@ export type Database = {
           not_found: number
           processed_rows: number
           reverse_lookup: boolean
+          source: string
           risky_email: number
           row_limit: number | null
           started_at: string | null
@@ -503,6 +504,7 @@ export type Database = {
           not_found?: number
           processed_rows?: number
           reverse_lookup?: boolean
+          source?: string
           risky_email?: number
           row_limit?: number | null
           started_at?: string | null
@@ -539,6 +541,7 @@ export type Database = {
           not_found?: number
           processed_rows?: number
           reverse_lookup?: boolean
+          source?: string
           risky_email?: number
           row_limit?: number | null
           started_at?: string | null

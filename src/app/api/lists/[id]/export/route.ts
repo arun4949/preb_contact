@@ -1,81 +1,16 @@
 import type { NextRequest } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { CSV_BOM, csvLine, safeFileName } from "@/lib/csv/export";
-import { uiEmailStatus } from "@/lib/fullenrich/mapping";
-import type { EmailStatus, EnrichedPhone } from "@/lib/fullenrich/types";
 import { applySegment, originalColumns } from "@/lib/lists/queries";
-import { contactUiStatus, isSegment, SEGMENTS, type ContactRow } from "@/lib/lists/segments";
+import { PREB_COLUMNS, rowCells } from "@/lib/lists/export-columns";
+import { isSegment, SEGMENTS } from "@/lib/lists/segments";
 
 export const maxDuration = 60;
 
 const PAGE = 1000;
 
-const APPENDED = [
-  "Preb: Work email",
-  "Preb: Work email status",
-  "Preb: Personal email",
-  "Preb: Personal email status",
-  "Preb: Phone",
-  "Preb: Phone type",
-  "Preb: Job title",
-  "Preb: Company",
-  "Preb: Company domain",
-  "Preb: Location",
-  "Preb: LinkedIn URL",
-  "Preb: Status",
-  "Preb: Credits",
-] as const;
-
 const SEGMENT_SUFFIX: Record<string, string> = { all: "", valid: "-valid-emails", risky: "-risky-emails", not_found: "-not-found" };
 
-function emailStatusLabel(status: string | null): string {
-  if (!status) return "";
-  const ui = uiEmailStatus(status as EmailStatus);
-  return ui === "valid" ? "Valid" : ui === "risky" ? "Risky (catch-all)" : "Not found";
-}
-
-function phoneType(meta: ContactRow["phone_meta"]): string {
-  const type = (meta as EnrichedPhone | null)?.line_type;
-  if (!type) return "";
-  return type.charAt(0) + type.slice(1).toLowerCase();
-}
-
-function statusLabel(c: ContactRow): string {
-  const s = contactUiStatus(c);
-  switch (s.kind) {
-    case "enriched":
-      return "Enriched";
-    case "cached":
-      return "Already enriched";
-    case "not_found":
-      return "Not found";
-    case "pending":
-      return "Pending";
-    case "skipped":
-      return `Skipped: ${s.reason}`;
-  }
-}
-
-function rowCells(c: ContactRow, headers: string[]): unknown[] {
-  const raw = (c.raw ?? {}) as Record<string, unknown>;
-  const original = headers.map((h) => raw[h] ?? "");
-  return [
-    ...original,
-    c.work_email ?? "",
-    emailStatusLabel(c.work_email ? c.work_email_status : null),
-    c.personal_email ?? "",
-    emailStatusLabel(c.personal_email ? c.personal_email_status : null),
-    c.phone ?? "",
-    phoneType(c.phone_meta),
-    c.job_title ?? "",
-    c.company ?? c.company_name ?? "",
-    c.company_domain ?? c.domain ?? "",
-    c.location ?? "",
-    c.linkedin_url ?? "",
-    statusLabel(c),
-    c.credits_cost,
-  ];
-}
 
 /**
  * CSV export of a list: original columns first (file order), then the Preb
@@ -100,7 +35,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
-      controller.enqueue(encoder.encode(CSV_BOM + csvLine([...headers, ...APPENDED])));
+      controller.enqueue(encoder.encode(CSV_BOM + csvLine([...headers, ...PREB_COLUMNS])));
     },
     async pull(controller) {
       let q = supabase.from("list_contacts").select("*").eq("list_id", id).order("row_index", { ascending: true }).range(cursor, cursor + PAGE - 1);

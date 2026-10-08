@@ -2,6 +2,14 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Enrich tab (manual single-contact enrichment) — 2026-10-08
+
+### Done
+- ✅ **New top-level tab `Enrich`** (`/enrich`, CTO requirement for the trial): type in up to **25 contacts** (LinkedIn URL, or first name + last name + company domain), pick Work email / Personal email / Mobile phone, live credit estimate, one click to start. The same page lists **every manually enriched contact** of the workspace (newest first, search, pagination, Download CSV), with skeleton cells while a run is in flight (5 s polling + realtime on `lists`).
+- ✅ **No engine change.** A manual run is a normal `lists` row with **`source = 'manual'`** (migration `0013_manual_lists.sql`, applied via MCP, types patched). It goes through `normaliseRows` → cache lookup → `list_contacts` → `queueList` (hold, `queued`, `runTick`) exactly like a CSV list; FullEnrich bulk accepts 1–100 contacts. `src/lib/lists/actions.ts`: `insertContacts` and `queueList` extracted from `parseList`/`startList` (no behaviour change), new `startManualEnrichment`, `manualListName` ("Jon Snow + 2 more").
+- ✅ Manual runs are **hidden from the Lists tab** (`getLists` filters `source = 'csv'`); the list detail page and per-list export still work for them. Lists empty state links to "Enrich a single contact".
+- ✅ Shared bits: `lib/credits/fields.ts` (`FIELD_CARDS`), `lib/lists/export-columns.ts` (Preb CSV columns, used by both exports), `EmailCell`/`PhoneCell`/`StatusCell` exported from `contacts-table.tsx`. Header tabs now render on all screen sizes.
+
 ## Pricing v2 — 2026-10-08 · 2× credits, USD catalogue, trial 50 (complete; EUR→USD revert needs deploy)
 
 ### Done

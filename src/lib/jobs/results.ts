@@ -1,6 +1,6 @@
 import "server-only";
 
-import { mapRecord, toPrebCredits, type RecordKind } from "@/lib/fullenrich/mapping";
+import { mapRecord, toPrebCredits, type RecordKind, profileName } from "@/lib/fullenrich/mapping";
 import type { EnrichmentRecord, EnrichmentResult, EnrichmentStatus } from "@/lib/fullenrich/types";
 import type { Database, Json, TablesUpdate } from "@/lib/supabase/types";
 import { log, type Admin, type BatchRow } from "./shared";
@@ -89,6 +89,11 @@ export async function applyRecords(
     }
     if (!row) continue;
     applied += 1;
+    // LinkedIn-only inputs carry no name: take it from the profile, never overwrite a supplied one.
+    const name = kind === "enrich" ? profileName(record) : null;
+    if (name) {
+      await admin.from("list_contacts").update(name).eq("id", contactId).is("full_name", null).is("first_name", null).is("last_name", null);
+    }
     const cacheable = kind === "reverse" ? Boolean(record.profile) : Boolean(record.contact_info);
     if (row.input_hash && cacheable) {
       const { error: cacheErr } = await admin.from("enrichment_cache").upsert(

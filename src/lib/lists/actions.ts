@@ -7,12 +7,14 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSessionContext } from "@/lib/supabase/queries";
-import type { Json, TablesInsert } from "@/lib/supabase/types";
+import type { Json, Tables, TablesInsert } from "@/lib/supabase/types";
 import { EMPTY_MAPPING, type ColumnMapping, type PrebField } from "@/lib/csv/automap";
 import { MAX_BYTES, MAX_ROWS, parseSpreadsheet, type FileType } from "@/lib/csv/parse";
-import { normaliseRows, type RowSummary } from "@/lib/csv/normalize";
+import { normaliseRows, type NormalisedRow, type RowSummary } from "@/lib/csv/normalize";
 import { estimateCredits, type EnrichmentField } from "@/lib/credits/estimate";
+import { MANUAL_HEADERS, MANUAL_MAPPING, MANUAL_MAX_CONTACTS, manualListName, type ManualEnrichmentInput, type ManualEnrichmentResult } from "@/lib/lists/manual";
 import { cachedContactPatch } from "@/lib/jobs/results";
+import { profileName } from "@/lib/fullenrich/mapping";
 import { runTick } from "@/lib/jobs/tick";
 import type { EnrichmentRecord } from "@/lib/fullenrich/types";
 
@@ -108,6 +110,91 @@ function inputHash(key: string) {
 }
 
 /**
+ * Cache lookup (same workspace, < 90 days) and the `list_contacts` insert,
+ * shared by the file wizard and manual entry. Replaces any previous rows of
+ * the list, so a re-parse is idempotent.
+ */
+async function insertContacts(
+  admin: ReturnType<typeof createAdminClient>,
+  workspaceId: string,
+  listId: string,
+  rows: NormalisedRow[],
+): Promise<Result<{ cached: number; cachedReverse: number }>> {
+  // Cache lookup (same workspace, < 90 days) → free, pre-filled rows. Enrichable
+  // rows reuse enrich records; email-only rows reuse reverse-lookup records
+  // (cached under the "reverse" field tag), so a repeat email list costs nothing.
+  const hashes = new Map<string, string>();
+  for (const r of rows) if ((r.enrichable || r.skipReason === "email_only") && r.dedupKey) hashes.set(r.dedupKey, inputHash(r.dedupKey));
+  const since = new Date(Date.now() - CACHE_TTL_DAYS * 86_400_000).toISOString();
+  const cacheHits = new Map<string, { record: EnrichmentRecord; reverse: boolean }>();
+  const hashList = [...hashes.values()];
+  for (let i = 0; i < hashList.length; i += INSERT_BATCH) {
+    const { data } = await admin
+      .from("enrichment_cache")
+      .select("input_hash, fields, result")
+      .in("input_hash", hashList.slice(i, i + INSERT_BATCH))
+      .eq("source_workspace_id", workspaceId)
+      .gte("fetched_at", since);
+    for (const hit of data ?? []) {
+      cacheHits.set(hit.input_hash, { record: hit.result as unknown as EnrichmentRecord, reverse: hit.fields.includes("reverse") });
+    }
+  }
+
+  let cached = 0;
+  let cachedReverse = 0;
+  const now = new Date().toISOString();
+  const inserts: TablesInsert<"list_contacts">[] = rows.map((r) => {
+    const hash = r.dedupKey ? hashes.get(r.dedupKey) ?? inputHash(r.dedupKey) : null;
+    const base: TablesInsert<"list_contacts"> = {
+      list_id: listId,
+      workspace_id: workspaceId,
+      row_index: r.rowIndex,
+      raw: r.raw as Json,
+      first_name: r.first_name,
+      last_name: r.last_name,
+      full_name: r.full_name,
+      company_name: r.company_name,
+      domain: r.domain,
+      linkedin_url: r.linkedin_url,
+      email_input: r.email_input,
+      input_hash: hash,
+      status: r.enrichable ? "pending" : "skipped",
+      skip_reason: r.skipReason,
+      // Email-only rows wait as skipped until the user opts into reverse lookup in step 3.
+      kind: r.skipReason === "email_only" ? "reverse" : "enrich",
+      // Explicit: a bulk insert that mixes cache-hit rows (which set this) with
+      // plain rows would otherwise send NULL for the missing key, not the default.
+      credits_cost: 0,
+    };
+    const hit = hash ? cacheHits.get(hash) : undefined;
+    if (hit && r.enrichable && !hit.reverse) {
+      cached += 1;
+      // LinkedIn-only rows have no name of their own: take it from the cached profile.
+      const name = !r.full_name && !r.first_name && !r.last_name ? profileName(hit.record) : null;
+      return { ...base, ...cachedContactPatch(hit.record, "enrich", now), ...(name ?? {}) };
+    }
+    if (hit && r.skipReason === "email_only" && hit.reverse) {
+      // Identified before in this workspace: served free, no opt-in needed.
+      cachedReverse += 1;
+      return { ...base, skip_reason: null, ...cachedContactPatch(hit.record, "reverse", now) };
+    }
+    return base;
+  });
+
+  // Re-parse is idempotent: replace previous contacts for this draft.
+  await admin.from("list_contacts").delete().eq("list_id", listId);
+  for (let i = 0; i < inserts.length; i += INSERT_BATCH) {
+    const { error } = await admin.from("list_contacts").insert(inserts.slice(i, i + INSERT_BATCH));
+    if (error) {
+      console.error(JSON.stringify({ scope: "lists", event: "parse.insert_failed", listId: listId, error: error.message }));
+      return { ok: false, error: "Could not store the rows. Please try again." };
+    }
+  }
+
+  return { ok: true, data: { cached, cachedReverse } };
+}
+
+/**
  * Step 2 → 3: parse the stored file with the chosen mapping, normalise,
  * dedup, look up the cache and (re)write `list_contacts`. Idempotent.
  */
@@ -134,74 +221,9 @@ export async function parseList(listId: string, mapping: ColumnMapping, hasHeade
     return { ok: false, error: "No row has enough information to enrich. Check the mapping." };
   }
 
-  // Cache lookup (same workspace, < 90 days) → free, pre-filled rows. Enrichable
-  // rows reuse enrich records; email-only rows reuse reverse-lookup records
-  // (cached under the "reverse" field tag), so a repeat email list costs nothing.
-  const hashes = new Map<string, string>();
-  for (const r of rows) if ((r.enrichable || r.skipReason === "email_only") && r.dedupKey) hashes.set(r.dedupKey, inputHash(r.dedupKey));
-  const since = new Date(Date.now() - CACHE_TTL_DAYS * 86_400_000).toISOString();
-  const cacheHits = new Map<string, { record: EnrichmentRecord; reverse: boolean }>();
-  const hashList = [...hashes.values()];
-  for (let i = 0; i < hashList.length; i += INSERT_BATCH) {
-    const { data } = await admin
-      .from("enrichment_cache")
-      .select("input_hash, fields, result")
-      .in("input_hash", hashList.slice(i, i + INSERT_BATCH))
-      .eq("source_workspace_id", session.workspace.id)
-      .gte("fetched_at", since);
-    for (const hit of data ?? []) {
-      cacheHits.set(hit.input_hash, { record: hit.result as unknown as EnrichmentRecord, reverse: hit.fields.includes("reverse") });
-    }
-  }
-
-  let cached = 0;
-  let cachedReverse = 0;
-  const now = new Date().toISOString();
-  const inserts: TablesInsert<"list_contacts">[] = rows.map((r) => {
-    const hash = r.dedupKey ? hashes.get(r.dedupKey) ?? inputHash(r.dedupKey) : null;
-    const base: TablesInsert<"list_contacts"> = {
-      list_id: list.id,
-      workspace_id: session.workspace.id,
-      row_index: r.rowIndex,
-      raw: r.raw as Json,
-      first_name: r.first_name,
-      last_name: r.last_name,
-      full_name: r.full_name,
-      company_name: r.company_name,
-      domain: r.domain,
-      linkedin_url: r.linkedin_url,
-      email_input: r.email_input,
-      input_hash: hash,
-      status: r.enrichable ? "pending" : "skipped",
-      skip_reason: r.skipReason,
-      // Email-only rows wait as skipped until the user opts into reverse lookup in step 3.
-      kind: r.skipReason === "email_only" ? "reverse" : "enrich",
-      // Explicit: a bulk insert that mixes cache-hit rows (which set this) with
-      // plain rows would otherwise send NULL for the missing key, not the default.
-      credits_cost: 0,
-    };
-    const hit = hash ? cacheHits.get(hash) : undefined;
-    if (hit && r.enrichable && !hit.reverse) {
-      cached += 1;
-      return { ...base, ...cachedContactPatch(hit.record, "enrich", now) };
-    }
-    if (hit && r.skipReason === "email_only" && hit.reverse) {
-      // Identified before in this workspace: served free, no opt-in needed.
-      cachedReverse += 1;
-      return { ...base, skip_reason: null, ...cachedContactPatch(hit.record, "reverse", now) };
-    }
-    return base;
-  });
-
-  // Re-parse is idempotent: replace previous contacts for this draft.
-  await admin.from("list_contacts").delete().eq("list_id", list.id);
-  for (let i = 0; i < inserts.length; i += INSERT_BATCH) {
-    const { error } = await admin.from("list_contacts").insert(inserts.slice(i, i + INSERT_BATCH));
-    if (error) {
-      console.error(JSON.stringify({ scope: "lists", event: "parse.insert_failed", listId: list.id, error: error.message }));
-      return { ok: false, error: "Could not store the rows. Please try again." };
-    }
-  }
+  const inserted = await insertContacts(admin, session.workspace.id, list.id, rows);
+  if (!inserted.ok) return inserted;
+  const { cached, cachedReverse } = inserted.data;
 
   const { error: updErr } = await supabase
     .from("lists")
@@ -233,11 +255,16 @@ export interface StartListError {
   shortBy?: number;
 }
 
-/** Step 3: validate, place a credit hold, queue the list and kick the dispatcher. */
-export async function startList(listId: string, input: StartListInput): Promise<StartListError | undefined> {
-  const { session, supabase, list } = await loadOwnList(listId);
-  if (list.status !== "draft") return { error: "This list has already been started." };
-
+/**
+ * Validate, place a credit hold, queue the list and kick the dispatcher.
+ * Shared by `startList` (file wizard) and `startManualEnrichment`.
+ */
+async function queueList(
+  session: Awaited<ReturnType<typeof requireSession>>,
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  list: Tables<"lists">,
+  input: StartListInput,
+): Promise<StartListError | undefined> {
   const name = input.name.trim().slice(0, 120);
   if (!name) return { error: "Give the list a name." };
   const allowed: EnrichmentField[] = ["work_email", "personal_email", "mobile_phone"];
@@ -317,6 +344,16 @@ export async function startList(listId: string, input: StartListInput): Promise<
     }
   });
 
+}
+
+/** Step 3: validate, place a credit hold, queue the list and kick the dispatcher. */
+export async function startList(listId: string, input: StartListInput): Promise<StartListError | undefined> {
+  const { session, supabase, list } = await loadOwnList(listId);
+  if (list.status !== "draft") return { error: "This list has already been started." };
+
+  const queued = await queueList(session, supabase, list, input);
+  if (queued) return queued;
+
   revalidatePath("/lists");
   redirect(`/lists/${list.id}`);
 }
@@ -377,4 +414,60 @@ export async function discardDraft(listId: string): Promise<void> {
   } catch {
     // Nothing to discard.
   }
+}
+
+/* ----------------------------------------------------------------- manual */
+
+/**
+ * Enrich tab: hand-typed contacts (LinkedIn URL, or first + last + domain)
+ * become a hidden `source = 'manual'` list that runs through the normal
+ * engine. Returns without redirecting; the page shows the rows as history.
+ */
+export async function startManualEnrichment(input: ManualEnrichmentInput): Promise<ManualEnrichmentResult> {
+  const session = await requireSession();
+  const supabase = await createClient();
+
+  const clean = (v: unknown) => (typeof v === "string" ? v.trim().slice(0, 200) : "");
+  const contacts = (Array.isArray(input.contacts) ? input.contacts : []).slice(0, MANUAL_MAX_CONTACTS);
+  const cells = contacts.map((c) => [clean(c.first_name), clean(c.last_name), clean(c.domain), clean(c.linkedin_url)]);
+  const allowed: EnrichmentField[] = ["work_email", "personal_email", "mobile_phone"];
+  const fields = allowed.filter((f) => input.fields.includes(f));
+  if (fields.length === 0) return { ok: false, error: "Choose at least one thing to find." };
+
+  const { rows, summary } = normaliseRows(cells, MANUAL_HEADERS, MANUAL_MAPPING);
+  if (summary.enrichable === 0) {
+    return { ok: false, error: "Add at least one contact with a LinkedIn URL, or first name, last name and company domain." };
+  }
+
+  const name = manualListName(rows);
+  const { data: list, error: insErr } = await supabase
+    .from("lists")
+    .insert({
+      workspace_id: session.workspace.id,
+      created_by: session.userId,
+      name,
+      status: "draft",
+      source: "manual",
+      column_mapping: { ...MANUAL_MAPPING, headers: MANUAL_HEADERS } as Json,
+      has_header: true,
+      duplicates_removed: summary.duplicates,
+    })
+    .select("*")
+    .single();
+  if (insErr || !list) return { ok: false, error: "Could not start the enrichment. Please try again." };
+
+  const admin = createAdminClient();
+  const fail = async (error: string, shortBy?: number): Promise<ManualEnrichmentResult> => {
+    await admin.from("lists").delete().eq("id", list.id);
+    return { ok: false, error, shortBy };
+  };
+
+  const inserted = await insertContacts(admin, session.workspace.id, list.id, rows);
+  if (!inserted.ok) return fail(inserted.error);
+
+  const queued = await queueList(session, supabase, list, { name, fields, rowLimit: null });
+  if (queued) return fail(queued.error, queued.shortBy);
+
+  revalidatePath("/enrich");
+  return { ok: true, listId: list.id };
 }

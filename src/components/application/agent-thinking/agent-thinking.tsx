@@ -90,7 +90,8 @@ function dotOpacities(variant: "wave" | "spin", phase: number) {
   });
 }
 
-function DotsIndicator({ variant }: { variant: "wave" | "spin" }) {
+/** The animated dot grid on its own (16px, `currentColor`), e.g. inside a status pill. */
+export function DotsIndicator({ variant }: { variant: "wave" | "spin" }) {
   const localize = useTemplateCopy();
   const [opacities, setOpacities] = useState<number[]>(DOTS_SEED);
 

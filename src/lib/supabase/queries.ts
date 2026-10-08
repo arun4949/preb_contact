@@ -117,6 +117,8 @@ export async function getLists(workspaceId: string, userId: string, filters: Lis
     .select("*")
     .eq("workspace_id", workspaceId)
     .neq("status", "draft")
+    // Manual runs (Enrich tab) are not shown as lists.
+    .eq("source", "csv")
     .order("created_at", { ascending: false });
   if (filters.status && filters.status !== "all") query = query.in("status", STATUS_GROUPS[filters.status]);
   if (filters.owner === "me") query = query.eq("created_by", userId);

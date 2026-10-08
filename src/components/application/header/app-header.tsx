@@ -17,16 +17,21 @@ export interface AppHeaderProps extends AccountDropdownProps {
   credits: CreditSummary;
 }
 
+const NAV = [
+  { id: "lists", label: "Lists", href: "/lists" },
+  { id: "enrich", label: "Enrich", href: "/enrich" },
+] as const;
+
 /**
- * Sticky app bar (Figma 1015:30): logo + wordmark, underline tabs (Lists only
- * for the MVP), New list, credits dropdown, account dropdown. Mobile keeps
- * logo, an icon-only New list and the avatar.
+ * Sticky app bar (Figma 1015:30): logo + wordmark, underline tabs (Lists,
+ * Enrich), New list, credits dropdown, account dropdown. Mobile keeps the
+ * logo mark, both tabs, an icon-only New list and the avatar.
  */
 export function AppHeader({ credits, ...account }: AppHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   useGlobalShortcuts();
-  const selected = pathname.startsWith("/lists") ? "lists" : "lists";
+  const selected = NAV.find((t) => pathname.startsWith(t.href))?.id ?? "lists";
 
   return (
     <header className="sticky top-0 z-40 border-b border-separator-border bg-background-primary-default">
@@ -44,13 +49,15 @@ export function AppHeader({ credits, ...account }: AppHeaderProps) {
           </Link>
           <Tabs
             selectedKey={selected}
-            onSelectionChange={(key) => router.push(key === "lists" ? "/lists" : "/lists")}
-            className="hidden h-16 w-auto justify-end md:flex"
+            onSelectionChange={(key) => router.push(NAV.find((t) => t.id === key)?.href ?? "/lists")}
+            className="flex h-16 w-auto justify-end"
           >
             <TabList aria-label="Main navigation" className="h-16 border-b-0">
-              <Tab id="lists" className="h-full">
-                Lists
-              </Tab>
+              {NAV.map((t) => (
+                <Tab key={t.id} id={t.id} className="h-full">
+                  {t.label}
+                </Tab>
+              ))}
             </TabList>
           </Tabs>
         </div>

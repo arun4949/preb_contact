@@ -11,6 +11,7 @@ import { ProgressBar } from "@/components/base/progress-bar/progress-bar";
 import { useToast } from "@/components/base/toast/toast";
 import { PlanPickerDialog } from "@/components/application/billing/plan-picker-dialog";
 import { estimateCredits, type EnrichmentField } from "@/lib/credits/estimate";
+import { FIELD_CARDS } from "@/lib/credits/fields";
 import { CREDIT_COST } from "@/lib/fullenrich/mapping";
 import { startList, type ParseSummary } from "@/lib/lists/actions";
 import { cx } from "@/utils/cx";
@@ -18,27 +19,6 @@ import { cx } from "@/utils/cx";
 const fmt = (n: number) => n.toLocaleString("en-US");
 const PRESETS = [500, 1000, 2500, 5000];
 
-const FIELD_CARDS: {
-  key: EnrichmentField;
-  title: string;
-  description: string;
-}[] = [
-  {
-    key: "work_email",
-    title: "Work email",
-    description: "Verified business email",
-  },
-  {
-    key: "personal_email",
-    title: "Personal email",
-    description: "Direct reach · recruiting use only",
-  },
-  {
-    key: "mobile_phone",
-    title: "Mobile phone",
-    description: "Mobile numbers; landlines are free",
-  },
-];
 
 export interface StepConfigureProps {
   listId: string;

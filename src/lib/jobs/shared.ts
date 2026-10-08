@@ -33,8 +33,14 @@ export function appOrigin(): string {
   return origin.replace(/\/$/, "");
 }
 
+/**
+ * Where FullEnrich posts results. Defaults to this deployment; a local dev
+ * server is not reachable from the internet, so `FULLENRICH_WEBHOOK_BASE_URL`
+ * can point it at production, which writes into the same database.
+ */
 export function webhookUrl(): string {
-  return `${appOrigin()}/api/webhooks/${PROVIDER}`;
+  const base = process.env.FULLENRICH_WEBHOOK_BASE_URL?.trim().replace(/\/$/, "") || appOrigin();
+  return `${base}/api/webhooks/${PROVIDER}`;
 }
 
 export function minutesAgo(minutes: number): string {

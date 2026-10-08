@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { RiAddLine, RiDownloadLine, RiFileList3Line } from "@remixicon/react";
+import { RiAddLine, RiDownloadLine, RiFileList3Line, RiUserSearchLine } from "@remixicon/react";
 import { Badge } from "@/components/base/badges/badge";
 import { ButtonLink } from "@/components/base/buttons/button";
 import { EmptyState } from "@/components/base/empty-state/empty-state";
@@ -90,7 +90,10 @@ export default async function ListsPage({ searchParams }: PageProps<"/lists">) {
                   <ButtonLink href="/lists/new" leadingIcon={RiAddLine}>
                     New list
                   </ButtonLink>
-                  <ButtonLink href="/samples/contacts-template.csv" variant="secondary" leadingIcon={RiDownloadLine} download>
+                  <ButtonLink href="/enrich" variant="secondary" leadingIcon={RiUserSearchLine}>
+                    Enrich a single contact
+                  </ButtonLink>
+                  <ButtonLink href="/samples/contacts-template.csv" variant="ghost" leadingIcon={RiDownloadLine} download>
                     Download sample CSV
                   </ButtonLink>
                 </>
