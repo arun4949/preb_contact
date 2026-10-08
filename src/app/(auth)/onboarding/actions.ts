@@ -8,9 +8,12 @@ import { sendEmail } from "@/lib/email/resend";
 import { WelcomeEmail } from "@/lib/email/templates/welcome";
 
 export interface OnboardingState {
-  status: "idle" | "error";
+  /** `done` → the form performs a full navigation to /lists (see onboarding-form.tsx). */
+  status: "idle" | "error" | "done";
   message?: string;
 }
+
+const DONE: OnboardingState = { status: "done" };
 
 const SAVE_FAILED = "Something went wrong saving your details. Please try again.";
 
@@ -52,7 +55,7 @@ export async function completeOnboarding(_prev: OnboardingState, formData: FormD
       return { status: "error", message: SAVE_FAILED };
     }
     // Null = a membership appeared meanwhile (double submit or a new invite); just continue to the app.
-    if (!created) redirect("/lists");
+    if (!created) return DONE;
     const { error } = await supabase
       .from("profiles")
       .update({ full_name: fullName, onboarded_at: profile.onboarded_at ?? new Date().toISOString() })
@@ -78,5 +81,9 @@ export async function completeOnboarding(_prev: OnboardingState, formData: FormD
     }
   }
 
-  redirect("/lists");
+  // No `redirect()` here: the action runs under the (auth) layout and the
+  // target lives under the (app) layout. A server-action redirect across the
+  // two groups left the client router re-fetching /lists in a loop on prod
+  // (blank, flickering page); a full navigation starts from a clean tree.
+  return DONE;
 }

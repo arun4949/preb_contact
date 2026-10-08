@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { Banner } from "@/components/base/banner/banner";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
@@ -22,6 +22,14 @@ const COPY: Record<OnboardingMode, { title: string; intro: string }> = {
 export function OnboardingForm({ mode, defaultName, defaultWorkspace }: { mode: OnboardingMode; defaultName: string; defaultWorkspace: string }) {
   const [state, action, pending] = useActionState<OnboardingState, FormData>(completeOnboarding, { status: "idle" });
   const copy = COPY[mode];
+  const done = state.status === "done";
+
+  // Full navigation (not router.push): the app shell is a different layout
+  // group and must render from a fresh tree with the new workspace.
+  useEffect(() => {
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- intentional hard navigation, see actions.ts
+    if (done) window.location.assign("/lists");
+  }, [done]);
 
   return (
     <div className="flex w-full max-w-[440px] flex-col rounded-3xl border border-border-button-default bg-background-primary-default p-6 shadow-xs sm:p-8">
@@ -46,8 +54,8 @@ export function OnboardingForm({ mode, defaultName, defaultWorkspace }: { mode: 
           hint="Usually your company or agency name."
           isRequired
         />
-        <Button type="submit" className="mt-2 w-full" disabled={pending} aria-busy={pending}>
-          {pending ? "Creating workspace…" : "Create workspace"}
+        <Button type="submit" className="mt-2 w-full" disabled={pending || done} aria-busy={pending || done}>
+          {pending || done ? "Creating workspace…" : "Create workspace"}
         </Button>
       </form>
     </div>
