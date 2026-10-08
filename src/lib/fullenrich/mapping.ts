@@ -17,7 +17,28 @@ export function isMobile(phone: EnrichedPhone | null | undefined): boolean {
   return phone?.line_type === "MOBILE";
 }
 
-export const CREDIT_COST = { work_email: 1, personal_email: 3, mobile_phone: 10, reverse: 1 } as const;
+/** What the provider charges us per result, in provider credits. */
+export const UPSTREAM_CREDIT_COST = { work_email: 1, personal_email: 3, mobile_phone: 10, reverse: 1 } as const;
+
+/**
+ * Pricing v2 (2026-10-08): 1 Preb credit = ½ provider credit. Every provider
+ * charge (per-result derivation AND the authoritative batch `cost.credits`)
+ * is multiplied by this before it touches our ledger.
+ */
+export const CREDIT_MULTIPLIER = 2;
+
+/** What we charge the workspace per result, in Preb credits. */
+export const CREDIT_COST = {
+  work_email: UPSTREAM_CREDIT_COST.work_email * CREDIT_MULTIPLIER,
+  personal_email: UPSTREAM_CREDIT_COST.personal_email * CREDIT_MULTIPLIER,
+  mobile_phone: UPSTREAM_CREDIT_COST.mobile_phone * CREDIT_MULTIPLIER,
+  reverse: UPSTREAM_CREDIT_COST.reverse * CREDIT_MULTIPLIER,
+} as const;
+
+/** Provider credits (batch `cost.credits`) → Preb credits. */
+export function toPrebCredits(upstream: number): number {
+  return Math.max(0, Math.round(upstream * CREDIT_MULTIPLIER));
+}
 
 /** Which provider endpoint produced a record: person → contact data, or email → profile. */
 export type RecordKind = "enrich" | "reverse";

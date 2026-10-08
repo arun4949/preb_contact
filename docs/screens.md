@@ -55,7 +55,7 @@ Common: `stepper` (Upload · Map · Configure) under the header, page header wit
 - CTA `Next step` disabled until ≥1 row is enrichable.
 
 **Step 3 — Configure** (`1015:43`)
-- "Enrichment level — choose what to add": three `checkbox-card`s in a row (stack on mobile): **Work email** (1 credit, "Verified business email") · **Personal email** (3 credits, "For reaching candidates directly; recruiting use only") · **Mobile phone** (10 credits, "Mobile numbers; landlines are free").
+- "Enrichment level — choose what to add": three `checkbox-card`s in a row (stack on mobile): **Work email** (2 credits, "Verified business email") · **Personal email** (6 credits, "For reaching candidates directly; recruiting use only") · **Mobile phone** (20 credits, "Mobile numbers; landlines are free").
 - Row: `Name this list` `input` (placeholder "e.g. Sales Directors in NYC") · `Rows to enrich` preset chips 500 · 1,000 · 2,500 · 5,000 + number `input` (default all).
 - Estimate card: `Typically ~320 credits · up to 415` with `progress-bar` of balance; "You have 1,240 credits". If short: warning `banner` + `Buy credits` button (opens plan picker).
 - Footer: `Start enrichment` primary right.
@@ -80,10 +80,10 @@ Common: `stepper` (Upload · Map · Configure) under the header, page header wit
 Header block: avatar, name `text-body-medium`, workspace `text-body-2-regular text-text-secondary`. Group: Settings · Billing. (Workspace switcher group if member of several.) Group: Help center · Share feedback. Divider. Log out.
 
 ## 5 · Credits dropdown (`1015:35`)
-Title `Credit balance`. Row: coin icon, `1,240 available` right‑aligned, `progress-bar` vs plan amount, meta `200 credits expire Dec 1`. Footer link `Manage credits` → Settings › Billing. If trial: `chip` "Trial · 25 credits".
+Title `Credit balance`. Row: coin icon, `1,240 available` right‑aligned, `progress-bar` vs plan amount, meta `200 credits expire Dec 1`. Footer link `Manage credits` → Settings › Billing. If trial: `chip` "Trial · 50 credits".
 
 ## 6 · Settings modal (`1015:37` for the Billing content)
-BoardUI `settings-modal`, pages: **Profile** (avatar upload, full name, email read‑only) · **Workspace** (name; members `table`: avatar, name, email, role `select`, remove; invite row `input` + role `select` + `Send invite`; pending invites with Resend/Revoke) · **Billing** (plan card: plan name, credits/month, renewal date, `Change plan`; balance card with expiry schedule; buttons `Manage billing` → Stripe portal; ledger `table`: date, description, ±credits). Plan picker `dialog`: `segmented-control` Monthly/Annual, 7 plan rows with price, credits, "Choose" → Stripe Checkout.
+BoardUI `settings-modal`, pages: **Profile** (avatar upload, full name, email read‑only) · **Workspace** (name; members `table`: avatar, name, email, role `select`, remove; invite row `input` + role `select` + `Send invite`; pending invites with Resend/Revoke) · **Billing** (plan card: plan name, credits/month, renewal date, `Change plan`; balance card with expiry schedule; buttons `Manage billing` → Stripe portal; ledger `table`: date, description, ±credits). Plan picker `dialog`: `segmented-control` Monthly/Annual, slider over 11 tiers + "Contact us"; headline shows credits, €/month and €/credit; "Continue to checkout" → Stripe Checkout.
 
 ## 7 · Auth & onboarding
 - `/login`: centered `auth-card`, Preb logo, "Sign in to Preb", Google `social-button`, divider, email `input` + `Continue with email`. Verify state: "Check your inbox — we sent a sign‑in link to …", resend link. Footer Terms · Privacy.

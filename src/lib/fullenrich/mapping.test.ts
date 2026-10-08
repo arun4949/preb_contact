@@ -1,14 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { catchAllRecord, fullRecord, invalidRecord, reverseMissRecord, reverseRecord } from "./__fixtures__/records";
-import { contactCredits, mapRecord, uiEmailStatus } from "./mapping";
+import { CREDIT_COST, CREDIT_MULTIPLIER, UPSTREAM_CREDIT_COST, contactCredits, mapRecord, toPrebCredits, uiEmailStatus } from "./mapping";
 
 describe("mapping", () => {
-  it("derives 1 + 3 + 10 credits for work + personal + mobile", () => {
-    expect(contactCredits(fullRecord)).toBe(14);
+  it("charges CREDIT_MULTIPLIER × the upstream cost table and converts batch costs", () => {
+    expect(CREDIT_MULTIPLIER).toBe(2);
+    expect(CREDIT_COST).toEqual({ work_email: 2, personal_email: 6, mobile_phone: 20, reverse: 2 });
+    for (const k of Object.keys(UPSTREAM_CREDIT_COST) as (keyof typeof UPSTREAM_CREDIT_COST)[]) {
+      expect(CREDIT_COST[k]).toBe(UPSTREAM_CREDIT_COST[k] * CREDIT_MULTIPLIER);
+    }
+    expect(toPrebCredits(15)).toBe(30);
+    expect(toPrebCredits(0)).toBe(0);
+    expect(toPrebCredits(-3)).toBe(0);
+  });
+
+  it("derives 2 + 6 + 20 Preb credits (2× upstream 1 + 3 + 10) for work + personal + mobile", () => {
+    expect(contactCredits(fullRecord)).toBe(28);
   });
 
   it("charges catch-all work emails but not landlines", () => {
-    expect(contactCredits(catchAllRecord)).toBe(1);
+    expect(contactCredits(catchAllRecord)).toBe(2);
     expect(uiEmailStatus(catchAllRecord.contact_info!.most_probable_work_email!.status)).toBe("risky");
   });
 
@@ -20,8 +31,8 @@ describe("mapping", () => {
     expect(m.found).toBe(false);
   });
 
-  it("reverse lookup: 1 credit and names when a profile came back, nothing otherwise", () => {
-    expect(contactCredits(reverseRecord, "reverse")).toBe(1);
+  it("reverse lookup: 2 credits and names when a profile came back, nothing otherwise", () => {
+    expect(contactCredits(reverseRecord, "reverse")).toBe(2);
     const m = mapRecord(reverseRecord, "reverse");
     expect(m.found).toBe(true);
     expect(m.first_name).toBe("Ada");

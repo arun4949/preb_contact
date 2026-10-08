@@ -27,10 +27,10 @@ Consequence for the MVP: everything that touches the provider must sit behind on
 | **Member** | A user in a workspace. Roles: owner, admin, member. Admins/owners manage members, billing and can delete lists. |
 | **List** | One uploaded spreadsheet and its enrichment run. Has a name, a status, counters and an export. |
 | **Contact** | One row in a list. Input fields (name, company, domain, LinkedIn URL, email) plus found fields. |
-| **Enrichment fields** | What the user asks us to find: **Work email** (1 credit), **Personal email** (3 credits), **Mobile phone** (10 credits). Landline numbers are returned free. Nothing found = nothing charged. |
-| **Credit** | Our unit of value. 1 Preb credit = 1 FullEnrich credit. Credits belong to the workspace, come from a subscription plan (or the trial) and expire 3 months after they are granted (12 months on annual plans). |
+| **Enrichment fields** | What the user asks us to find: **Work email** (2 credits), **Personal email** (6 credits), **Mobile phone** (20 credits). Landline numbers are returned free. Nothing found = nothing charged. |
+| **Credit** | Our unit of value. 1 Preb credit = ½ FullEnrich credit (pricing v2, 2026-10-08) — our tiers carry 2× the credits at 1.25× the price, so the per-credit price looks lower while the margin stays ≥ 20 %. Credits belong to the workspace, come from a subscription plan (or the trial) and expire 3 months after they are granted (12 months on annual plans). |
 | **Email status** | **Valid** (deliverable or high probability), **Risky** (catch‑all domain, may bounce), **Not found**. Risky emails are still charged by the provider, so we show them clearly. |
-| **Reverse lookup** | If a row only has an email, we can identify the person (name, title, company, LinkedIn) for 1 credit. Scheduled for the last sprint day; cut first if time is short. |
+| **Reverse lookup** | If a row only has an email, we can identify the person (name, title, company, LinkedIn) for 2 credits. Scheduled for the last sprint day; cut first if time is short. |
 
 ## 5. The user journey
 
@@ -48,9 +48,9 @@ Consequence for the MVP: everything that touches the provider must sit behind on
 
 ## 6. Credits, plans and money rules
 
-- Plans mirror FullEnrich's Pro tiers (500 → 10,000 credits/month monthly, 6,000 → 120,000 credits/year annual). Our price = FullEnrich price × margin (10–20 %, decided on day 5). Larger volumes = "Contact us".
+- Plans mirror FullEnrich's Pro tiers at 2× the credits: 1,000 → 200,000 credits/month (€36.50 → €4,375) and 12,000 → 2.4M credits/year (€390 → €47,250), EUR. Price = FullEnrich price × 1.25 rounded up to 0.50 €. All tiers self-serve; above that "Contact us".
 - Monthly credits expire 3 months after grant; annual credits are granted up front and expire after 12 months. Credits are consumed oldest‑expiring first.
-- New workspaces get **25 trial credits** (expire in 30 days). One trial per person.
+- New workspaces get **50 trial credits** (expire in 30 days). One trial per person.
 - Before a run starts, the workspace needs at least the *typical* estimate available. We put a hold on that amount; actual consumption is settled per batch from the provider's real cost. If a run exhausts the balance, it **pauses** with a buy button and **resumes automatically** after purchase.
 - A contact enriched in the same workspace within the last 90 days is free again (we serve it from our store). A contact enriched by another workspace is served from our store too and charged normally.
 - Everything we enrich is stored permanently with timestamps (for our future own engine) until the user deletes the list.

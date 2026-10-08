@@ -1,6 +1,6 @@
 import "server-only";
 
-import { mapRecord, type RecordKind } from "@/lib/fullenrich/mapping";
+import { mapRecord, toPrebCredits, type RecordKind } from "@/lib/fullenrich/mapping";
 import type { EnrichmentRecord, EnrichmentResult, EnrichmentStatus } from "@/lib/fullenrich/types";
 import type { Database, Json, TablesUpdate } from "@/lib/supabase/types";
 import { log, type Admin, type BatchRow } from "./shared";
@@ -133,7 +133,8 @@ export async function applyTerminalResult(
       .eq("status", "submitted");
   }
 
-  const credits = typeof result.cost?.credits === "number" ? Math.max(0, Math.round(result.cost.credits)) : null;
+  // `credits_cost` is in Preb credits (provider charge × CREDIT_MULTIPLIER); `raw.cost` keeps the provider's own number.
+  const credits = typeof result.cost?.credits === "number" ? toPrebCredits(result.cost.credits) : null;
   await admin
     .from("enrichment_batches")
     .update({

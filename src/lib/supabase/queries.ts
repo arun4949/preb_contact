@@ -149,7 +149,7 @@ export const getCreditSummary = cache(async (workspace: Workspace): Promise<Cred
   ]);
   const rows = grants ?? [];
   const isTrial = !workspace.plan_key;
-  const planCredits = isTrial ? rows.find((g) => g.source === "trial")?.amount ?? 25 : rows.reduce((s, g) => s + g.amount, 0) || 0;
+  const planCredits = isTrial ? rows.find((g) => g.source === "trial")?.amount ?? 50 : rows.reduce((s, g) => s + g.amount, 0) || 0;
   const next = rows[0];
   return {
     available: available ?? 0,

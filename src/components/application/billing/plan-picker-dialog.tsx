@@ -12,17 +12,15 @@ import { Slider } from "@/components/base/slider/slider";
 import { useToast } from "@/components/base/toast/toast";
 import type { PlanInterval } from "@/lib/credits/plans";
 import { confirmPlanSwitch, fetchPlanCatalogue, previewPlanSwitch, startCheckout, type PlanCatalogue, type PlanSwitchPreview } from "@/lib/billing/actions";
+import { formatEur, formatEurExact, formatEurFine } from "@/lib/credits/money";
 import { CREDIT_COST } from "@/lib/fullenrich/mapping";
 import { cx } from "@/utils/cx";
 
 const fmt = (n: number) => n.toLocaleString("en-US");
-/** Tick labels: 500 · 750 · 1k · 1.5k · 2k · 5k · 10k … */
-const short = (n: number) => (n >= 1000 ? `${Number((n / 1000).toFixed(1))}k` : String(n));
+/** Tick labels: 1k · 1.5k · 2k · 3k · 4k · 10k · 20k … 200k (annual: 12k … 2.4M). */
+const short = (n: number) => (n >= 1_000_000 ? `${Number((n / 1_000_000).toFixed(1))}M` : n >= 1000 ? `${Number((n / 1000).toFixed(1))}k` : String(n));
 const SALES_MAILTO = "mailto:sales@preb.co?subject=Preb%20volume%20pricing";
-const usd2 = (cents: number) => (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
-/** Per-item price, e.g. $0.066 — three decimals like the upstream pricing page. */
-const usd3 = (cents: number) => (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 3 });
-const usd = (cents: number) => (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+const LARGEST_MONTHLY = 200_000;
 
 export interface PlanPickerDialogProps {
   isOpen: boolean;
@@ -32,10 +30,9 @@ export interface PlanPickerDialogProps {
 }
 
 /**
- * Plan picker (plan § 6 · Settings › Billing, modelled on the upstream "Buy a
- * plan" card): Monthly / Annual toggle, one slider across the Pro tiers with
- * the chosen credits + price in the headline and a "Contact us" stop past the
- * largest tier. New subscribers continue to Stripe Checkout; existing subscribers
+ * Plan picker (plan § 6 · Settings › Billing): Monthly / Annual toggle, one
+ * slider across the 11 tiers with the chosen credits, price and per-credit
+ * price in the headline and a "Contact us" stop past the largest tier. New subscribers continue to Stripe Checkout; existing subscribers
  * get a confirm step with the exact prorated amount from Stripe, charged to
  * the saved payment method on confirm. Prices come from Stripe, never computed here.
  */
@@ -86,7 +83,7 @@ export function PlanPickerDialog({ isOpen, onClose, reason }: PlanPickerDialogPr
   const plans = interval === "year" ? annualPlans : monthlyPlans;
   const chosen = plans.find((p) => p.key === selected) ?? null;
   const isCurrent = chosen?.key === catalogue?.currentPlanKey;
-  /** Tiers line up by position (Pro 500 ↔ Pro 6k, …): the sibling plan on the other interval. */
+  /** Tiers line up by position (Preb 1k ↔ Preb 12k, …): the sibling plan on the other interval. */
   const siblingOf = (key: string, to: PlanInterval) => {
     const from = to === "year" ? monthlyPlans : annualPlans;
     const idx = from.findIndex((p) => p.key === key);
@@ -157,7 +154,7 @@ export function PlanPickerDialog({ isOpen, onClose, reason }: PlanPickerDialogPr
               Back
             </Button>
             <Button onClick={confirmSwitch} disabled={pending} aria-busy={pending}>
-              {pending ? "Switching…" : quote.amountDueCents > 0 ? `Pay ${usd2(quote.amountDueCents)} and switch` : "Switch plan"}
+              {pending ? "Switching…" : quote.amountDueCents > 0 ? `Pay ${formatEurExact(quote.amountDueCents)} and switch` : "Switch plan"}
             </Button>
           </>
         ) : (
@@ -188,12 +185,12 @@ export function PlanPickerDialog({ isOpen, onClose, reason }: PlanPickerDialogPr
           <dl className="flex flex-col gap-2 text-body-regular">
             <div className="flex items-center justify-between gap-3">
               <dt className="text-text-secondary">Charged today</dt>
-              <dd className="text-body-medium text-text-primary tabular-nums">{usd2(quote.amountDueCents)}</dd>
+              <dd className="text-body-medium text-text-primary tabular-nums">{formatEurExact(quote.amountDueCents)}</dd>
             </div>
             {quote.creditedCents > 0 ? (
               <div className="flex items-center justify-between gap-3">
                 <dt className="text-text-secondary">Unused time credited to your next invoices</dt>
-                <dd className="text-body-medium text-text-primary tabular-nums">{usd2(quote.creditedCents)}</dd>
+                <dd className="text-body-medium text-text-primary tabular-nums">{formatEurExact(quote.creditedCents)}</dd>
               </div>
             ) : null}
             <div className="flex items-center justify-between gap-3">
@@ -247,7 +244,7 @@ export function PlanPickerDialog({ isOpen, onClose, reason }: PlanPickerDialogPr
             <div className="flex flex-wrap items-center justify-between gap-3">
               {isContact ? (
                 <div className="flex min-w-0 flex-col gap-0.5">
-                  <p className="text-title-3-semibold text-text-primary">More than {short(plans[plans.length - 1]?.credits ?? 10000)} credits</p>
+                  <p className="text-title-3-semibold text-text-primary">More than {short(plans[plans.length - 1]?.credits ?? LARGEST_MONTHLY)} credits</p>
                   <p className="text-body-regular text-text-secondary">Volume pricing, invoicing and SSO — we reply within a business day.</p>
                 </div>
               ) : chosen ? (
@@ -259,11 +256,15 @@ export function PlanPickerDialog({ isOpen, onClose, reason }: PlanPickerDialogPr
                   </span>
                   <span aria-hidden className="hidden h-5 w-px bg-separator-border sm:block" />
                   <span className="text-title-3-semibold text-text-primary tabular-nums">
-                    {usd(perMonthCents)} <span className="text-body-regular text-text-secondary">/month</span>
+                    {formatEur(perMonthCents)} <span className="text-body-regular text-text-secondary">/month</span>
+                  </span>
+                  <span aria-hidden className="hidden h-5 w-px bg-separator-border sm:block" />
+                  <span className="text-title-3-semibold text-accent-600 tabular-nums">
+                    {formatEurFine(centsPerCredit)} <span className="text-body-regular text-text-secondary">/ credit</span>
                   </span>
                   {chosen.interval === "year" ? (
                     <span className="text-body-2-regular text-text-tertiary">
-                      {usd(chosen.priceCents)} billed yearly{saving > 0 ? ` · save ${usd(saving)}` : ""}
+                      {formatEur(chosen.priceCents)} billed yearly{saving > 0 ? ` · save ${formatEur(saving)}` : ""}
                     </span>
                   ) : null}
                   {isCurrent ? (
@@ -278,7 +279,7 @@ export function PlanPickerDialog({ isOpen, onClose, reason }: PlanPickerDialogPr
             <div className="flex flex-col gap-1">
               {/* Tick labels sit above the track, one per stop, centred on the stop. */}
               <div className="relative h-5 text-caption-1-medium text-text-tertiary">
-                {[...plans.map((p) => short(p.credits)), `>${short(plans[plans.length - 1]?.credits ?? 10000)}`].map((label, i) => {
+                {[...plans.map((p) => short(p.credits)), `>${short(plans[plans.length - 1]?.credits ?? LARGEST_MONTHLY)}`].map((label, i) => {
                   const pct = (i / contactIndex) * 100;
                   const active = i === sliderIndex;
                   return (
@@ -292,12 +293,12 @@ export function PlanPickerDialog({ isOpen, onClose, reason }: PlanPickerDialogPr
                         "absolute top-0 cursor-pointer rounded px-1 tabular-nums transition-colors",
                         // Edge labels hug the ends so nothing is clipped by the dialog padding.
                         i === 0 ? "translate-x-0" : i === contactIndex ? "-translate-x-full" : "-translate-x-1/2",
-                        // Phone: neighbouring labels collide. Keep the first stop, the even stops and
-                        // the selected stop; drop the odd stops and the end-hugging ">10k" (whose
-                        // neighbour yields to it when "Contact us" is selected).
+                        // Phone (12 stops): neighbouring labels collide. Keep the first stop, every
+                        // third stop and the selected stop; drop the rest and the end-hugging ">200k"
+                        // (whose neighbour yields to it when "Contact us" is selected).
                         !active &&
                           i !== 0 &&
-                          (i % 2 === 1 || i === contactIndex || (i === contactIndex - 1 && sliderIndex === contactIndex)) &&
+                          (i % 3 !== 0 || i === contactIndex || (i === contactIndex - 1 && sliderIndex === contactIndex)) &&
                           "hidden sm:block",
                         active ? "text-text-primary" : i === currentIndex ? "text-accent-600" : "hover:text-text-secondary",
                       )}
@@ -329,13 +330,13 @@ export function PlanPickerDialog({ isOpen, onClose, reason }: PlanPickerDialogPr
               {chosen ? (
                 <>
                   <li className="flex items-center gap-1.5">
-                    <RiMailLine className="size-4 text-foreground-icon-tertiary" aria-hidden />1 work email = {CREDIT_COST.work_email} credit ({usd3(centsPerCredit * CREDIT_COST.work_email)})
+                    <RiMailLine className="size-4 text-foreground-icon-tertiary" aria-hidden />1 work email = {CREDIT_COST.work_email} credits ({formatEurFine(centsPerCredit * CREDIT_COST.work_email)})
                   </li>
                   <li className="flex items-center gap-1.5">
-                    <RiMailSendLine className="size-4 text-foreground-icon-tertiary" aria-hidden />1 personal email = {CREDIT_COST.personal_email} credits ({usd3(centsPerCredit * CREDIT_COST.personal_email)})
+                    <RiMailSendLine className="size-4 text-foreground-icon-tertiary" aria-hidden />1 personal email = {CREDIT_COST.personal_email} credits ({formatEurFine(centsPerCredit * CREDIT_COST.personal_email)})
                   </li>
                   <li className="flex items-center gap-1.5">
-                    <RiSmartphoneLine className="size-4 text-foreground-icon-tertiary" aria-hidden />1 mobile = {CREDIT_COST.mobile_phone} credits ({usd3(centsPerCredit * CREDIT_COST.mobile_phone)})
+                    <RiSmartphoneLine className="size-4 text-foreground-icon-tertiary" aria-hidden />1 mobile = {CREDIT_COST.mobile_phone} credits ({formatEurFine(centsPerCredit * CREDIT_COST.mobile_phone)})
                   </li>
                 </>
               ) : null}

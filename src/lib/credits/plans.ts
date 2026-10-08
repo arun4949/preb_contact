@@ -1,7 +1,13 @@
 /**
- * Plan catalogue mirrored from the upstream Pro tiers. Prices are USD per
- * month; `upstream` is what we pay, our list price = upstream × MARGIN
- * (display only — the real price lives in Stripe and is fixed there).
+ * Plan catalogue (pricing v2, 2026-10-08). Prices are EUR per billing period
+ * and FIXED here and in Stripe — the app reads the live amount from Stripe by
+ * lookup key, this table only names the plans and their credits.
+ *
+ * Unit: 1 Preb credit = ½ upstream credit (see CREDIT_MULTIPLIER in
+ * `@/lib/fullenrich/mapping`). Every tier is 2× the upstream credit count at
+ * 1.25× the upstream price rounded up to the next 0.50 € (≥ 20 % margin);
+ * annual = upstream yearly total × 1.25. `upstreamCredits` / `upstreamCents`
+ * document that basis and are never shown to customers.
  */
 export type PlanInterval = "month" | "year";
 
@@ -11,36 +17,62 @@ export interface Plan {
   interval: PlanInterval;
   /** Credits granted per billing period (monthly: per month; annual: per year, up front). */
   credits: number;
-  /** Upstream price in USD per month (annual plans: per month, billed yearly). */
-  upstreamMonthly: number;
+  /** Our list price in EUR cents per billing period (the amount fixed in Stripe). */
+  priceCents: number;
+  /** Upstream credits bought for the same period (documentation only). */
+  upstreamCredits: number;
+  /** Upstream price per billing period in cents (documentation only). */
+  upstreamCents: number;
 }
+
+const m = (size: string, credits: number, priceCents: number, upstreamCents: number): Plan => ({
+  key: `p2_${size}_m`,
+  name: `Preb ${size.replace("1500", "1.5k")}`,
+  interval: "month",
+  credits,
+  priceCents,
+  upstreamCredits: credits / 2,
+  upstreamCents,
+});
+const y = (size: string, credits: number, priceCents: number, upstreamCents: number): Plan => ({
+  key: `p2_${size}_y`,
+  name: `Preb ${size.replace("1200k", "1.2M").replace("2400k", "2.4M")}`,
+  interval: "year",
+  credits,
+  priceCents,
+  upstreamCredits: credits / 2,
+  upstreamCents,
+});
 
 export const PLANS: Plan[] = [
-  { key: "pro_500_m", name: "Pro 500", interval: "month", credits: 500, upstreamMonthly: 29 },
-  { key: "pro_750_m", name: "Pro 750", interval: "month", credits: 750, upstreamMonthly: 42.75 },
-  { key: "pro_1k_m", name: "Pro 1k", interval: "month", credits: 1000, upstreamMonthly: 55 },
-  { key: "pro_1500_m", name: "Pro 1.5k", interval: "month", credits: 1500, upstreamMonthly: 79.5 },
-  { key: "pro_2k_m", name: "Pro 2k", interval: "month", credits: 2000, upstreamMonthly: 104 },
-  { key: "pro_5k_m", name: "Pro 5k", interval: "month", credits: 5000, upstreamMonthly: 255 },
-  { key: "pro_10k_m", name: "Pro 10k", interval: "month", credits: 10000, upstreamMonthly: 499 },
-  { key: "pro_6k_y", name: "Pro 6k", interval: "year", credits: 6000, upstreamMonthly: 26 },
-  { key: "pro_9k_y", name: "Pro 9k", interval: "year", credits: 9000, upstreamMonthly: 39 },
-  { key: "pro_12k_y", name: "Pro 12k", interval: "year", credits: 12000, upstreamMonthly: 49 },
-  { key: "pro_18k_y", name: "Pro 18k", interval: "year", credits: 18000, upstreamMonthly: 71 },
-  { key: "pro_24k_y", name: "Pro 24k", interval: "year", credits: 24000, upstreamMonthly: 94 },
-  { key: "pro_60k_y", name: "Pro 60k", interval: "year", credits: 60000, upstreamMonthly: 232 },
-  { key: "pro_120k_y", name: "Pro 120k", interval: "year", credits: 120000, upstreamMonthly: 454 },
+  // Monthly — upstream 500 … 100k credits at 29 … 3,500 per month.
+  m("1k", 1_000, 36_50, 29_00),
+  m("1500", 1_500, 53_50, 42_75),
+  m("2k", 2_000, 69_00, 55_00),
+  m("3k", 3_000, 99_50, 79_50),
+  m("4k", 4_000, 130_00, 104_00),
+  m("10k", 10_000, 319_00, 255_00),
+  m("20k", 20_000, 624_00, 499_00),
+  m("30k", 30_000, 900_00, 720_00),
+  m("50k", 50_000, 1_437_50, 1_150_00),
+  m("100k", 100_000, 2_437_50, 1_950_00),
+  m("200k", 200_000, 4_375_00, 3_500_00),
+  // Annual — upstream 6k … 1.2M credits per year at 26 … 3,150 per month billed yearly.
+  y("12k", 12_000, 390_00, 312_00),
+  y("18k", 18_000, 585_00, 468_00),
+  y("24k", 24_000, 735_00, 588_00),
+  y("36k", 36_000, 1_065_00, 852_00),
+  y("48k", 48_000, 1_410_00, 1_128_00),
+  y("120k", 120_000, 3_480_00, 2_784_00),
+  y("240k", 240_000, 6_810_00, 5_448_00),
+  y("360k", 360_000, 9_825_00, 7_860_00),
+  y("600k", 600_000, 15_690_00, 12_552_00),
+  y("1200k", 1_200_000, 26_535_00, 21_228_00),
+  y("2400k", 2_400_000, 47_250_00, 37_800_00),
 ];
 
-export const MARGIN_MULTIPLIER = Number(process.env.MARGIN_MULTIPLIER ?? "1.15");
-
-/** Our list price in USD cents for one billing period. */
-export function planPriceCents(plan: Plan, margin = MARGIN_MULTIPLIER): number {
-  const monthly = plan.upstreamMonthly * margin;
-  const perPeriod = plan.interval === "year" ? monthly * 12 : monthly;
-  // Round to whole dollars; charm pricing is a day-5 decision.
-  return Math.round(perPeriod) * 100;
-}
+/** Minimum margin over upstream that every plan must keep (asserted in tests). */
+export const MIN_MARGIN = 1.25;
 
 export function getPlan(key: string | null | undefined): Plan | undefined {
   return PLANS.find((p) => p.key === key);

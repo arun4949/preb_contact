@@ -33,9 +33,9 @@ export async function activeSubscriptionId(ws: { stripe_subscription_id: string 
 }
 
 export interface SwitchPreview {
-  /** What the saved payment method is charged now, USD cents (0 when the change is credited). */
+  /** What the saved payment method is charged now, EUR cents (0 when the change is credited). */
   amountDueCents: number;
-  /** Unused time credited to the customer's balance, USD cents (downgrades). */
+  /** Unused time credited to the customer's balance, EUR cents (downgrades). */
   creditedCents: number;
   prorationDate: number;
 }

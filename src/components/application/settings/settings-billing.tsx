@@ -12,11 +12,11 @@ import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from 
 import { useToast } from "@/components/base/toast/toast";
 import { fetchBillingOverview, openBillingPortal } from "@/lib/billing/actions";
 import type { BillingOverview, LedgerEntry } from "@/lib/billing/queries";
+import { formatEur, formatEurFine } from "@/lib/credits/money";
 import { cx } from "@/utils/cx";
 import { SettingsCard, SettingsRow, SettingsSectionLabel } from "./settings-rows";
 
 const fmt = (n: number) => n.toLocaleString("en-US");
-const usd = (cents: number) => (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const date = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
 const STATUS_CHIP: Record<string, { label: string; color: "lime" | "yellow" | "rose" | "neutral" }> = {
@@ -94,7 +94,7 @@ export function SettingsBilling({ onChoosePlan, refreshKey = 0 }: SettingsBillin
     );
   }
 
-  const planCredits = data.plan?.credits ?? data.grants.find((g) => g.source === "trial")?.amount ?? 25;
+  const planCredits = data.plan?.credits ?? data.grants.find((g) => g.source === "trial")?.amount ?? 50;
   const low = data.available < planCredits * 0.1;
   const status = data.subscription?.status ? STATUS_CHIP[data.subscription.status] : null;
 
@@ -119,12 +119,13 @@ export function SettingsBilling({ onChoosePlan, refreshKey = 0 }: SettingsBillin
                   {data.plan.priceCents != null ? (
                     <span className="text-text-secondary">
                       {" "}
-                      · {usd(data.plan.priceCents)}/{data.plan.interval === "year" ? "year" : "month"}
+                      · {formatEur(data.plan.priceCents)}/{data.plan.interval === "year" ? "year" : "month"}
                     </span>
                   ) : null}
                 </p>
                 <p className="text-body-2-regular text-text-secondary">
                   {fmt(data.plan.credits)} credits every {data.plan.interval}
+                  {data.plan.priceCents != null ? ` · ${formatEurFine(data.plan.priceCents / data.plan.credits)} per credit` : ""}
                   {data.subscription?.currentPeriodEnd
                     ? data.subscription.cancelAtPeriodEnd
                       ? ` · cancels on ${date(data.subscription.currentPeriodEnd)}`
@@ -135,7 +136,7 @@ export function SettingsBilling({ onChoosePlan, refreshKey = 0 }: SettingsBillin
             ) : (
               <div className="flex flex-col gap-0.5">
                 <p className="text-headline-medium text-text-primary">Free trial</p>
-                <p className="text-body-2-regular text-text-secondary">25 credits to try Preb. Choose a plan to keep enriching.</p>
+                <p className="text-body-2-regular text-text-secondary">50 credits to try Preb. Choose a plan to keep enriching.</p>
               </div>
             )}
           </div>

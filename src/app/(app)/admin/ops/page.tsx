@@ -58,7 +58,7 @@ export default async function OpsPage() {
 
   const emailCounts = (emails.data ?? []).reduce<Record<string, number>>((acc, e) => ({ ...acc, [e.kind]: (acc[e.kind] ?? 0) + 1 }), {});
   const stats: { label: string; value: string; tone?: "warn" | "bad" }[] = [
-    { label: "FullEnrich balance", value: typeof balance === "number" ? balance.toLocaleString("en-US") : balance, tone: typeof balance === "number" ? (balance < 200 ? "warn" : undefined) : "bad" },
+    { label: "Provider balance (provider credits)", value: typeof balance === "number" ? balance.toLocaleString("en-US") : balance, tone: typeof balance === "number" ? (balance < 200 ? "warn" : undefined) : "bad" },
     { label: "Lists running", value: String(running.count ?? 0) },
     { label: "Stuck batches", value: String(stuck.data?.length ?? 0), tone: stuck.data?.length ? "bad" : undefined },
     { label: "Webhook problems", value: String(webhooks.data?.length ?? 0), tone: webhooks.data?.length ? "warn" : undefined },

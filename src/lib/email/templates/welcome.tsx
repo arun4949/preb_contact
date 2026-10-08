@@ -15,8 +15,8 @@ export function WelcomeEmail({ firstName, workspaceName, trialCredits }: Welcome
       <Text style={emailStyles.body}>
         <strong>{workspaceName}</strong> is set up.
         {trialCredits > 0 ? ` You have ${trialCredits} free credits to try it out.` : ""} Upload a CSV or XLSX of candidates
-        and Preb finds verified work emails, personal emails and mobile numbers in a few minutes. One credit per
-        work email, three per personal email, ten per mobile number — you only pay for what we find.
+        and Preb finds verified work emails, personal emails and mobile numbers in a few minutes. Two credits per
+        work email, six per personal email, twenty per mobile number — you only pay for what we find.
       </Text>
       <Button href={appUrl("/lists/new")} style={emailStyles.button}>
         Enrich your first list

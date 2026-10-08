@@ -14,7 +14,7 @@ describe("results", () => {
   it("produces an enriched row patch with derived cost and the raw record", () => {
     const patch = contactPatchFromRecord(fullRecord, "2026-10-07T00:00:00.000Z");
     expect(patch.status).toBe("enriched");
-    expect(patch.credits_cost).toBe(14);
+    expect(patch.credits_cost).toBe(28);
     expect(patch.work_email).toBe("gregoire@fullenrich.com");
     expect(patch.enriched_at).toBe("2026-10-07T00:00:00.000Z");
     expect(patch.result).toEqual(fullRecord);
@@ -31,7 +31,7 @@ describe("results", () => {
     const patch = contactPatchFromRecord(catchAllRecord);
     expect(patch.status).toBe("enriched");
     expect(patch.work_email_status).toBe("CATCH_ALL");
-    expect(patch.credits_cost).toBe(1);
+    expect(patch.credits_cost).toBe(2);
   });
 
   it("cache fill marks the row cached at zero cost for both kinds", () => {

@@ -8,7 +8,7 @@ import { stripe } from "./client";
 export interface CataloguePlan extends Plan {
   priceId: string;
   productId: string;
-  /** Amount charged per billing period, in USD cents (the Stripe price, not an estimate). */
+  /** Amount charged per billing period, in EUR cents (the Stripe price, not an estimate). */
   priceCents: number;
 }
 
@@ -60,11 +60,6 @@ export async function planForPriceId(priceId: string): Promise<CataloguePlan | n
   const price = await stripe().prices.retrieve(priceId);
   const key = planKeyFromLookup(price.lookup_key);
   return key ? getCataloguePlan(key) : null;
-}
-
-export function formatUsd(cents: number): string {
-  const dollars = cents / 100;
-  return dollars.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: Number.isInteger(dollars) ? 0 : 2 });
 }
 
 export function intervalLabel(interval: PlanInterval): string {

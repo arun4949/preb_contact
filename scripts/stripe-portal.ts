@@ -3,7 +3,7 @@
  * found by `metadata.preb_managed`). Lets customers update payment method,
  * address and tax id, see invoices and cancel at period end. Plan switching
  * happens in the app (Settings › Billing › Change plan): the portal can list
- * at most 10 products and the catalogue has 14.
+ * at most 10 products and the catalogue has 22.
  *
  *   npm run stripe:portal            (uses STRIPE_SECRET_KEY from .env.local)
  */

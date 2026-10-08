@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getAccountCredits } from "@/lib/fullenrich/client";
+import { CREDIT_MULTIPLIER } from "@/lib/fullenrich/mapping";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyOps } from "./notify";
 import { log, logError, releaseHolds } from "./shared";
@@ -56,7 +57,8 @@ export async function runDaily(): Promise<DailySummary> {
     const { balance } = await getAccountCredits();
     summary.upstreamBalance = balance;
     const { data: holds } = await admin.from("credit_holds").select("amount").is("released_at", null).order("amount", { ascending: false }).limit(1);
-    const largestHold = holds?.[0]?.amount ?? 0;
+    // Holds are in Preb credits; the provider balance is in provider credits.
+    const largestHold = Math.ceil((holds?.[0]?.amount ?? 0) / CREDIT_MULTIPLIER);
     const threshold = Math.max(LOW_BALANCE_FLOOR, 2 * largestHold);
     if (balance < threshold) {
       summary.alerted = true;
