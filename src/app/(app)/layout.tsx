@@ -9,10 +9,13 @@ import { SettingsHost } from "@/components/application/settings/settings-host";
  * here we verify the user, load the workspace context and render the header.
  * A signed-in user without any workspace (removed from their only one) goes
  * to /onboarding to create a new one instead of looping through /login.
+ * A cookie with valid claims but no user behind it (deleted account, stale
+ * cookie) is cleared via /auth/signout — redirecting to /login alone would
+ * loop, because the proxy only checks the claims.
  */
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const session = await getSessionContext();
-  if (!session) redirect((await getUser()) ? "/onboarding" : "/login");
+  if (!session) redirect((await getUser()) ? "/onboarding" : "/auth/signout");
   const credits = await getCreditSummary(session.workspace);
 
   return (

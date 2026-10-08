@@ -56,7 +56,15 @@ export function ListDetail({ list, contacts, query, eta, extras, canDelete }: Li
     const t = setInterval(() => {
       if (document.visibilityState === "visible") refresh();
     }, POLL_MS);
-    return () => clearInterval(t);
+    // A background tab skips the poll; catch up as soon as it is visible again.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running, list.id]);
 
@@ -66,7 +74,11 @@ export function ListDetail({ list, contacts, query, eta, extras, canDelete }: Li
     const channel = supabase
       .channel(`list:${list.id}`)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "lists", filter: `id=eq.${list.id}` }, () => refresh())
-      .subscribe();
+      // The engine may finish (e.g. an all-cached list) before the channel is open;
+      // one refresh on connect closes that gap.
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") refresh();
+      });
     return () => {
       void supabase.removeChannel(channel);
     };

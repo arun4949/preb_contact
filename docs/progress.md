@@ -2,7 +2,32 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
-## Backlog — 2026-10-08 (evening) · onboarding for workspace-less users (code done, CTO test + deploy pending)
+## Backlog — 2026-10-08 (night) · reverse rows pre-filled from the same-workspace cache at parse time (complete, verified on localhost)
+
+### Done
+- ✅ **`parseList` now serves email-only rows from the cache**: rows whose email was identified in this workspace in the last 90 days (cache rows tagged `fields = ['reverse']`) are inserted as `status cached`, `kind reverse`, `skip_reason null`, with the profile columns filled (names, title, company, location, LinkedIn) at 0 credits — no opt-in, no provider call. Enrichable rows keep the old behaviour; the lookup now also reads `fields` so an enrich row never takes a reverse record and vice versa (hash prefixes `em:` / `li:` / `nc:` already keep them apart; the check is belt and braces).
+- ✅ `ParseSummary` gains `cachedReverse`; `emailOnly` excludes those rows, so the step-3 estimate and the reverse opt-in only cover rows that still need the lookup. Both cache fills use the new pure `cachedContactPatch()` in `lib/jobs/results.ts` (= `contactPatchFromRecord` + `status cached`, cost 0) instead of a hand-written column list → 1 new test, **49 tests**.
+- ✅ Step 3 (`step-configure.tsx`): "Email-only rows" section also appears when only cached identifications exist ("N email-only rows were already identified in this workspace and are included for free"); the opt-in card is hidden when nothing is left to identify; the rows line shows "· N already identified (free)". A list served entirely from the cache can now be started (`allCached`): `startList` accepts `pending 0 / reverse 0` when cached rows exist, skips the credit hold at a 0 estimate, and `finalizeList` completes the list on the next tick (this also fixes the old all-cached *enrich* list, which used to fail with "There is nothing to enrich").
+- ✅ **Login loop for stale cookies fixed**: a cookie whose claims verify (proxy) but whose user no longer exists (`getUser()` null — deleted account or a cookie from another environment) looped `/lists → /login → /lists` (proxy bounces signed-in users off `/login`). The app layout now redirects such requests to `GET /auth/signout`, which clears the cookie and lands on `/login`. Hit on localhost with a leftover dev cookie; it would happen on prod for a deleted user too.
+- ✅ `npm test` 49 ✓ · `npx tsc --noEmit` ✓ · `npm run lint` ✓ (2 upstream warnings) · `npm run build` ✓.
+
+### Verified on localhost (CTO signed in)
+- ✅ CSV `Email,Note` with the two cached emails + `fresh.person@nowhere.test` → Email auto-mapped → step 3: "1 row has an email address … 2 email-only rows were already identified in this workspace and are included for free", opt-in card for the 1 remaining row, rows line "0 enrichable rows · 2 already identified (free) · 1 email-only", estimate ~1 credit.
+- ✅ Opt-in turned off → "Typically ~0 credits", Start enabled → list `completed` by the in-process tick (`finalize.list processed 2 creditsUsed 0`). DB for both test lists: 2 rows `cached / reverse / cost 0` with names, 1 row `skipped / email_only`, `credits_estimated 0`, `credits_used 0`, no hold, no batch, `identified_rows 2`, balance unchanged (1264). Table shows names, titles, companies, locations; filter rail "Already enriched (free) 2".
+- 🐞 **Fixed during the test**:
+  - `list-stats.tsx`: the 4th card showed "Personal emails" for a list with identified rows but no reverse opt-in → now "Identified" when `identified_rows > 0` (and no phone/personal fields).
+  - `list-detail.tsx`: an all-cached list finished before the realtime channel was open, so the page stayed on "Queued" until a reload (the 5 s poll is paused in background tabs). Now one `router.refresh()` when the channel reports `SUBSCRIBED`, and one when a background tab becomes visible. Re-tested: the second list flipped to Enriched without a reload. This likely also explains the day-7 "Queued · 0/4 for ~40 s" note.
+- Not run: the opt-in **on** path for the fresh row (real reverse call; the webhook cannot reach localhost without the tunnel, M6). Unchanged engine code from day 7.
+- Test data left in the CTO workspace: two lists named "reverse-cache" (0 credits). Delete them from the lists dashboard when convenient.
+- Final checks: `npm test` 49 ✓ · `npx tsc --noEmit` ✓ · `npm run lint` ✓ (2 upstream warnings) · `npm run build` ✓.
+
+### Next
+1. **CTO**: deploy (cache fill, stale-cookie fix, live-update catch-up, Identified card); top up FullEnrich credits before inviting customers.
+2. Backlog (pick one per session): Sentry source maps (needs DSNs + auth token) · marketing/legal pages (`/terms`, `/privacy`, post-MVP).
+
+---
+
+## Backlog — 2026-10-08 (evening) · onboarding for workspace-less users (complete, verified on prod)
 
 ### Done
 - ✅ **Login loop fixed**: a signed-in user with no workspace (member removed from their only one) used to hit `(app)/layout` → `/login` → proxy → `/lists` → … forever. Now the app layout sends a signed-in user without a workspace to `/onboarding`; anonymous users still go to `/login`.
@@ -22,8 +47,9 @@ Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠�
 - No workspace-less user existed in the DB (all 3 profiles have one membership). **CTO test**: in Settings → Members remove `ar.gupta494+invite@gmail.com`, then sign in as that address (magic link lands in the CTO inbox) → expect `/onboarding` "Create a workspace", prefilled "Ar.gupta494's workspace"; submit → `/lists` with an empty workspace, 0 credits, welcome email without the trial sentence. Re-invite afterwards if the member account is still needed for RLS tests (it will then have 2 workspaces).
 
 ### Next
-1. **CTO**: deploy (push) the onboarding fix, reset the test account with the SQL above and retest; top up FullEnrich credits before inviting customers.
-2. Backlog (pick one per session): pre-fill reverse rows from the same-workspace cache at parse time · Sentry source maps (needs DSNs + auth token).
+1. ✅ **Retest on prod after the fix deploy** (agent reset the test account first): onboarding → submit → one full reload → empty lists dashboard, no flicker. DB: one owner membership, `onboarded_at` set, 0 grants, no trial. The `+invite` account now owns its own workspace; re-invite it to the CTO workspace if it is needed for RLS tests again.
+2. **CTO**: top up FullEnrich credits before inviting customers.
+3. Backlog (pick one per session): pre-fill reverse rows from the same-workspace cache at parse time · Sentry source maps (needs DSNs + auth token).
 
 ---
 

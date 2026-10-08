@@ -18,10 +18,26 @@ import { cx } from "@/utils/cx";
 const fmt = (n: number) => n.toLocaleString("en-US");
 const PRESETS = [500, 1000, 2500, 5000];
 
-const FIELD_CARDS: { key: EnrichmentField; title: string; description: string }[] = [
-  { key: "work_email", title: "Work email", description: "Verified business email" },
-  { key: "personal_email", title: "Personal email", description: "Direct reach · recruiting use only" },
-  { key: "mobile_phone", title: "Mobile phone", description: "Mobile numbers; landlines are free" },
+const FIELD_CARDS: {
+  key: EnrichmentField;
+  title: string;
+  description: string;
+}[] = [
+  {
+    key: "work_email",
+    title: "Work email",
+    description: "Verified business email",
+  },
+  {
+    key: "personal_email",
+    title: "Personal email",
+    description: "Direct reach · recruiting use only",
+  },
+  {
+    key: "mobile_phone",
+    title: "Mobile phone",
+    description: "Mobile numbers; landlines are free",
+  },
 ];
 
 export interface StepConfigureProps {
@@ -53,11 +69,13 @@ export function StepConfigure({ listId, defaultName, summary, creditsAvailable, 
   const rows = Math.min(enrichRows, billable);
   const estimate = useMemo(() => estimateCredits(rows, fields, reverseRows), [rows, fields, reverseRows]);
   const short = Math.max(0, estimate.typical - creditsAvailable);
-  const hasWork = summary.enrichable > 0 ? fields.length > 0 : reverse;
-  const canStart = hasWork && name.trim().length > 0 && rowsWanted > 0 && short === 0 && !pending;
+  const freeRows = summary.cached + summary.cachedReverse;
+  // Every row was served from the cache: nothing to buy, the list completes on start.
+  const allCached = totalRows === 0 && freeRows > 0;
+  const hasWork = allCached || (summary.enrichable > 0 ? fields.length > 0 : reverse);
+  const canStart = hasWork && name.trim().length > 0 && (allCached || rowsWanted > 0) && short === 0 && !pending;
 
-  const toggle = (key: EnrichmentField, on: boolean) =>
-    setFields((prev) => (on ? [...new Set([...prev, key])] : prev.filter((f) => f !== key)));
+  const toggle = (key: EnrichmentField, on: boolean) => setFields((prev) => (on ? [...new Set([...prev, key])] : prev.filter((f) => f !== key)));
 
   const toggleReverse = (on: boolean) => {
     // Keep "all rows" selected when the user had not narrowed the count.
@@ -106,29 +124,36 @@ export function StepConfigure({ listId, defaultName, summary, creditsAvailable, 
         </div>
       </section>
 
-      {summary.emailOnly > 0 ? (
+      {summary.emailOnly > 0 || summary.cachedReverse > 0 ? (
         <section className="flex flex-col gap-3">
           <div>
             <h2 className="text-headline-medium text-text-primary">Email-only rows</h2>
             <p className="text-body-regular text-text-secondary">
-              {fmt(summary.emailOnly)} {summary.emailOnly === 1 ? "row has" : "rows have"} an email address but no name or company. We can identify the person behind each one.
+              {summary.emailOnly > 0
+                ? `${fmt(summary.emailOnly)} ${summary.emailOnly === 1 ? "row has" : "rows have"} an email address but no name or company. We can identify the person behind each one.`
+                : null}
+              {summary.cachedReverse > 0
+                ? `${summary.emailOnly > 0 ? " " : ""}${fmt(summary.cachedReverse)} email-only ${summary.cachedReverse === 1 ? "row was" : "rows were"} already identified in this workspace and ${summary.cachedReverse === 1 ? "is" : "are"} included for free.`
+                : null}
             </p>
           </div>
-          <CheckboxCard
-            isSelected={reverse}
-            onChange={toggleReverse}
-            title={
-              <span className="flex items-center gap-2">
-                <RiUserSearchLine className="size-4 text-foreground-icon-secondary" aria-hidden />
-                Identify email-only rows
-                <Chip variant="caption" color="soft">
-                  {CREDIT_COST.reverse} credit
-                </Chip>
-              </span>
-            }
-            description="Reverse lookup adds name, job title, company, location and LinkedIn. Charged only when a person is identified."
-            className={cx("items-start", reverse && "border-accent-600")}
-          />
+          {summary.emailOnly > 0 ? (
+            <CheckboxCard
+              isSelected={reverse}
+              onChange={toggleReverse}
+              title={
+                <span className="flex items-center gap-2">
+                  <RiUserSearchLine className="size-4 text-foreground-icon-secondary" aria-hidden />
+                  Identify email-only rows
+                  <Chip variant="caption" color="soft">
+                    {CREDIT_COST.reverse} credit
+                  </Chip>
+                </span>
+              }
+              description="Reverse lookup adds name, job title, company, location and LinkedIn. Charged only when a person is identified."
+              className={cx("items-start", reverse && "border-accent-600")}
+            />
+          ) : null}
         </section>
       ) : null}
 
@@ -152,18 +177,12 @@ export function StepConfigure({ listId, defaultName, summary, creditsAvailable, 
                 {fmt(p)}
               </button>
             ))}
-            <Input
-              aria-label="Rows to enrich"
-              type="text"
-              inputMode="numeric"
-              value={rowsText}
-              onChange={setRowsText}
-              className="w-28"
-            />
+            <Input aria-label="Rows to enrich" type="text" inputMode="numeric" value={rowsText} onChange={setRowsText} className="w-28" />
           </div>
           <p className="text-body-2-regular text-text-tertiary">
             {fmt(summary.enrichable)} enrichable rows
             {summary.cached > 0 ? ` · ${fmt(summary.cached)} already enriched (free)` : ""}
+            {summary.cachedReverse > 0 ? ` · ${fmt(summary.cachedReverse)} already identified (free)` : ""}
             {reverse ? ` · ${fmt(summary.emailOnly)} email-only (reverse lookup)` : ""}
           </p>
         </div>
@@ -202,7 +221,8 @@ export function StepConfigure({ listId, defaultName, summary, creditsAvailable, 
               </Button>
             }
           >
-            Reduce the rows to enrich, choose fewer fields{summary.emailOnly > 0 ? " or skip the reverse lookup" : ""} to start now.
+            Reduce the rows to enrich, choose fewer fields
+            {summary.emailOnly > 0 ? " or skip the reverse lookup" : ""} to start now.
           </Banner>
         ) : null}
       </section>

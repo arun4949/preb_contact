@@ -12,7 +12,8 @@ export function ListStats({ list }: { list: ListRow }) {
   const base = list.processed_rows || list.enrichable_rows || list.total_rows;
   const wantsPhone = list.enrich_fields.includes("mobile_phone");
   const wantsPersonal = list.enrich_fields.includes("personal_email");
-  const reverseOnly = list.reverse_lookup && !wantsPhone && !wantsPersonal;
+  // Identified rows also come from the parse-time cache without the reverse opt-in.
+  const reverseOnly = (list.reverse_lookup || list.identified_rows > 0) && !wantsPhone && !wantsPersonal;
   const stats: Stat[] = [
     { icon: RiGroupLine, label: "Contacts", value: fmt(list.total_rows), delta: `${fmt(list.enrichable_rows)} enrichable`, deltaColor: "neutral" },
     { icon: RiMailCheckLine, label: "Valid emails", value: fmt(list.found_work_email), delta: pct(list.found_work_email, base), deltaColor: "lime" },

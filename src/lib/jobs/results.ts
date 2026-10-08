@@ -49,6 +49,14 @@ export function contactPatchFromRecord(record: EnrichmentRecord, now = new Date(
 }
 
 /**
+ * Parse-time cache fill: same-workspace hit (< 90 days) → the row is served
+ * free and marked `cached` (never `enriched`/`not_found`), for both kinds.
+ */
+export function cachedContactPatch(record: EnrichmentRecord, kind: RecordKind = "enrich", now = new Date().toISOString()): TablesUpdate<"list_contacts"> {
+  return { ...contactPatchFromRecord(record, now, kind), status: "cached", credits_cost: 0 };
+}
+
+/**
  * Write provider records onto the contacts of a batch (idempotent: the same
  * record from a contact event and the batch event yields the same row) and
  * write-through to `enrichment_cache`.

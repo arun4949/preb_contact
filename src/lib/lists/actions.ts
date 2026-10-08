@@ -12,7 +12,7 @@ import { EMPTY_MAPPING, type ColumnMapping, type PrebField } from "@/lib/csv/aut
 import { MAX_BYTES, MAX_ROWS, parseSpreadsheet, type FileType } from "@/lib/csv/parse";
 import { normaliseRows, type RowSummary } from "@/lib/csv/normalize";
 import { estimateCredits, type EnrichmentField } from "@/lib/credits/estimate";
-import { mapRecord } from "@/lib/fullenrich/mapping";
+import { cachedContactPatch } from "@/lib/jobs/results";
 import { runTick } from "@/lib/jobs/tick";
 import type { EnrichmentRecord } from "@/lib/fullenrich/types";
 
@@ -96,8 +96,10 @@ export async function attachUpload(listId: string, path: string): Promise<Result
 /* ------------------------------------------------------------------ parse */
 
 export interface ParseSummary extends RowSummary {
-  /** Rows already enriched in this workspace in the last 90 days (free). */
+  /** Enrichable rows already enriched in this workspace in the last 90 days (free). */
   cached: number;
+  /** Email-only rows already identified in this workspace in the last 90 days (free; not counted in `emailOnly`). */
+  cachedReverse: number;
   truncated: boolean;
 }
 
@@ -132,23 +134,29 @@ export async function parseList(listId: string, mapping: ColumnMapping, hasHeade
     return { ok: false, error: "No row has enough information to enrich. Check the mapping." };
   }
 
-  // Cache lookup (same workspace, < 90 days) → free, pre-filled rows.
+  // Cache lookup (same workspace, < 90 days) → free, pre-filled rows. Enrichable
+  // rows reuse enrich records; email-only rows reuse reverse-lookup records
+  // (cached under the "reverse" field tag), so a repeat email list costs nothing.
   const hashes = new Map<string, string>();
-  for (const r of rows) if (r.enrichable && r.dedupKey) hashes.set(r.dedupKey, inputHash(r.dedupKey));
+  for (const r of rows) if ((r.enrichable || r.skipReason === "email_only") && r.dedupKey) hashes.set(r.dedupKey, inputHash(r.dedupKey));
   const since = new Date(Date.now() - CACHE_TTL_DAYS * 86_400_000).toISOString();
-  const cacheHits = new Map<string, EnrichmentRecord>();
+  const cacheHits = new Map<string, { record: EnrichmentRecord; reverse: boolean }>();
   const hashList = [...hashes.values()];
   for (let i = 0; i < hashList.length; i += INSERT_BATCH) {
     const { data } = await admin
       .from("enrichment_cache")
-      .select("input_hash, result")
+      .select("input_hash, fields, result")
       .in("input_hash", hashList.slice(i, i + INSERT_BATCH))
       .eq("source_workspace_id", session.workspace.id)
       .gte("fetched_at", since);
-    for (const hit of data ?? []) cacheHits.set(hit.input_hash, hit.result as unknown as EnrichmentRecord);
+    for (const hit of data ?? []) {
+      cacheHits.set(hit.input_hash, { record: hit.result as unknown as EnrichmentRecord, reverse: hit.fields.includes("reverse") });
+    }
   }
 
   let cached = 0;
+  let cachedReverse = 0;
+  const now = new Date().toISOString();
   const inserts: TablesInsert<"list_contacts">[] = rows.map((r) => {
     const hash = r.dedupKey ? hashes.get(r.dedupKey) ?? inputHash(r.dedupKey) : null;
     const base: TablesInsert<"list_contacts"> = {
@@ -172,29 +180,15 @@ export async function parseList(listId: string, mapping: ColumnMapping, hasHeade
       // plain rows would otherwise send NULL for the missing key, not the default.
       credits_cost: 0,
     };
-    const hit = hash && r.enrichable ? cacheHits.get(hash) : undefined;
-    if (hit) {
+    const hit = hash ? cacheHits.get(hash) : undefined;
+    if (hit && r.enrichable && !hit.reverse) {
       cached += 1;
-      const m = mapRecord(hit);
-      return {
-        ...base,
-        status: "cached",
-        work_email: m.work_email,
-        work_email_status: m.work_email_status,
-        personal_email: m.personal_email,
-        personal_email_status: m.personal_email_status,
-        phone: m.phone,
-        phone_meta: m.phone_meta as unknown as Json,
-        job_title: m.job_title,
-        company: m.company,
-        company_domain: m.company_domain,
-        company_logo_url: m.company_logo_url,
-        location: m.location,
-        profile: m.profile as unknown as Json,
-        result: hit as unknown as Json,
-        credits_cost: 0,
-        enriched_at: new Date().toISOString(),
-      };
+      return { ...base, ...cachedContactPatch(hit.record, "enrich", now) };
+    }
+    if (hit && r.skipReason === "email_only" && hit.reverse) {
+      // Identified before in this workspace: served free, no opt-in needed.
+      cachedReverse += 1;
+      return { ...base, skip_reason: null, ...cachedContactPatch(hit.record, "reverse", now) };
     }
     return base;
   });
@@ -219,7 +213,7 @@ export async function parseList(listId: string, mapping: ColumnMapping, hasHeade
     .eq("id", list.id);
   if (updErr) return { ok: false, error: "Could not save the mapping." };
 
-  return { ok: true, data: { ...summary, cached, truncated: sheet.truncated } };
+  return { ok: true, data: { ...summary, emailOnly: summary.emailOnly - cachedReverse, cached, cachedReverse, truncated: sheet.truncated } };
 }
 
 /* ------------------------------------------------------------------ start */
@@ -249,14 +243,16 @@ export async function startList(listId: string, input: StartListInput): Promise<
   const allowed: EnrichmentField[] = ["work_email", "personal_email", "mobile_phone"];
   const fields = allowed.filter((f) => input.fields.includes(f));
 
-  const [{ count: pendingCount }, { count: emailOnlyCount }] = await Promise.all([
+  const [{ count: pendingCount }, { count: emailOnlyCount }, { count: cachedCount }] = await Promise.all([
     supabase.from("list_contacts").select("id", { count: "exact", head: true }).eq("list_id", list.id).eq("status", "pending"),
     supabase.from("list_contacts").select("id", { count: "exact", head: true }).eq("list_id", list.id).eq("status", "skipped").eq("skip_reason", "email_only"),
+    supabase.from("list_contacts").select("id", { count: "exact", head: true }).eq("list_id", list.id).eq("status", "cached"),
   ]);
   const pending = pendingCount ?? 0;
   const reverseRows = input.reverseLookup ? emailOnlyCount ?? 0 : 0;
   if (pending > 0 && fields.length === 0) return { error: "Choose at least one thing to find." };
-  if (pending === 0 && reverseRows === 0) return { error: "There is nothing to enrich in this list." };
+  // A list served entirely from the cache has nothing to send; the tick completes it.
+  if (pending === 0 && reverseRows === 0 && (cachedCount ?? 0) === 0) return { error: "There is nothing to enrich in this list." };
 
   const rowLimit = input.rowLimit && input.rowLimit > 0 ? Math.min(Math.floor(input.rowLimit), MAX_ROWS) : null;
   // The dispatcher sends enrich rows first, then email-only rows; the limit spans both.
@@ -271,10 +267,12 @@ export async function startList(listId: string, input: StartListInput): Promise<
   }
 
   const admin = createAdminClient();
-  const { error: holdErr } = await admin
-    .from("credit_holds")
-    .insert({ workspace_id: session.workspace.id, list_id: list.id, amount: estimate.typical });
-  if (holdErr) return { error: "Could not reserve credits. Please try again." };
+  if (estimate.typical > 0) {
+    const { error: holdErr } = await admin
+      .from("credit_holds")
+      .insert({ workspace_id: session.workspace.id, list_id: list.id, amount: estimate.typical });
+    if (holdErr) return { error: "Could not reserve credits. Please try again." };
+  }
 
   if (reverseRows > 0) {
     // Opt-in: email-only rows join the queue as reverse-lookup contacts.
