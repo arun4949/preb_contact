@@ -6,16 +6,28 @@ import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { completeOnboarding, type OnboardingState } from "./actions";
 
-export function OnboardingForm({ defaultName, defaultWorkspace }: { defaultName: string; defaultWorkspace: string }) {
+export type OnboardingMode = "first_login" | "no_workspace";
+
+const COPY: Record<OnboardingMode, { title: string; intro: string }> = {
+  first_login: {
+    title: "Welcome to Preb",
+    intro: "Tell us who you are and name your workspace. You can invite teammates later.",
+  },
+  no_workspace: {
+    title: "Create a workspace",
+    intro: "You are no longer a member of a workspace. Create your own to keep using Preb, or ask a teammate for a new invite.",
+  },
+};
+
+export function OnboardingForm({ mode, defaultName, defaultWorkspace }: { mode: OnboardingMode; defaultName: string; defaultWorkspace: string }) {
   const [state, action, pending] = useActionState<OnboardingState, FormData>(completeOnboarding, { status: "idle" });
+  const copy = COPY[mode];
 
   return (
     <div className="flex w-full max-w-[440px] flex-col rounded-3xl border border-border-button-default bg-background-primary-default p-6 shadow-xs sm:p-8">
       <div className="flex flex-col gap-1.5">
-        <h1 className="text-title-2-medium text-text-primary">Welcome to Preb</h1>
-        <p className="text-body-regular text-text-secondary">
-          Tell us who you are and name your workspace. You can invite teammates later.
-        </p>
+        <h1 className="text-title-2-medium text-text-primary">{copy.title}</h1>
+        <p className="text-body-regular text-text-secondary">{copy.intro}</p>
       </div>
 
       {state.status === "error" ? (

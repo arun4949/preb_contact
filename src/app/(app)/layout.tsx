@@ -1,16 +1,18 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { getCreditSummary, getSessionContext } from "@/lib/supabase/queries";
+import { getCreditSummary, getSessionContext, getUser } from "@/lib/supabase/queries";
 import { AppHeader } from "@/components/application/header/app-header";
 import { SettingsHost } from "@/components/application/settings/settings-host";
 
 /**
  * Signed-in shell. `proxy.ts` already bounced anonymous requests to /login;
  * here we verify the user, load the workspace context and render the header.
+ * A signed-in user without any workspace (removed from their only one) goes
+ * to /onboarding to create a new one instead of looping through /login.
  */
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const session = await getSessionContext();
-  if (!session) redirect("/login");
+  if (!session) redirect((await getUser()) ? "/onboarding" : "/login");
   const credits = await getCreditSummary(session.workspace);
 
   return (

@@ -196,8 +196,8 @@ Spec lives in `docs/screens.md`; agent calls `get_screenshot` per node while bui
 ```
 docs/product_mvp.md · docs/screens.md · docs/fullenrich.md · docs/setup_manual.md · docs/decisions.md
 supabase/migrations/0001_schema.sql … (RLS, functions, triggers, realtime, storage bucket)
-src/app/(auth)/login · auth/callback · auth/confirm · invite/[token]
-src/app/(app)/layout.tsx (header, providers) · onboarding · lists · lists/new · lists/[id] · admin/ops
+src/app/(auth)/login · (auth)/onboarding · auth/callback · auth/confirm · invite/[token]
+src/app/(app)/layout.tsx (header, providers) · lists · lists/new · lists/[id] · admin/ops
 src/app/api/webhooks/{fullenrich,stripe}/route.ts · api/jobs/{tick,daily}/route.ts · api/lists/[id]/export/route.ts
 src/lib/fullenrich/{client,types,mapping,signature,cost}.ts
 src/lib/credits/{estimate,plans,server}.ts · src/lib/stripe/{client,checkout,portal,webhooks}.ts
@@ -337,6 +337,7 @@ Only these need your hands. Each is 5–15 minutes. Saved to `docs/setup_manual.
 - Day 6: migration 0008 (`credits_available` returns 0 for non-member callers); Members page = `settings-members.tsx` + `lib/workspace/actions.ts` (invites re-issued with a fresh token on resend, 10/h/workspace); welcome email sent at the end of onboarding (owners only); auth redirects use `lib/auth/origin.ts: redirectOrigin()` (trusted hosts only — fixes `https://localhost` behind the tunnel); Sentry via `instrumentation*.ts` only, no `withSentryConfig` (v11 API differs; source maps deferred); `/admin/ops` under `(app)/admin/ops`; new env `NEXT_PUBLIC_SENTRY_DSN`.
 - Go-live: production domain is the apex `preb.co` (Framer dropped; website to be built in-app post-MVP). Terms/Privacy links point to `/terms` and `/privacy` (public prefixes in the proxy; pages come with the website). Email/portal fallbacks and manual-task docs updated. Vercel: production environment only, CTO-operated (agent has read-only access at most).
 - Day 7: reverse email lookup = opt-in per list for email-only rows (not a separate list type): migration 0009 (`list_contacts.kind`, `lists.reverse_lookup`, `lists.identified_rows`, `claim_pending_contacts(..., p_kind)`), dispatcher batches per kind, 1 credit × 0.7 find rate in the estimate; migration 0010 covering FK indexes (advisor); 0011 identified counter incl. cached rows. `startList` kicks `runTick()` in-process instead of POSTing its own URL. `parseList` sets `credits_cost: 0` explicitly (mixed cache-hit batches sent NULL). New `npm run qa:replay-webhook`. Go-live (M5) moved to a follow-up session.
+- Post-launch: `/onboarding` moved under `(auth)` and doubles as the landing page for signed-in users without a workspace (app layout redirects there instead of `/login`); `lib/workspace/create.ts` creates an owned workspace without a trial; `lib/workspace/naming.ts` mirrors the trigger's naming.
 
 ## Verification
 
