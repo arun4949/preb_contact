@@ -2,7 +2,7 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
-## Pricing v2 — 2026-10-08 · 2× credits, EUR catalogue, trial 50 (code, DB and live Stripe done; deploy pending)
+## Pricing v2 — 2026-10-08 · 2× credits, EUR catalogue, trial 50 (complete, live on preb.co)
 
 ### Done
 - ✅ **Management pricing table analysed**: every Preb tier = 2× the FullEnrich credits at 1.25× the FullEnrich price rounded up to the next 0.50 € (≥ 20 % margin). The margin sits in the credit unit — **1 Preb credit = ½ provider credit** — so the visible per-credit price (€0.037 → €0.022) undercuts the provider's (€0.058 → €0.035) while every action costs 2× (work email 2, personal email 6, mobile 20, reverse 2). FullEnrich's live pricing (per-action costs and the annual ladder) verified on fullenrich.com and a 2026-09-28 third-party capture; identical to `docs/fullenrich.md`.
@@ -20,10 +20,9 @@ Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠�
 - ✅ **Deployed by CTO; plan picker checked on preb.co (desktop).** Monthly 1k: "1,000 credits / month · €36.50 /month · €0.037 / credit", per-action lines 2 / 6 / 20 credits. Annual 12k: "€32.50 /month · €0.033 / credit · €390 billed yearly · save €48". `MARGIN_MULTIPLIER` confirmed absent from Vercel.
 - ✅ Fix: the end-hugging "Contact us" tick (">200k" / ">2.4M") overlapped the last tier label with 12 stops → now a compact "+" (the headline still reads "More than 200k credits"). Verified by previewing the label in the live dialog; needs a redeploy.
 
-### Next (CTO)
-1. Redeploy for the "+" tick fix.
-2. Phone-width pass on the plan picker (the agent's browser window could not be resized).
-3. Known since v1, not changed: with no current plan the picker opens with nothing selected (empty headline, disabled checkout button) until a tier is clicked.
+- ✅ Redeployed; CTO confirmed the phone-width picker (Preb 2k: €69 /month, €0.035 / credit, labels 1k · 2k · 3k · 20k · 100k without overlap).
+
+- ✅ Plan picker preselects the smallest tier of the shown interval when nothing is picked (no plan yet): headline and "Continue to checkout" are ready on open, and the default follows the Monthly / Annual toggle. Derived in render (`picked = selected ?? plans[0]`), no extra effect. Subscribers keep the "next tier up" preselection. Needs a redeploy.
 
 ---
 

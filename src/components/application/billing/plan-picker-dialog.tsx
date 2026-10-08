@@ -81,7 +81,10 @@ export function PlanPickerDialog({ isOpen, onClose, reason }: PlanPickerDialogPr
   const monthlyPlans = (catalogue?.plans ?? []).filter((p) => p.interval === "month");
   const annualPlans = (catalogue?.plans ?? []).filter((p) => p.interval === "year");
   const plans = interval === "year" ? annualPlans : monthlyPlans;
-  const chosen = plans.find((p) => p.key === selected) ?? null;
+  // Nothing picked yet: default to the smallest tier of the shown interval so the price and
+  // checkout are ready on open (derived, so it follows the Monthly / Annual toggle).
+  const picked = selected ?? plans[0]?.key ?? null;
+  const chosen = plans.find((p) => p.key === picked) ?? null;
   const isCurrent = chosen?.key === catalogue?.currentPlanKey;
   /** Tiers line up by position (Preb 1k ↔ Preb 12k, …): the sibling plan on the other interval. */
   const siblingOf = (key: string, to: PlanInterval) => {
@@ -215,7 +218,7 @@ export function PlanPickerDialog({ isOpen, onClose, reason }: PlanPickerDialogPr
               const next = [...keys][0];
               if (next === "month" || next === "year") {
                 setInterval(next);
-                setSelected((prev) => (prev && prev !== "contact" ? (siblingOf(prev, next)?.key ?? null) : prev));
+                setSelected(picked && picked !== "contact" ? (siblingOf(picked, next)?.key ?? null) : picked);
               }
             }}
           >
