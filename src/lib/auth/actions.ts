@@ -68,7 +68,10 @@ export async function sendMagicLink(_prev: MagicLinkState, formData: FormData): 
   }
 
   const origin = await appOrigin();
-  const url = `${origin}/auth/confirm?token_hash=${encodeURIComponent(data.properties.hashed_token)}&type=magiclink&next=${encodeURIComponent(next)}`;
+  // A first-time address gets a `signup` token, not a `magiclink` one; verifyOtp
+  // rejects a mismatched type as "invalid or expired", so pass Supabase's own.
+  const type = data.properties.verification_type ?? "magiclink";
+  const url = `${origin}/auth/confirm?token_hash=${encodeURIComponent(data.properties.hashed_token)}&type=${type}&next=${encodeURIComponent(next)}`;
 
   try {
     await sendEmail({ to: email, subject: "Your sign-in link for Preb", kind: "magic_link", react: MagicLinkEmail({ url }) });

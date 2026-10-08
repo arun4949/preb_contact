@@ -15,7 +15,10 @@ export async function subscribeContact({ email, fullName }: { email: string; ful
     if (existing.data) return;
     if (existing.error && existing.error.name !== "not_found") throw new Error(existing.error.message);
 
-    const [firstName, ...rest] = (fullName ?? "").trim().split(/\s+/);
+    // The signup trigger falls back to the email's local part when there is no
+    // real name; that is not a name to greet anyone with.
+    const name = (fullName ?? "").trim();
+    const [firstName, ...rest] = name.toLowerCase() === address.split("@")[0] ? [] : name.split(/\s+/);
     const segmentId = process.env.RESEND_SEGMENT_ID;
     const { error } = await resend().contacts.create({
       email: address,
