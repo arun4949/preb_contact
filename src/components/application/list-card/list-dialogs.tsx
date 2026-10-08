@@ -75,7 +75,7 @@ export function ListDialogs({ list, dialog, onClose, onDone }: ListDialogsProps)
         confirmLabel="Stop list"
         tone="primary"
         isPending={pending}
-        onConfirm={() => run("stop", () => stopList(list.id), list.status === "queued" ? "List stopped" : "List is stopping — in-flight contacts will finish")}
+        onConfirm={() => run("stop", () => stopList(list.id), list.status === "queued" ? "List stopped" : "List is stopping, contacts already in progress will finish")}
       />
 
       <ConfirmDialog

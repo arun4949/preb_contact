@@ -235,7 +235,7 @@ export function StepConfigure({ listId, defaultName, summary, creditsAvailable, 
       <PlanPickerDialog
         isOpen={picker}
         onClose={() => setPicker(false)}
-        reason={`You need ${fmt(short)} more credits to start this list. Checkout opens in this tab — you will upload the file again afterwards.`}
+        reason={`You need ${fmt(short)} more credits to start this list. Checkout opens in this tab, so you will upload the file again afterwards.`}
       />
     </div>
   );

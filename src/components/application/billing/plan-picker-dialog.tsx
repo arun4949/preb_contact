@@ -248,7 +248,7 @@ export function PlanPickerDialog({ isOpen, onClose, reason }: PlanPickerDialogPr
               {isContact ? (
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <p className="text-title-3-semibold text-text-primary">More than {short(plans[plans.length - 1]?.credits ?? LARGEST_MONTHLY)} credits</p>
-                  <p className="text-body-regular text-text-secondary">Volume pricing, invoicing and SSO — we reply within a business day.</p>
+                  <p className="text-body-regular text-text-secondary">Volume pricing, invoicing and SSO. We reply within a business day.</p>
                 </div>
               ) : chosen ? (
                 <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">

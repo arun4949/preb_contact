@@ -59,7 +59,7 @@ export function CreditsDropdown({ summary }: { summary: CreditSummary }) {
           <p className="text-body-2-regular text-text-tertiary">
             {summary.nextExpiry
               ? `${fmt(summary.nextExpiry.amount)} credits expire on ${fmtDate(summary.nextExpiry.at)}`
-              : "No credits yet — choose a plan to get started."}
+              : "No credits yet. Choose a plan to get started."}
           </p>
         </div>
         <div className="flex items-center gap-2 border-t border-separator-border px-3 py-3">

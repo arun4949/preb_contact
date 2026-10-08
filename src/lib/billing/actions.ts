@@ -60,7 +60,7 @@ export async function startCheckout(planKey: string): Promise<Result<never>> {
   let url: string | null = null;
   try {
     if (await activeSubscriptionId(ws)) {
-      return { ok: false, error: "You already have a subscription — use Switch plan." };
+      return { ok: false, error: "You already have a subscription. Use Switch plan instead." };
     }
     const customerId = await ensureCustomer(ws, session.email);
     const checkout = await createCheckoutSession(ws, customerId, plan, {

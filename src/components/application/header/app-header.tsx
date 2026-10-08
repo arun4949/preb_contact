@@ -34,7 +34,7 @@ export function AppHeader({ credits, ...account }: AppHeaderProps) {
         <div className="flex min-w-0 items-center gap-6">
           <Link
             href="/lists"
-            aria-label="Preb — Lists"
+            aria-label="Preb, go to lists"
             className="flex shrink-0 items-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring"
           >
             <span className="hidden items-center sm:flex">

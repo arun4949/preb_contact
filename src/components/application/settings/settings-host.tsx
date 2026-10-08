@@ -62,7 +62,7 @@ export function SettingsHost({ profile }: SettingsHostProps) {
     if (!checkout || handledCheckout.current === checkout) return;
     handledCheckout.current = checkout;
     if (checkout === "success") {
-      toast.success("Payment received", { description: "Your credits arrive within a minute — this page refreshes automatically." });
+      toast.success("Payment received", { description: "Your credits arrive within a minute. This page refreshes automatically." });
     } else if (checkout === "switched") {
       toast.success("Plan updated", { description: "Any extra credits arrive within a minute." });
     } else if (checkout === "cancelled") {

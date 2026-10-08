@@ -8,7 +8,7 @@ export type Segment = "all" | "valid" | "risky" | "not_found";
 export const SEGMENTS: { id: Segment; label: string; description: string }[] = [
   { id: "all", label: "All contacts", description: "Every row, including skipped ones with the reason" },
   { id: "valid", label: "Valid emails", description: "Deliverable work emails" },
-  { id: "risky", label: "Risky emails", description: "Catch-all domains — may bounce" },
+  { id: "risky", label: "Risky emails", description: "Catch-all domains that may bounce" },
   { id: "not_found", label: "Not found", description: "Processed rows without a work email" },
 ];
 

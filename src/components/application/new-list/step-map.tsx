@@ -157,7 +157,7 @@ export function StepMap({ listId, sheet, mapping, hasHeader, onMappingChange, on
             />
             <SummaryRow icon={RiFileCopy2Line} tone="muted" label={`${fmt(summary.duplicates)} ${summary.duplicates === 1 ? "duplicate" : "duplicates"} removed`} />
             {summary.emailOnly > 0 ? (
-              <SummaryRow icon={RiMailLine} tone="muted" label={`${fmt(summary.emailOnly)} email-only ${summary.emailOnly === 1 ? "row" : "rows"} — can be identified in the next step`} />
+              <SummaryRow icon={RiMailLine} tone="muted" label={`${fmt(summary.emailOnly)} email-only ${summary.emailOnly === 1 ? "row" : "rows"}, these can be identified in the next step`} />
             ) : null}
           </ul>
           {showMissing && missingRows.length > 0 ? (

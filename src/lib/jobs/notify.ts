@@ -45,7 +45,7 @@ export async function notifyListPaused(admin: Admin, list: ListRow, remaining: n
       to,
       kind: "list_paused",
       workspaceId: list.workspace_id,
-      subject: `${list.name} is paused — add credits to continue`,
+      subject: `${list.name} is paused, add credits to continue`,
       react: ListPausedEmail({ listId: list.id, listName: list.name, processed: list.processed_rows, remaining }),
     });
   } catch (error) {

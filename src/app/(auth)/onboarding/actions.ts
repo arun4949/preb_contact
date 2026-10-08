@@ -75,7 +75,7 @@ export async function completeOnboarding(_prev: OnboardingState, formData: FormD
           to: profile.email,
           kind: "welcome",
           workspaceId,
-          subject: "Welcome to Preb — your workspace is ready",
+          subject: "Welcome to Preb, your workspace is ready",
           react: WelcomeEmail({ firstName: fullName.split(/\s+/)[0] ?? "", workspaceName: finalWorkspaceName, trialCredits }),
         });
       } catch (error) {

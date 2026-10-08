@@ -50,8 +50,8 @@ function formatEta(seconds: number | null): string {
 }
 
 const PAUSED_COPY: Partial<Record<ListRow["status"], string>> = {
-  paused_credits: "Paused — add credits to continue. Progress so far is saved.",
-  paused_upstream: "Paused — our enrichment provider is temporarily unavailable. We retry automatically.",
+  paused_credits: "Paused, add credits to continue. Your progress so far is saved.",
+  paused_upstream: "Paused because our enrichment provider is temporarily unavailable. We retry automatically.",
   failed: "Enrichment stopped after repeated provider errors. Our team has been alerted.",
 };
 
@@ -72,7 +72,7 @@ export function EnrichingPanel({ list, eta }: { list: ListRow; eta: ListEta }) {
   const subtitle = useMemo(() => {
     if (paused) return PAUSED_COPY[list.status];
     if (list.status === "queued") return "Starting in a few seconds…";
-    if (list.status === "stopping") return "Finishing contacts already in progress — nothing new is submitted.";
+    if (list.status === "stopping") return "Finishing contacts already in progress. Nothing new is submitted.";
     return formatEta(eta.seconds);
   }, [paused, list.status, eta.seconds]);
 
@@ -94,7 +94,7 @@ export function EnrichingPanel({ list, eta }: { list: ListRow; eta: ListEta }) {
           ) : null}
           <p className="mt-2 flex items-center gap-2 text-body-2-regular text-text-tertiary">
             <RiMailSendLine className="size-4 shrink-0" aria-hidden />
-            You can leave &mdash; we&apos;ll email you when it&apos;s done.
+            You can leave this page, we&apos;ll email you when it&apos;s done.
           </p>
         </div>
       </div>

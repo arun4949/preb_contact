@@ -117,7 +117,7 @@ export async function inviteMember(emailInput: string, role: InviteRole): Promis
   const members = await getWorkspaceMembers(session.workspace.id);
   if (members.some((m) => m.email.toLowerCase() === email)) return { ok: false, error: "That person is already a member of this workspace." };
 
-  if (await workspaceInviteBudgetExceeded(session.workspace.id)) return { ok: false, error: "Invite limit reached — try again in an hour." };
+  if (await workspaceInviteBudgetExceeded(session.workspace.id)) return { ok: false, error: "Invite limit reached. Try again in an hour." };
   if (await isRateLimited(email, "invite")) return { ok: false, error: "That address was invited too many times recently." };
 
   const supabase = await createClient();
@@ -174,7 +174,7 @@ export async function resendInvite(inviteId: string): Promise<Result> {
     .eq("workspace_id", session.workspace.id)
     .maybeSingle();
   if (!invite || invite.accepted_at) return { ok: false, error: "That invite no longer exists." };
-  if (await workspaceInviteBudgetExceeded(session.workspace.id)) return { ok: false, error: "Invite limit reached — try again in an hour." };
+  if (await workspaceInviteBudgetExceeded(session.workspace.id)) return { ok: false, error: "Invite limit reached. Try again in an hour." };
   if (await isRateLimited(invite.email, "invite")) return { ok: false, error: "That address was invited too many times recently." };
   try {
     await deliverInvite({

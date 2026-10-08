@@ -53,3 +53,8 @@ This project uses BoardUI (React + Tailwind CSS v4, source-owned components unde
 
 When unsure about a token, a component's API, or working example code, ask the BoardUI MCP server: `get_theme`, `get_component`, `get_usage_examples`.
 <!-- boardui:rules:end -->
+
+# Copy and email text
+
+- Never use em dashes (—), en dashes (–) or a hyphen (" - ") as punctuation in user-visible copy: UI text, toasts, error messages, aria labels, email subjects, previews and bodies. It reads as AI-written. Write full sentences, or join clauses with a comma.
+- Allowed: hyphens inside compound words ("sign-in", "email-only"), numeric ranges ("1–20 of 50", "2–80 characters") and "—" as the empty-cell placeholder in tables.

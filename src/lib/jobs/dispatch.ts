@@ -231,7 +231,7 @@ async function pauseUpstream(admin: Admin, list: ListRow, current: ListRow["stat
     .maybeSingle();
   log("dispatch.paused_upstream", { listId: list.id, reason });
   if (updated && current !== "paused_upstream") {
-    await notifyOps("Upstream credits exhausted — lists paused", [reason, `list_id: ${list.id}`, `workspace_id: ${list.workspace_id}`, "Top up the provider account; lists retry every 15 minutes."]);
+    await notifyOps("Upstream credits exhausted, lists paused", [reason, `list_id: ${list.id}`, `workspace_id: ${list.workspace_id}`, "Top up the provider account; lists retry every 15 minutes."]);
   }
 }
 

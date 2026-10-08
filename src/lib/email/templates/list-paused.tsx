@@ -11,7 +11,7 @@ export interface ListPausedProps {
 export function ListPausedEmail({ listId, listName, processed, remaining }: ListPausedProps) {
   const n = (v: number) => v.toLocaleString("en-US");
   return (
-    <EmailLayout preview={`${listName} is paused — your workspace is out of credits`}>
+    <EmailLayout preview={`${listName} is paused because your workspace is out of credits`}>
       <Text style={emailStyles.title}>Your list is paused</Text>
       <Text style={emailStyles.body}>
         <strong>{listName}</strong> ran out of credits after {n(processed)} contacts. {n(remaining)} contacts are waiting. Add credits and the

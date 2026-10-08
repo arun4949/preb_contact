@@ -18,7 +18,7 @@ export function ListFinishedEmail({ listId, listName, processed, validEmails, ri
     <EmailLayout preview={stopped ? `${listName} was stopped` : `${listName} is enriched`}>
       <Text style={emailStyles.title}>{stopped ? "Your list was stopped" : "Your list is enriched"}</Text>
       <Text style={emailStyles.body}>
-        <strong>{listName}</strong> — {n(processed)} contacts processed: {n(validEmails)} valid emails, {n(riskyEmails)} risky, {n(mobiles)} mobile
+        <strong>{listName}</strong> is done. {n(processed)} contacts processed: {n(validEmails)} valid emails, {n(riskyEmails)} risky, {n(mobiles)} mobile
         numbers. {n(creditsUsed)} credits used.
       </Text>
       <Button href={appUrl(`/lists/${listId}`)} style={emailStyles.button}>
