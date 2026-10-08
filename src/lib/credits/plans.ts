@@ -78,9 +78,15 @@ export function getPlan(key: string | null | undefined): Plan | undefined {
   return PLANS.find((p) => p.key === key);
 }
 
-/** Grant expiry: monthly grants +3 months, annual +12 months, trial +30 days. */
+/**
+ * Grant expiry: monthly grants +3 months, annual +12 months, trial +30 days.
+ * Clamped to the last day of the target month so a grant on Nov 30 expires
+ * Feb 28, not Mar 2 (plain `setMonth` overflows at month ends).
+ */
 export function grantExpiry(interval: PlanInterval, from = new Date()): Date {
   const d = new Date(from);
-  d.setMonth(d.getMonth() + (interval === "year" ? 12 : 3));
+  const target = d.getUTCMonth() + (interval === "year" ? 12 : 3);
+  const lastDay = new Date(Date.UTC(d.getUTCFullYear(), target + 1, 0)).getUTCDate();
+  d.setUTCMonth(target, Math.min(d.getUTCDate(), lastDay));
   return d;
 }

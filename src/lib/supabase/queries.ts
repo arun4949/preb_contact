@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "@/utils/supabase/server";
 import type { Tables } from "@/lib/supabase/types";
+import { getPlan } from "@/lib/credits/plans";
 
 export type Profile = Tables<"profiles">;
 export type Workspace = Tables<"workspaces">;
@@ -149,7 +150,9 @@ export const getCreditSummary = cache(async (workspace: Workspace): Promise<Cred
   ]);
   const rows = grants ?? [];
   const isTrial = !workspace.plan_key;
-  const planCredits = isTrial ? rows.find((g) => g.source === "trial")?.amount ?? 50 : rows.reduce((s, g) => s + g.amount, 0) || 0;
+  // Denominator is the plan's per-period amount, not the sum of live grants:
+  // monthly grants overlap for 3 months, which would inflate it.
+  const planCredits = isTrial ? (rows.find((g) => g.source === "trial")?.amount ?? 50) : (getPlan(workspace.plan_key)?.credits ?? 0);
   const next = rows[0];
   return {
     available: available ?? 0,

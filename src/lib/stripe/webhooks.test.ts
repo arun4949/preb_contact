@@ -17,6 +17,11 @@ describe("decideGrant", () => {
     expect(g?.expiresAt.toISOString().slice(0, 10)).toBe("2027-01-07");
     expect(g?.note).toBe("Preb 1k · monthly");
   });
+  it("clamps expiry to the end of the target month instead of overflowing", () => {
+    const nov30 = new Date("2026-11-30T10:00:00Z");
+    const g = decideGrant("subscription_cycle", [{ priceId: "price_1k", amount: 3650 }], planOf, nov30);
+    expect(g?.expiresAt.toISOString().slice(0, 10)).toBe("2027-02-28");
+  });
   it("annual renewals expire +12 months", () => {
     const g = decideGrant("subscription_cycle", [{ priceId: "price_12k", amount: 39000 }], planOf, now);
     expect(g?.credits).toBe(12000);
