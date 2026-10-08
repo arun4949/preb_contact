@@ -11,7 +11,7 @@ Accounts to reuse: Stripe *Preb.co* (live, `acct_1TbKWFI8j3KU4u56`, old scheduli
 ## Decisions (CTO) and flags
 
 **Decided**
-1. **Billing = subscription tiers** mirroring FullEnrich Pro (monthly + annual), **EUR** (pricing v2, 2026-10-08; was USD), Stripe Checkout; credits granted on `invoice.paid`, monthly grants expire +3 months, annual grants issued up front and expire +12 months; no overage.
+1. **Billing = subscription tiers** mirroring FullEnrich Pro (monthly + annual), **USD** (pricing v2 briefly switched to EUR on 2026-10-08 and was reverted the same day — CTO: prices stay in dollars), Stripe Checkout; credits granted on `invoice.paid`, monthly grants expire +3 months, annual grants issued up front and expire +12 months; no overage.
 2. **Trial = 50 credits, no card** (pricing v2; was 25), once per workspace; abuse guard (see Credits).
 2a. **Work email required** (added day 2): magic link and Google sign‑up reject free‑mail and disposable domains (`src/lib/auth/work-email.ts`); exceptions = `ADMIN_EMAILS` and invited members (no trial anyway). Defense in depth: `public.is_free_email_domain()` and `handle_new_user` never grant a trial to a free‑mail domain (migration 0004).
 3. **Enrichment fields mirror FullEnrich exactly**: work email (2 cr), personal email (6 cr), phone (20 cr for a mobile; landlines/VoIP returned free; no separate "private phone" exists). Plus **Reverse Email Lookup** (email → profile, 2 cr). Pricing v2: 1 Preb credit = ½ provider credit, so every cost is 2× the provider's (1 / 3 / 10 / 1) as an input mode for email‑only rows. People/Company Search (prospecting) = post‑MVP.
@@ -24,7 +24,7 @@ Accounts to reuse: Stripe *Preb.co* (live, `acct_1TbKWFI8j3KU4u56`, old scheduli
 - F4 **Vercel Pro plan is required** for a 1‑minute cron (Hobby = daily). ~$20/seat/month.
 - F5 **Reverse email mode** is scheduled last (day 7 morning) and is the first thing to cut if the week slips.
 - F6 **Data retention**: we keep enriched data until the user deletes the list; FullEnrich keeps 3 months. Privacy policy (Leon) must say so; see M8.
-- F7 ~~**Currency USD** assumed for all Stripe prices.~~ Superseded: EUR since pricing v2 (2026-10-08).
+- F7 **Currency USD** for all Stripe prices (confirmed again 2026-10-08 after a short-lived EUR switch: the management table was written in €, but the currency stays USD with the same numbers).
 
 **Things I questioned from your notes, resolved in the plan**
 - "Billing only in the Stripe portal" → buying must start in‑app (Checkout) and management goes to the Portal; no card UI of our own. ✔
@@ -115,9 +115,9 @@ Next.js on Vercel ──► Supabase (Postgres · Auth · Storage `list-uploads`
 - **Grants, holds, ledger (expiry‑correct):** `credit_grants(amount, remaining, source, stripe_invoice_id unique, granted_at, expires_at)`; `consume_credits(ws, amount, list_id, batch_id)` drains **earliest‑expiry first** in one SQL function and writes one `credit_ledger` row per touched grant; `available = Σ remaining (expires_at > now) − Σ holds`. Daily job writes `expire` rows. A flat +/− ledger cannot expire partially used grants, so this structure is required.
 - **Estimate shown**: "Typically ~M credits · up to N" (M = find‑rate weighted, N = max). Start requires `available ≥ M` (F1). Hold = M. Dispatcher checks `available > 0` before each batch; at ≤0 → list `paused_credits`, email + CTA; resumes on next tick after a grant. Settlement per batch: consume actual; hold released at list end.
 - **Cache**: `enrichment_cache(input_hash, fields, result, provider, fetched_at)`; same‑workspace hit <90 d = free, "Already enriched" tooltip; cross‑workspace hit = served from cache, charged normally (F2).
-- **Plans — pricing v2** (EUR, fixed literally in `lib/credits/plans.ts` and in Stripe, no multiplier env). Rule from management: 2× the upstream credits at 1.25× the upstream price rounded up to the next 0.50 € (≥ 20 % margin; the visible per-credit price 0.037 → 0.022 € undercuts the provider's 0.058 → 0.035 €). Annual = upstream yearly total × 1.25. Keys `p2_*` (lookup `preb_p2_*`) so the retired v1 `pro_*` USD prices can never resolve to a plan. All 11 tiers self-serve; "Contact us" only above 200k/month.
+- **Plans — pricing v2** (USD, fixed literally in `lib/credits/plans.ts` and in Stripe, no multiplier env). Rule from management: 2× the upstream credits at 1.25× the upstream price rounded up to the next $0.50 (≥ 20 % margin; the visible per-credit price $0.037 → $0.022 undercuts the provider's $0.058 → $0.035). Annual = upstream yearly total × 1.25. Keys `p2_*` (lookup `preb_p2_*`) so the retired v1 `pro_*` USD prices can never resolve to a plan. All 11 tiers self-serve; "Contact us" only above 200k/month.
 
-| key | credits / month | € / month | upstream basis |
+| key | credits / month | $ / month | upstream basis |
 |---|---|---|---|
 | p2_1k_m | 1,000 | 36.50 | 500 / 29 |
 | p2_1500_m | 1,500 | 53.50 | 750 / 42.75 |
@@ -131,7 +131,7 @@ Next.js on Vercel ──► Supabase (Postgres · Auth · Storage `list-uploads`
 | p2_100k_m | 100,000 | 2,437.50 | 50k / 1,950 |
 | p2_200k_m | 200,000 | 4,375.00 | 100k / 3,500 |
 
-| key | credits / year | € / year | ≈ € / month | upstream basis ($/mo billed yearly) |
+| key | credits / year | $ / year | ≈ $ / month | upstream basis ($/mo billed yearly) |
 |---|---|---|---|---|
 | p2_12k_y | 12,000 | 390 | 32.50 | 6k / 26 |
 | p2_18k_y | 18,000 | 585 | 48.75 | 9k / 39 |
@@ -369,7 +369,7 @@ Only these need your hands. Each is 5–15 minutes. Saved to `docs/setup_manual.
 - Day 7: reverse email lookup = opt-in per list for email-only rows (not a separate list type): migration 0009 (`list_contacts.kind`, `lists.reverse_lookup`, `lists.identified_rows`, `claim_pending_contacts(..., p_kind)`), dispatcher batches per kind, 1 credit × 0.7 find rate in the estimate; migration 0010 covering FK indexes (advisor); 0011 identified counter incl. cached rows. `startList` kicks `runTick()` in-process instead of POSTing its own URL. `parseList` sets `credits_cost: 0` explicitly (mixed cache-hit batches sent NULL). New `npm run qa:replay-webhook`. Go-live (M5) moved to a follow-up session.
 - Post-launch (2026-10-08): email-only rows are pre-filled from the same-workspace reverse cache at parse time (`ParseSummary.cachedReverse`, shared `cachedContactPatch()`); an all-cached list may start (no hold, completed by the tick); stale-cookie login loop → `GET /auth/signout`; list detail refreshes on realtime `SUBSCRIBED` and on tab visible.
 - Post-launch (2026-10-08, late): Sentry source maps and the `/terms` / `/privacy` pages leave this repo's scope — they belong to the separate website / landing-page project (CTO decision). M8 links stay as-is until that project ships.
-- Pricing v2 (2026-10-08, management decision): credit unit halved (`CREDIT_MULTIPLIER = 2`, costs 2 / 6 / 20 / 2), catalogue re-cut to 11 monthly + 11 annual EUR tiers with fixed prices (`lib/credits/plans.ts`, keys `p2_*`), `MARGIN_MULTIPLIER` removed, money formatted by `lib/credits/money.ts` (`en-IE`, `€36.50`), per-credit price promoted into the plan-picker headline; trial 50; migration 0012 (trial + one-off doubling of grants/holds/ledger/costs, marker row in `webhook_events` provider `migration`); `scripts/stripe-catalogue.ts` now uses `products.list` (search lagged and produced duplicates), retires products not in `PLANS` (unset default price → deactivate → archive). Test and live catalogues synced, migration 0012 applied (2026-10-08).
+- Pricing v2 (2026-10-08, management decision): credit unit halved (`CREDIT_MULTIPLIER = 2`, costs 2 / 6 / 20 / 2), catalogue re-cut to 11 monthly + 11 annual USD tiers with fixed prices (`lib/credits/plans.ts`, keys `p2_*`), `MARGIN_MULTIPLIER` removed, money formatted by `lib/credits/money.ts` (`en-US`, `$36.50`; briefly EUR/`en-IE`, reverted same day), per-credit price promoted into the plan-picker headline; trial 50; migration 0012 (trial + one-off doubling of grants/holds/ledger/costs, marker row in `webhook_events` provider `migration`); `scripts/stripe-catalogue.ts` now uses `products.list` (search lagged and produced duplicates), retires products not in `PLANS` (unset default price → deactivate → archive). Test and live catalogues synced, migration 0012 applied (2026-10-08).
 - Post-launch: `/onboarding` moved under `(auth)` and doubles as the landing page for signed-in users without a workspace (app layout redirects there instead of `/login`); `lib/workspace/create.ts` creates an owned workspace without a trial; `lib/workspace/naming.ts` mirrors the trigger's naming.
 
 ## Verification

@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from 
 import { useToast } from "@/components/base/toast/toast";
 import { fetchBillingOverview, openBillingPortal } from "@/lib/billing/actions";
 import type { BillingOverview, LedgerEntry } from "@/lib/billing/queries";
-import { formatEur, formatEurFine } from "@/lib/credits/money";
+import { formatUsd, formatUsdFine } from "@/lib/credits/money";
 import { cx } from "@/utils/cx";
 import { SettingsCard, SettingsRow, SettingsSectionLabel } from "./settings-rows";
 
@@ -119,13 +119,13 @@ export function SettingsBilling({ onChoosePlan, refreshKey = 0 }: SettingsBillin
                   {data.plan.priceCents != null ? (
                     <span className="text-text-secondary">
                       {" "}
-                      · {formatEur(data.plan.priceCents)}/{data.plan.interval === "year" ? "year" : "month"}
+                      · {formatUsd(data.plan.priceCents)}/{data.plan.interval === "year" ? "year" : "month"}
                     </span>
                   ) : null}
                 </p>
                 <p className="text-body-2-regular text-text-secondary">
                   {fmt(data.plan.credits)} credits every {data.plan.interval}
-                  {data.plan.priceCents != null ? ` · ${formatEurFine(data.plan.priceCents / data.plan.credits)} per credit` : ""}
+                  {data.plan.priceCents != null ? ` · ${formatUsdFine(data.plan.priceCents / data.plan.credits)} per credit` : ""}
                   {data.subscription?.currentPeriodEnd
                     ? data.subscription.cancelAtPeriodEnd
                       ? ` · cancels on ${date(data.subscription.currentPeriodEnd)}`

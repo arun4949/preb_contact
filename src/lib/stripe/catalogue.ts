@@ -8,7 +8,7 @@ import { stripe } from "./client";
 export interface CataloguePlan extends Plan {
   priceId: string;
   productId: string;
-  /** Amount charged per billing period, in EUR cents (the Stripe price, not an estimate). */
+  /** Amount charged per billing period, in USD cents (the Stripe price, not an estimate). */
   priceCents: number;
 }
 

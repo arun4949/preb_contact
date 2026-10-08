@@ -12,7 +12,7 @@ import { Slider } from "@/components/base/slider/slider";
 import { useToast } from "@/components/base/toast/toast";
 import type { PlanInterval } from "@/lib/credits/plans";
 import { confirmPlanSwitch, fetchPlanCatalogue, previewPlanSwitch, startCheckout, type PlanCatalogue, type PlanSwitchPreview } from "@/lib/billing/actions";
-import { formatEur, formatEurExact, formatEurFine } from "@/lib/credits/money";
+import { formatUsd, formatUsdExact, formatUsdFine } from "@/lib/credits/money";
 import { CREDIT_COST } from "@/lib/fullenrich/mapping";
 import { cx } from "@/utils/cx";
 
@@ -157,7 +157,7 @@ export function PlanPickerDialog({ isOpen, onClose, reason }: PlanPickerDialogPr
               Back
             </Button>
             <Button onClick={confirmSwitch} disabled={pending} aria-busy={pending}>
-              {pending ? "Switching…" : quote.amountDueCents > 0 ? `Pay ${formatEurExact(quote.amountDueCents)} and switch` : "Switch plan"}
+              {pending ? "Switching…" : quote.amountDueCents > 0 ? `Pay ${formatUsdExact(quote.amountDueCents)} and switch` : "Switch plan"}
             </Button>
           </>
         ) : (
@@ -188,12 +188,12 @@ export function PlanPickerDialog({ isOpen, onClose, reason }: PlanPickerDialogPr
           <dl className="flex flex-col gap-2 text-body-regular">
             <div className="flex items-center justify-between gap-3">
               <dt className="text-text-secondary">Charged today</dt>
-              <dd className="text-body-medium text-text-primary tabular-nums">{formatEurExact(quote.amountDueCents)}</dd>
+              <dd className="text-body-medium text-text-primary tabular-nums">{formatUsdExact(quote.amountDueCents)}</dd>
             </div>
             {quote.creditedCents > 0 ? (
               <div className="flex items-center justify-between gap-3">
                 <dt className="text-text-secondary">Unused time credited to your next invoices</dt>
-                <dd className="text-body-medium text-text-primary tabular-nums">{formatEurExact(quote.creditedCents)}</dd>
+                <dd className="text-body-medium text-text-primary tabular-nums">{formatUsdExact(quote.creditedCents)}</dd>
               </div>
             ) : null}
             <div className="flex items-center justify-between gap-3">
@@ -259,15 +259,15 @@ export function PlanPickerDialog({ isOpen, onClose, reason }: PlanPickerDialogPr
                   </span>
                   <span aria-hidden className="hidden h-5 w-px bg-separator-border sm:block" />
                   <span className="text-title-3-semibold text-text-primary tabular-nums">
-                    {formatEur(perMonthCents)} <span className="text-body-regular text-text-secondary">/month</span>
+                    {formatUsd(perMonthCents)} <span className="text-body-regular text-text-secondary">/month</span>
                   </span>
                   <span aria-hidden className="hidden h-5 w-px bg-separator-border sm:block" />
                   <span className="text-title-3-semibold text-accent-600 tabular-nums">
-                    {formatEurFine(centsPerCredit)} <span className="text-body-regular text-text-secondary">/ credit</span>
+                    {formatUsdFine(centsPerCredit)} <span className="text-body-regular text-text-secondary">/ credit</span>
                   </span>
                   {chosen.interval === "year" ? (
                     <span className="text-body-2-regular text-text-tertiary">
-                      {formatEur(chosen.priceCents)} billed yearly{saving > 0 ? ` · save ${formatEur(saving)}` : ""}
+                      {formatUsd(chosen.priceCents)} billed yearly{saving > 0 ? ` · save ${formatUsd(saving)}` : ""}
                     </span>
                   ) : null}
                   {isCurrent ? (
@@ -335,13 +335,13 @@ export function PlanPickerDialog({ isOpen, onClose, reason }: PlanPickerDialogPr
               {chosen ? (
                 <>
                   <li className="flex items-center gap-1.5">
-                    <RiMailLine className="size-4 text-foreground-icon-tertiary" aria-hidden />1 work email = {CREDIT_COST.work_email} credits ({formatEurFine(centsPerCredit * CREDIT_COST.work_email)})
+                    <RiMailLine className="size-4 text-foreground-icon-tertiary" aria-hidden />1 work email = {CREDIT_COST.work_email} credits ({formatUsdFine(centsPerCredit * CREDIT_COST.work_email)})
                   </li>
                   <li className="flex items-center gap-1.5">
-                    <RiMailSendLine className="size-4 text-foreground-icon-tertiary" aria-hidden />1 personal email = {CREDIT_COST.personal_email} credits ({formatEurFine(centsPerCredit * CREDIT_COST.personal_email)})
+                    <RiMailSendLine className="size-4 text-foreground-icon-tertiary" aria-hidden />1 personal email = {CREDIT_COST.personal_email} credits ({formatUsdFine(centsPerCredit * CREDIT_COST.personal_email)})
                   </li>
                   <li className="flex items-center gap-1.5">
-                    <RiSmartphoneLine className="size-4 text-foreground-icon-tertiary" aria-hidden />1 mobile = {CREDIT_COST.mobile_phone} credits ({formatEurFine(centsPerCredit * CREDIT_COST.mobile_phone)})
+                    <RiSmartphoneLine className="size-4 text-foreground-icon-tertiary" aria-hidden />1 mobile = {CREDIT_COST.mobile_phone} credits ({formatUsdFine(centsPerCredit * CREDIT_COST.mobile_phone)})
                   </li>
                 </>
               ) : null}

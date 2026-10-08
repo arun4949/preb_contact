@@ -13,7 +13,7 @@ describe("plan catalogue (pricing v2)", () => {
     for (const p of PLANS) expect(p.credits).toBe(p.upstreamCredits * CREDIT_MULTIPLIER);
   });
 
-  it("keeps at least the 20 % margin on every tier, rounded up to 0.50 €", () => {
+  it("keeps at least the 20 % margin on every tier, rounded up to $0.50", () => {
     for (const p of PLANS) {
       expect(p.priceCents).toBeGreaterThanOrEqual(p.upstreamCents * MIN_MARGIN);
       expect(p.priceCents % 50).toBe(0);

@@ -8,7 +8,7 @@
  *
  *   npm run stripe:catalogue            (uses STRIPE_SECRET_KEY from .env.local)
  *
- * Prices are EUR and fixed in `src/lib/credits/plans.ts` (pricing v2).
+ * Prices are USD and fixed in `src/lib/credits/plans.ts` (pricing v2).
  */
 import Stripe from "stripe";
 import { PLANS } from "../src/lib/credits/plans";
@@ -20,8 +20,8 @@ if (!key) {
 }
 const stripe = new Stripe(key);
 const TAX_CODE = "txcd_10103001"; // Software as a service (B2B)
-const CURRENCY = "eur";
-const eur = (cents: number) => `€${(cents / 100).toFixed(2)}`;
+const CURRENCY = "usd";
+const usd = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
 async function main() {
   const mode = key!.startsWith("sk_live") || key!.startsWith("rk_live") ? "LIVE" : "test";
@@ -69,7 +69,7 @@ async function main() {
     );
     if (current) {
       if (product.default_price !== current.id) await stripe.products.update(product.id, { default_price: current.id });
-      console.log(`  = price ${current.id} ${eur(amount)}/${plan.interval}`);
+      console.log(`  = price ${current.id} ${usd(amount)}/${plan.interval}`);
       continue;
     }
 
@@ -88,7 +88,7 @@ async function main() {
       await stripe.prices.update(old.id, { active: false });
       console.log(`  - deactivated ${old.id}`);
     }
-    console.log(`  + price ${price.id} ${eur(amount)}/${plan.interval}`);
+    console.log(`  + price ${price.id} ${usd(amount)}/${plan.interval}`);
   }
 
   // Retire Preb products that are no longer in the catalogue (e.g. the v1 USD

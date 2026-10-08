@@ -1,11 +1,11 @@
 /**
- * Plan catalogue (pricing v2, 2026-10-08). Prices are EUR per billing period
+ * Plan catalogue (pricing v2, 2026-10-08). Prices are USD per billing period
  * and FIXED here and in Stripe — the app reads the live amount from Stripe by
  * lookup key, this table only names the plans and their credits.
  *
  * Unit: 1 Preb credit = ½ upstream credit (see CREDIT_MULTIPLIER in
  * `@/lib/fullenrich/mapping`). Every tier is 2× the upstream credit count at
- * 1.25× the upstream price rounded up to the next 0.50 € (≥ 20 % margin);
+ * 1.25× the upstream price rounded up to the next $0.50 (≥ 20 % margin);
  * annual = upstream yearly total × 1.25. `upstreamCredits` / `upstreamCents`
  * document that basis and are never shown to customers.
  */
@@ -17,7 +17,7 @@ export interface Plan {
   interval: PlanInterval;
   /** Credits granted per billing period (monthly: per month; annual: per year, up front). */
   credits: number;
-  /** Our list price in EUR cents per billing period (the amount fixed in Stripe). */
+  /** Our list price in USD cents per billing period (the amount fixed in Stripe). */
   priceCents: number;
   /** Upstream credits bought for the same period (documentation only). */
   upstreamCredits: number;

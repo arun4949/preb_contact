@@ -48,7 +48,7 @@ Consequence for the MVP: everything that touches the provider must sit behind on
 
 ## 6. Credits, plans and money rules
 
-- Plans mirror FullEnrich's Pro tiers at 2× the credits: 1,000 → 200,000 credits/month (€36.50 → €4,375) and 12,000 → 2.4M credits/year (€390 → €47,250), EUR. Price = FullEnrich price × 1.25 rounded up to 0.50 €. All tiers self-serve; above that "Contact us".
+- Plans mirror FullEnrich's Pro tiers at 2× the credits: 1,000 → 200,000 credits/month ($36.50 → $4,375) and 12,000 → 2.4M credits/year ($390 → $47,250), USD. Price = FullEnrich price × 1.25 rounded up to $0.50. All tiers self-serve; above that "Contact us".
 - Monthly credits expire 3 months after grant; annual credits are granted up front and expire after 12 months. Credits are consumed oldest‑expiring first.
 - New workspaces get **50 trial credits** (expire in 30 days). One trial per person.
 - Before a run starts, the workspace needs at least the *typical* estimate available. We put a hold on that amount; actual consumption is settled per batch from the provider's real cost. If a run exhausts the balance, it **pauses** with a buy button and **resumes automatically** after purchase.

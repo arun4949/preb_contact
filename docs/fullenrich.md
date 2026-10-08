@@ -96,7 +96,7 @@ Pricing v2 (2026-10-08): **we charge the workspace 2× these numbers** (1 Preb c
 | Same input re‑enriched within 3 months | 0 (upstream dedup) |
 | Person/company profile with enrichment | 0 |
 - Results retained upstream 3 months; we store permanently in `list_contacts.result` + `enrichment_cache`.
-- Upstream pricing (basis for our plans; our tier = 2× credits at 1.25× price rounded up to 0.50 €, see `implementation_plan.md` § Credits & pricing): Pro monthly 500→$29, 750→$42.75, 1k→$55, 1.5k→$79.50, 2k→$104, 5k→$255, 10k→$499, 15k→$720, 25k→$1,150, 50k→$1,950, 100k→$3,500. Annual (credits/yr → $/mo): 6k→$26, 9k→$39, 12k→$49, 18k→$71, 24k→$94, 60k→$232, 120k→$454, 180k→$655, 300k→$1,046, 600k→$1,769, 1.2M→$3,150. Rollover 3 months monthly / 12 months annual; no overage.
+- Upstream pricing (basis for our plans; our tier = 2× credits at 1.25× price rounded up to $0.50, see `implementation_plan.md` § Credits & pricing): Pro monthly 500→$29, 750→$42.75, 1k→$55, 1.5k→$79.50, 2k→$104, 5k→$255, 10k→$499, 15k→$720, 25k→$1,150, 50k→$1,950, 100k→$3,500. Annual (credits/yr → $/mo): 6k→$26, 9k→$39, 12k→$49, 18k→$71, 24k→$94, 60k→$232, 120k→$454, 180k→$655, 300k→$1,046, 600k→$1,769, 1.2M→$3,150. Rollover 3 months monthly / 12 months annual; no overage.
 
 ## Timing
 40 s – 2 min per contact; 100 in parallel per workspace → a 100‑row batch ≈ 1–2 min, 1,000 rows ≈ 10–20 min. Show ETA from the average of finished batches.
