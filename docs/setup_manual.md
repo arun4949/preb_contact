@@ -55,7 +55,7 @@ Decision (go-live session): the app runs on the apex **`preb.co`** (no `app.` su
 - [x] 1. Vercel project created and linked in your team. The team needs the **Pro plan** (1‑minute cron jobs).
 - [ ] 2. **Settings → Domains → Add** `preb.co`; also add `www.preb.co` and set it to redirect to `preb.co`. Vercel shows the DNS values (an **A** record for the apex, a CNAME for `www`).
 - [ ] 3. DNS for preb.co: if the nameservers still point at Framer, move DNS to a provider you control (or Vercel DNS) first and **re-create the Resend records** (DKIM/SPF/return-path for `preb.co`, see M7) — otherwise outbound email breaks. Then add the A/CNAME records from step 2 and wait for the green check.
-- [ ] 4. **Settings → Environment Variables (Production)**: every variable from `.env.local` with production values: `NEXT_PUBLIC_APP_URL=https://preb.co`, a fresh `CRON_SECRET` (`openssl rand -hex 32`), **live** `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` (from M4 step 5), Supabase keys, FullEnrich key, Resend key, `EMAIL_FROM`, `ADMIN_EMAILS`, `OPS_ALERT_EMAIL`, `UPSTREAM_LOW_BALANCE` (`MARGIN_MULTIPLIER` is gone since pricing v2 — remove it if set). Sentry DSNs stay unset for launch.
+- [ ] 4. **Settings → Environment Variables (Production)**: every variable from `.env.local` with production values: `NEXT_PUBLIC_APP_URL=https://preb.co`, a fresh `CRON_SECRET` (`openssl rand -hex 32`), **live** `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` (from M4 step 5), Supabase keys, FullEnrich key, Resend key, `EMAIL_FROM`, `ADMIN_EMAILS`, `OPS_ALERT_EMAIL`, `UPSTREAM_LOW_BALANCE`, `FEATUREBASE_JWT_SECRET` (M9) (`MARGIN_MULTIPLIER` is gone since pricing v2 — remove it if set). Sentry DSNs stay unset for launch.
 - [ ] 5. Deploy to production (dashboard or `vercel --prod`). Then **Settings → Cron Jobs**: confirm `/api/jobs/tick` (every minute) and `/api/jobs/daily` are listed and enabled.
 - [ ] 6. After the deploy: M1 step 4a, M2 step 4b, M4 step 5 (live webhook URL must be `https://preb.co/api/webhooks/stripe`).
 
@@ -88,3 +88,15 @@ Decision (go-live session): the app runs on the apex **`preb.co`** (no `app.` su
 - [ ] Privacy policy states: contact data is enriched from third‑party data providers; enriched data is retained until the customer deletes the list; processors are FullEnrich, Supabase, Stripe, Resend, Vercel, Sentry; US sales; deletion path (delete list in app, workspace deletion on request).
 - [ ] Terms state: credits expire 3 months after grant (12 months on annual plans, trial 30 days); consumed credits are non‑refundable; personal email data may be used for recruiting outreach only.
 - [ ] Send Claude the final URLs for Terms and Privacy — they go into the login footer, the signup consent checkbox, the Configure‑step notice and the Stripe portal configuration.
+
+## M9 · Featurebase — support messenger identity · 2026-10-08
+
+**Plan note:** identity must be passed in the SDK's boot call (the wrapper does this); the separate `identify` action and custom attributes are Growth-only. On Free the inbox shows name, email, avatar and the workspace as company, nothing else.
+
+The messenger (app id `6a37abfc48ab5024a97ba42e`, constant in `src/lib/featurebase/config.ts`) boots on every page: anonymous on the website, `/login`, `/onboarding` and `/invite`, identified inside the signed-in shell through a server-signed JWT (`src/lib/featurebase/jwt.ts`).
+
+- [x] 1. **Settings → Access & Security → Security**: copy the JWT secret into `.env.local` as `FEATUREBASE_JWT_SECRET` and into the Vercel Production env (M5 step 4). Unset = the messenger runs anonymous only and the server logs one warning.
+- [ ] 2. **Settings → Users → Custom attributes** (user): `role` (text), `workspaceId` (text). **Companies → Custom attributes**: `planName` (text), `planKey` (text), `creditsAvailable` (number), `isTrial` (boolean), `subscriptionStatus` (text), `stripeCustomerId` (text), `currentPeriodEnd` (date). Attributes that are not declared are dropped silently.
+- [ ] 3. **Security → Validate JWT**: paste a token from a dev render (temporarily `console.log` the result of `signFeaturebaseJwt`) and confirm the company shape is accepted (Featurebase docs name the company id key both `id` and `companyId`; the validator is the source of truth).
+- [ ] 4. Test with a **non-admin** account: Featurebase SSO cannot identify users who are admins of the Featurebase organisation, so the CTO's own login stays anonymous in the messenger.
+- [ ] 5. Termly runs with `autoBlock`. Confirm the launcher loads with cookies rejected; if the resource blocker holds `do.featurebase.app` back, allowlist it or mark it essential in the Termly dashboard.

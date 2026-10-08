@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { getCreditSummary, getSessionContext, getUser } from "@/lib/supabase/queries";
 import { AppHeader } from "@/components/application/header/app-header";
 import { SettingsHost } from "@/components/application/settings/settings-host";
+import { FeaturebaseIdentity } from "@/components/foundations/featurebase/featurebase";
+import { signFeaturebaseJwt } from "@/lib/featurebase/jwt";
 
 /**
  * Signed-in shell. `proxy.ts` already bounced anonymous requests to /login;
@@ -16,7 +18,10 @@ import { SettingsHost } from "@/components/application/settings/settings-host";
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const session = await getSessionContext();
   if (!session) redirect((await getUser()) ? "/onboarding" : "/auth/signout");
-  const credits = await getCreditSummary(session.workspace, session.creditsAvailable);
+  const [credits, featurebaseJwt] = await Promise.all([
+    getCreditSummary(session.workspace, session.creditsAvailable),
+    signFeaturebaseJwt(session),
+  ]);
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -31,6 +36,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       <Suspense fallback={null}>
         <SettingsHost profile={{ name: session.profile.full_name ?? "", email: session.email, avatarUrl: session.profile.avatar_url }} />
       </Suspense>
+      <FeaturebaseIdentity jwt={featurebaseJwt} />
     </div>
   );
 }

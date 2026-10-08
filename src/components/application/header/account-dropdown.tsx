@@ -12,6 +12,7 @@ import { Avatar } from "@/components/base/avatar/avatar";
 import { Dropdown, DropdownDivider, DropdownGroup, DropdownItem, DropdownPopover, DropdownTrigger } from "@/components/base/dropdown/dropdown";
 import { openCookiePreferences } from "@/components/foundations/termly/termly-cmp";
 import { ThemeToggle } from "@/components/application/theme/theme-toggle";
+import { useSupportChat } from "@/components/foundations/featurebase/featurebase";
 import { signOut } from "@/lib/auth/actions";
 import { useSettingsUrl } from "@/components/application/settings/use-settings-url";
 import { initialsOf } from "@/utils/initials";
@@ -24,11 +25,12 @@ export interface AccountDropdownProps {
   workspaceName: string;
 }
 
-/** Avatar trigger + account menu (Figma 1015:33). Settings/Billing open the settings modal (day 5/6). */
+/** Avatar trigger + account menu (Figma 1015:33). Settings/Billing open the settings modal; Help and feedback open the Featurebase messenger. */
 export function AccountDropdown({ name, email, avatarUrl, workspaceName }: AccountDropdownProps) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const { openSettings } = useSettingsUrl();
+  const chat = useSupportChat();
   // Opens the settings modal on the current page without a server round trip.
   const go = (page: "profile" | "workspace" | "billing") => {
     setOpen(false);
@@ -66,20 +68,24 @@ export function AccountDropdown({ name, email, avatarUrl, workspaceName }: Accou
         </DropdownGroup>
         <DropdownDivider />
         <DropdownGroup>
-          <a
-            href="mailto:support@preb.co?subject=Help%20with%20Preb"
-            className="flex w-full cursor-pointer items-center gap-2 rounded-2lg p-2 text-start text-text-primary outline-none transition-colors hover:bg-dropdown-item-hover-background focus-visible:bg-dropdown-item-hover-background"
+          <DropdownItem
+            onSelect={() => {
+              setOpen(false);
+              chat.show();
+            }}
           >
             <RiQuestionLine className="size-5 text-foreground-icon-secondary" aria-hidden />
             <span className="text-body-medium">Help center</span>
-          </a>
-          <a
-            href="mailto:feedback@preb.co?subject=Feedback%20on%20Preb"
-            className="flex w-full cursor-pointer items-center gap-2 rounded-2lg p-2 text-start text-text-primary outline-none transition-colors hover:bg-dropdown-item-hover-background focus-visible:bg-dropdown-item-hover-background"
+          </DropdownItem>
+          <DropdownItem
+            onSelect={() => {
+              setOpen(false);
+              chat.showNewMessage();
+            }}
           >
             <RiFeedbackLine className="size-5 text-foreground-icon-secondary" aria-hidden />
             <span className="text-body-medium">Share feedback</span>
-          </a>
+          </DropdownItem>
           <DropdownItem
             onSelect={() => {
               setOpen(false);
@@ -100,7 +106,10 @@ export function AccountDropdown({ name, email, avatarUrl, workspaceName }: Accou
           <DropdownItem
             onSelect={() => {
               // Keep the menu open so "Logging out…" stays visible until the redirect.
-              if (!pending) start(() => signOut());
+              if (pending) return;
+              // Drop the cached messenger identity before the session goes.
+              chat.shutdown();
+              start(() => signOut());
             }}
             className={pending ? "pointer-events-none opacity-60" : undefined}
           >

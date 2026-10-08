@@ -2,6 +2,25 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Featurebase support chat — 2026-10-08 · messenger on every page, identified in the app
+
+### Done
+- ✅ `featurebase-js` + `jose`. `FeaturebaseRoot` (`components/foundations/featurebase/featurebase.tsx`) wraps the app in `app/providers.tsx`: anonymous messenger everywhere (ready for the website), theme follows the in-app toggle.
+- ✅ `(app)/layout.tsx` mints an HS256 identity token per render (`lib/featurebase/jwt.ts`: user id, email, name, avatar, role, member since; workspace as Featurebase company with plan, monthly spend, credits available, trial flag, subscription status, Stripe customer id, period end) and mounts `<FeaturebaseIdentity>`; unmount (logout, lost session) shuts the messenger down and reboots it anonymous. The SDK's Provider never clears identity on its own, so this lives in our wrapper.
+- ✅ Account menu: Help center opens the messenger, Share feedback opens the composer (mailto links gone); Log out calls `shutdown()` before the server action.
+- ✅ `npm run lint` ✓ (2 upstream warnings) · `npm run typecheck` ✓ · `npm test` ✓ (61).
+
+- ✅ **Fix**: the wrapper imported `whenReady`/`boot`/`update` from the package root, but `featurebase-js/react` inlines its own SDK copy with separate state, so the token was never sent. The wrapper now uses only the React entry: identity through the Provider's `featurebaseJwt` prop, logout via `shutdown()` and a Provider remount (rendered beside the app so the page tree is not reset).
+- ✅ **Root cause of "anonymous leads with random names"**: the Free plan refuses the SDK's separate `identify` action ("Identify functionality is available starting from the Growth plan"), but accepts identity inside the **boot** call. The old Preb app (`~/Documents/GitHub/preb`, `components/app/featurebase/featurebase-widget.tsx`) only ever mounts the Provider once the JWT exists, so it boots identified. The wrapper now does the same: every identity change is shutdown → fresh Provider mount keyed by the token. The Provider's own post-boot `identify` still logs the Growth warning on every load; it is noise, the boot already carried the identity.
+- ⚠️ Custom attributes (role, plan, credits …) remain Growth-only and are dropped on Free; built-ins (name, email, user id, avatar, company id/name/monthlySpend/createdAt) go through.
+
+### Next (CTO, `docs/setup_manual.md` M9)
+1. ✅ `FEATUREBASE_JWT_SECRET` set locally and in Vercel. Send one message from a signed-in non-admin account and confirm the inbox shows name, email and the workspace as company.
+2. Verify identification with a non-admin account (Featurebase SSO skips organisation admins).
+3. Check the launcher loads with Termly cookies rejected.
+
+---
+
 ## Responsiveness pass — 2026-10-08 · every click reacts at once
 
 ### Done
