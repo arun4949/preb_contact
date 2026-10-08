@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { redirectOrigin } from "@/lib/auth/origin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdminEmail, isFreeEmailDomain } from "@/lib/auth/work-email";
+import { finishInviteeSignup } from "@/lib/auth/first-login";
 
 /** OAuth (PKCE) return: exchange the code for a session, then continue to `next`. */
 export async function GET(request: NextRequest) {
@@ -39,6 +40,7 @@ export async function GET(request: NextRequest) {
           return NextResponse.redirect(`${origin}/login?error=work_email`);
         }
       }
+      if (user) await finishInviteeSignup(user.id);
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

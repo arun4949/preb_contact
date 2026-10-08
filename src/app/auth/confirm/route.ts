@@ -2,6 +2,7 @@ import { type EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { redirectOrigin } from "@/lib/auth/origin";
+import { finishInviteeSignup } from "@/lib/auth/first-login";
 
 /** Magic-link / invite return: verify the token hash, then continue to `next`. */
 export async function GET(request: NextRequest) {
@@ -14,8 +15,11 @@ export async function GET(request: NextRequest) {
 
   if (tokenHash && type) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
-    if (!error) return NextResponse.redirect(`${origin}${next}`);
+    const { data, error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
+    if (!error) {
+      if (data.user) await finishInviteeSignup(data.user.id);
+      return NextResponse.redirect(`${origin}${next}`);
+    }
   }
 
   return NextResponse.redirect(`${origin}/login?error=link`);

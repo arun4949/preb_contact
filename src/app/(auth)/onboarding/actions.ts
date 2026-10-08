@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 import { getProfile, getSessionContext } from "@/lib/supabase/queries";
 import { createOwnWorkspace } from "@/lib/workspace/create";
 import { sendEmail } from "@/lib/email/resend";
+import { subscribeContact } from "@/lib/email/contacts";
 import { WelcomeEmail } from "@/lib/email/templates/welcome";
 
 export interface OnboardingState {
@@ -66,19 +67,22 @@ export async function completeOnboarding(_prev: OnboardingState, formData: FormD
     trialCredits = 0;
   }
 
-  // Welcome email, once, after the workspace is named. Never blocks onboarding.
+  // Welcome email + Resend contact, once, after the workspace is named. Never blocks onboarding.
   if (!profile.onboarded_at) {
-    try {
-      await sendEmail({
-        to: profile.email,
-        kind: "welcome",
-        workspaceId,
-        subject: "Welcome to Preb — your workspace is ready",
-        react: WelcomeEmail({ firstName: fullName.split(/\s+/)[0] ?? "", workspaceName: finalWorkspaceName, trialCredits }),
-      });
-    } catch (error) {
-      console.error("[completeOnboarding] welcome email failed", error instanceof Error ? error.message : error);
-    }
+    const welcome = async () => {
+      try {
+        await sendEmail({
+          to: profile.email,
+          kind: "welcome",
+          workspaceId,
+          subject: "Welcome to Preb — your workspace is ready",
+          react: WelcomeEmail({ firstName: fullName.split(/\s+/)[0] ?? "", workspaceName: finalWorkspaceName, trialCredits }),
+        });
+      } catch (error) {
+        console.error("[completeOnboarding] welcome email failed", error instanceof Error ? error.message : error);
+      }
+    };
+    await Promise.all([welcome(), subscribeContact({ email: profile.email, fullName })]);
   }
 
   // No `redirect()` here: the action runs under the (auth) layout and the

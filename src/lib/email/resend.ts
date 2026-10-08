@@ -16,7 +16,7 @@ export type EmailKind = Database["public"]["Enums"]["email_kind"];
 export const EMAIL_FROM = process.env.EMAIL_FROM ?? "Preb <notifications@preb.co>";
 
 let client: Resend | null = null;
-function resend() {
+export function resend() {
   if (!client) {
     const key = process.env.RESEND_API_KEY;
     if (!key) throw new Error("RESEND_API_KEY is not set");
