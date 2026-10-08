@@ -2,6 +2,25 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Post-launch QA — 2026-10-08 (afternoon) · prod QA leftovers closed, phone-width fixes (code done, deploy pending)
+
+### Done
+- ✅ **Cancel webhook verified** in the DB: CTO workspace `plan_key` null, `subscription_status canceled`, `stripe_subscription_id` null, live customer kept, 4 grants, balance 1264 (the +500 from the refunded test purchase stays, as noted on launch day).
+- ✅ **Export download on prod** from the real "Download All (1)" button: `launch-check.csv`, UTF-8 BOM, 4 original columns + 13 `Preb:` columns, the enriched row (`arun@preb.co` Valid, Enriched, 1 credit).
+- ✅ **Magic-link sign-in on `preb.co`**: tested by the CTO, works.
+- ✅ **Phone-width pass on prod (375 px, same-origin iframe since the Chrome window can't shrink)**: lists dashboard, list detail (stat cards 2×2, table, pagination), wizard upload step, billing modal, plan picker, members and profile modals.
+- 🐞 **Fixed (3 phone-width defects, verified on localhost at 375 px)**:
+  - `settings-rows.tsx`: `SettingsRow` stacks label over control below `sm` (was side by side → one-word-per-line label, field overlapping); `SettingsValueField` and the profile name `Input` are full width on phone, 202 px from `sm`.
+  - `settings-members.tsx`: invite row — role select 104 px / button `flex-1` on phone ("Send invite" was clipped); member and pending-invite rows `flex-wrap` with `basis-40` name block + `ms-auto` controls, so the role select / Remove wrap under the name instead of covering the avatar. `settings-modal.tsx`: content padding `px-4` on phone, `px-8` from `sm`.
+  - `plan-picker-dialog.tsx`: tick labels collided ("500/750", "10k/>10k"); on phone the odd stops and the end-hugging `>10k` label are hidden unless selected (the `10k` label yields when "Contact us" is selected). Desktop unchanged.
+- ✅ `npm test` 44 ✓ · `npx tsc --noEmit` ✓ · `npm run lint` ✓ (2 upstream warnings) · `npm run build` ✓.
+
+### Next
+1. **CTO**: deploy (push) so the phone-width fixes reach `preb.co`; top up FullEnrich credits before inviting customers.
+2. Backlog (pick one per session): onboarding for workspace-less users (login loop) · pre-fill reverse rows from the same-workspace cache at parse time · Sentry source maps (needs DSNs + auth token).
+
+---
+
 ## Go-live prep — 2026-10-08 · domain change to `preb.co` (code done) · deploy by CTO
 
 ### Decisions (CTO)
@@ -27,7 +46,11 @@ Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠�
 - 🐞 **Fixed (launch blocker)**: dev and prod share one Supabase DB, so the CTO workspace still carried the **sandbox** subscription (`sub_1UNw0i…`, active, `pro_500_m`). With the live key the picker would offer "Switch plan" and fail on Stripe. New `activeSubscriptionId()` in `lib/stripe/subscription.ts` treats an id that does not exist in the current Stripe mode (`resource_missing`) or is canceled as "no subscription" — **read-only, never clears the column**, so dev on the test key can't wipe a live subscription. Used by the plan picker, `startCheckout`, plan switch and the billing overview (foreign subscription → shown as no plan). Customers already self-heal (`ensureCustomer`). Tests: `subscription.test.ts` (5).
 - ✅ `src/app/robots.ts` (allow `/login`, disallow app/api/auth/invite paths) + `/robots.txt` public in the proxy.
 - ✅ After the fixes: lint (2 upstream warnings) · tsc · **44 tests** · build green. **Needs a push/deploy by the CTO.**
-- ⬜ Signed-in checks on prod (Google + magic link on the real host, lists, wizard, one small real list via the cron, `/admin/ops`, billing page) — waiting for the CTO to sign in in the agent's Chrome tab.
+- ✅ CTO pushed the fixes (robots.txt live) and **deleted `www.preb.co`** from Vercel (it now 307s to the apex). Separate dev database: out of scope for now, comes with a future testing environment.
+- ✅ **Signed-in QA on prod** (CTO signed in with Google on `preb.co`): lists dashboard (4 lists, header 765); Billing shows **Free trial + Choose a plan** (sandbox subscription correctly ignored), balance 765 with 3 grants; plan picker loads **live** prices (500/mo = $33), "Continue to checkout", no stale Current chip; `/admin/ops` healthy (0 stuck batches, 0 webhook problems, FullEnrich key valid).
+- ✅ **Real list on prod** `launch-check` (1 row: the CTO at preb.co, work email only): upload → auto-map → configure (~1 credit) → start 11:04:01 → batch submitted 11:04:18 → FullEnrich contact webhook 11:05:11 + batch FINISHED 11:05:19 on `https://preb.co/api/webhooks/fullenrich`, both processed, no errors → `arun@preb.co` HIGH_PROBABILITY, batch cost 1 = contact cost 1 = ledger `consume −1`, hold released, list completed, page refreshed itself, "launch-check is enriched" email delivered with links to `https://preb.co/lists/…`.
+- ⚠️ **FullEnrich account balance is ~89 credits.** One customer buying the smallest plan (500) and running a full list would drain it → lists go `paused_upstream` + ops email. Top up the FullEnrich plan before onboarding customers (M3 "500-credit plan purchase unconfirmed").
+- ⬜ Not run on prod: export download (verified day 4), phone-width pass (Chrome window minimum), magic-link sign-in on the real host (Google used; Resend delivery verified via the list email).
 
 ### Manual tasks status
 | Task | Status |
@@ -39,12 +62,17 @@ Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠�
 | M5 Vercel: domain `preb.co` + `www`, DNS (keep Resend records), production env, deploy, crons | ⬜ (project exists; CTO-only) |
 | M8 Legal pages | postponed (post-MVP website) |
 
+### Live purchase (CTO, 2026-10-08 11:12 UTC) — ✅ green
+- Real Checkout Pro 500 monthly ($33): new **live** customer `cus_VP3KvVJIIpNQLr` (old sandbox customer replaced by `ensureCustomer`), subscription `sub_1UOFFjI8j3KU4u56p1yTj6kY` active, renews 2026-11-08; invoice `2RJDPVU2-0007` paid $33.00, `billing_reason subscription_create`, § 19 UStG footer present, no tax.
+- 3 live Stripe events delivered to `https://preb.co/api/webhooks/stripe` and processed in < 1 s, no errors → grant +500 "Pro 500 · monthly" (expires 2027-01-08, tied to the invoice), ledger `grant +500`, workspace `plan_key pro_500_m` + live subscription id. Balance 764 → 1264.
+- Refund notes: a refund does **not** cancel the subscription (it would renew and charge again on 2026-11-08) and the app has no refund handler, so the +500 credits stay. CTO cancels the subscription in Stripe as well (→ `customer.subscription.deleted` clears the plan).
+
 ### Open
 - **Shared database**: dev (`.env.local`, Stripe test key) and production use the same Supabase project. Test-mode Stripe ids and sandbox credit grants (the CTO workspace's +500 "Pro 500" grant was paid with a test card) live next to real data; the FullEnrich key is the same real account in both. Recommend a separate Supabase project (or branch) for dev after launch.
-- `www.preb.co` serves the app itself instead of redirecting to the apex: sessions are per host and Supabase only allows `https://preb.co/**` redirects. Recommend setting www → 308 → `preb.co` in Vercel.
 
-### Next (new chat after the CTO reports the production deploy)
-1. Post-deploy QA on `https://preb.co`: sign-in (magic link + Google) on the real host, Lighthouse, phone-width pass, one real list end to end with the Vercel cron dispatching (no tunnel), Stripe live webhook receives the real Checkout, `/admin/ops` sanity. `qa:replay-webhook` only if the prod service key is available locally.
+### Next
+1. **CTO**: refund the test purchase and cancel the subscription in Stripe; optional agent check that `customer.subscription.deleted` cleared the plan.
+2. **CTO**: top up FullEnrich credits before inviting customers.
 2. Optional backlog unchanged: onboarding for workspace-less users; Sentry source maps; pre-fill reverse rows from the same-workspace cache at parse time.
 
 ---

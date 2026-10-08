@@ -122,11 +122,11 @@ export function SettingsMembers() {
             isDisabled={pending && busyId === "invite"}
           />
           <div className="flex items-center gap-2">
-            <Select aria-label="Role" selectedKey={role} onSelectionChange={(k) => setRole(k as InviteRole)} triggerClassName="w-[120px]" popoverClassName="w-[200px]">
+            <Select aria-label="Role" selectedKey={role} onSelectionChange={(k) => setRole(k as InviteRole)} triggerClassName="w-[104px] shrink-0 sm:w-[120px]" popoverClassName="w-[200px]">
               <SelectItem id="member">Member</SelectItem>
               <SelectItem id="admin">Admin</SelectItem>
             </Select>
-            <Button type="submit" leadingIcon={RiMailSendLine} disabled={!email.trim() || (pending && busyId === "invite")}>
+            <Button type="submit" leadingIcon={RiMailSendLine} className="flex-1 sm:flex-none" disabled={!email.trim() || (pending && busyId === "invite")}>
               {pending && busyId === "invite" ? "Sending…" : "Send invite"}
             </Button>
           </div>
@@ -168,8 +168,8 @@ export function SettingsMembers() {
               {data.invites.map((inv) => {
                 const busy = pending && busyId === inv.id;
                 return (
-                  <div key={inv.id} className="flex min-h-[52px] w-full items-center justify-between gap-3 border-b border-separator-border py-2.5 pe-2.5 last:border-b-0">
-                    <div className="flex min-w-0 items-center gap-3">
+                  <div key={inv.id} className="flex min-h-[52px] w-full flex-wrap items-center justify-between gap-3 border-b border-separator-border py-2.5 pe-2.5 last:border-b-0">
+                    <div className="flex min-w-0 flex-1 basis-40 items-center gap-3">
                       <Avatar size="sm" alt="" initials={initialsOf(inv.email)} color="neutral" />
                       <div className="flex min-w-0 flex-col">
                         <p className="truncate text-body-regular text-text-primary" dir="ltr">
@@ -185,7 +185,7 @@ export function SettingsMembers() {
                         </Chip>
                       ) : null}
                     </div>
-                    <div className="flex shrink-0 items-center gap-1">
+                    <div className="ms-auto flex shrink-0 items-center gap-1">
                       <Button variant="secondary" size="small" disabled={busy} onClick={() => run(inv.id, () => resendInvite(inv.id), `Invite re-sent to ${inv.email}`)}>
                         {busy ? "Sending…" : "Resend"}
                       </Button>
@@ -259,8 +259,8 @@ function MemberRow({
   const editable = canManage && !isOwner && !isMe;
   const removable = editable || (isMe && !isOwner);
   return (
-    <div className={cx("flex min-h-[52px] w-full items-center justify-between gap-3 border-b border-separator-border py-2.5 pe-2.5 last:border-b-0", busy && "opacity-60")}>
-      <div className="flex min-w-0 items-center gap-3">
+    <div className={cx("flex min-h-[52px] w-full flex-wrap items-center justify-between gap-3 border-b border-separator-border py-2.5 pe-2.5 last:border-b-0", busy && "opacity-60")}>
+      <div className="flex min-w-0 flex-1 basis-40 items-center gap-3">
         <Avatar size="sm" src={member.avatarUrl ?? undefined} alt="" initials={initialsOf(name)} color={isOwner ? "blue" : "neutral"} />
         <div className="flex min-w-0 flex-col">
           <p className="truncate text-body-regular text-text-primary">
@@ -272,7 +272,7 @@ function MemberRow({
           </p>
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-1">
+      <div className="ms-auto flex shrink-0 items-center gap-1">
         {editable ? (
           <Select aria-label={`Role of ${name}`} size="sm" selectedKey={member.role} isDisabled={busy} onSelectionChange={(k) => k !== member.role && onRoleChange(k as InviteRole)} triggerClassName="w-[104px]" popoverClassName="w-[180px]">
             <SelectItem id="member">Member</SelectItem>

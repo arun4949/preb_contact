@@ -63,7 +63,7 @@ export function SettingsProfile({ name, email, avatarUrl, onSaved }: SettingsPro
             onKeyDown={(e) => {
               if (e.key === "Enter") (e.target as HTMLElement).blur();
             }}
-            className="w-[202px] shrink-0"
+            className="w-full shrink-0 sm:w-[202px]"
           />
         </SettingsRow>
         <SettingsRow label="Email" description="Sign-in address. Contact support to change it.">

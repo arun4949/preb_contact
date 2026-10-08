@@ -61,7 +61,8 @@ export function SettingsRow({
   return localize((
     <div
       className={cx(
-        "flex min-h-[52px] w-full items-center justify-between gap-4 py-2.5 pe-2.5",
+        // Phone: label above the control; sm+: label start / control end like Figma.
+        "flex min-h-[52px] w-full flex-col items-start gap-2 py-2.5 pe-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4",
         "border-b border-separator-border last:border-b-0",
       )}
     >
@@ -97,7 +98,7 @@ export function SettingsValueField({
   return localize((
     <div
       className={cx(
-        "flex h-8 w-[202px] shrink-0 items-center gap-0.5 rounded-2lg bg-background-tertiary-default px-1.5",
+        "flex h-8 w-full shrink-0 items-center gap-0.5 rounded-2lg bg-background-tertiary-default px-1.5 sm:w-[202px]",
         className,
       )}
     >

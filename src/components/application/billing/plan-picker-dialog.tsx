@@ -292,6 +292,13 @@ export function PlanPickerDialog({ isOpen, onClose, reason }: PlanPickerDialogPr
                         "absolute top-0 cursor-pointer rounded px-1 tabular-nums transition-colors",
                         // Edge labels hug the ends so nothing is clipped by the dialog padding.
                         i === 0 ? "translate-x-0" : i === contactIndex ? "-translate-x-full" : "-translate-x-1/2",
+                        // Phone: neighbouring labels collide. Keep the first stop, the even stops and
+                        // the selected stop; drop the odd stops and the end-hugging ">10k" (whose
+                        // neighbour yields to it when "Contact us" is selected).
+                        !active &&
+                          i !== 0 &&
+                          (i % 2 === 1 || i === contactIndex || (i === contactIndex - 1 && sliderIndex === contactIndex)) &&
+                          "hidden sm:block",
                         active ? "text-text-primary" : i === currentIndex ? "text-accent-600" : "hover:text-text-secondary",
                       )}
                       style={{ insetInlineStart: `${pct}%` }}

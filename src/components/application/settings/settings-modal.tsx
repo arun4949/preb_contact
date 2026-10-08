@@ -252,7 +252,7 @@ export function SettingsModal({
 
         {/* Content pane — fixed title row, scrollable page below */}
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex shrink-0 items-start justify-between gap-4 px-8 pt-8 pb-3">
+          <div className="flex shrink-0 items-start justify-between gap-4 px-4 pt-6 pb-3 sm:px-8 sm:pt-8">
             <div className="flex flex-col gap-0.5">
               <h2 className="text-title-3-medium text-text-primary">{PAGE_TITLES[page].title}</h2>
               <p className="text-body-2-regular text-text-secondary">{PAGE_TITLES[page].subtitle}</p>
@@ -273,7 +273,7 @@ export function SettingsModal({
           </div>
           <div className="relative min-h-0 flex-1">
             <div
-              className="h-full overflow-y-auto px-8 pb-8"
+              className="h-full overflow-y-auto px-4 pb-6 sm:px-8 sm:pb-8"
               onScroll={(e) => setContentScrolled(e.currentTarget.scrollTop > 0)}
             >
               {page === "billing" ? (
