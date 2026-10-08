@@ -6,6 +6,7 @@ import { getProfile, getSessionContext } from "@/lib/supabase/queries";
 import { createOwnWorkspace } from "@/lib/workspace/create";
 import { sendEmail } from "@/lib/email/resend";
 import { subscribeContact } from "@/lib/email/contacts";
+import { firstNameFor } from "@/lib/email/name";
 import { WelcomeEmail } from "@/lib/email/templates/welcome";
 
 export interface OnboardingState {
@@ -69,14 +70,15 @@ export async function completeOnboarding(_prev: OnboardingState, formData: FormD
 
   // Welcome email + Resend contact, once, after the workspace is named. Never blocks onboarding.
   if (!profile.onboarded_at) {
+    const firstName = firstNameFor(fullName, profile.email);
     const welcome = async () => {
       try {
         await sendEmail({
           to: profile.email,
           kind: "welcome",
           workspaceId,
-          subject: "Welcome to Preb, your workspace is ready",
-          react: WelcomeEmail({ firstName: fullName.split(/\s+/)[0] ?? "", workspaceName: finalWorkspaceName, trialCredits }),
+          subject: firstName ? `Welcome to Preb, ${firstName}` : "Welcome to Preb, your workspace is ready",
+          react: WelcomeEmail({ firstName, workspaceName: finalWorkspaceName, trialCredits }),
         });
       } catch (error) {
         console.error("[completeOnboarding] welcome email failed", error instanceof Error ? error.message : error);

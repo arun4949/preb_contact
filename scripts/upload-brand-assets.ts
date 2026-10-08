@@ -1,5 +1,5 @@
 /**
- * Uploads public brand assets (email logo) to the public `brand` bucket.
+ * Uploads public brand assets (email logo, founder portrait) to the public `brand` bucket.
  *   npx tsx --env-file=.env.local scripts/upload-brand-assets.ts
  */
 import { readFile } from "node:fs/promises";
@@ -10,7 +10,7 @@ async function main() {
   const key = process.env.SUPABASE_SECRET_KEY;
   if (!url || !key) throw new Error("NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY are required");
   const supabase = createClient(url, key, { auth: { persistSession: false } });
-  for (const [name, type] of [["logoName.png", "image/png"], ["logo.png", "image/png"]] as const) {
+  for (const [name, type] of [["logoName.png", "image/png"], ["logo.png", "image/png"], ["portrait_arun_round.png", "image/png"]] as const) {
     const body = await readFile(new URL(`../public/${name}`, import.meta.url));
     const { error } = await supabase.storage.from("brand").upload(name, body, { contentType: type, upsert: true, cacheControl: "31536000" });
     if (error) throw error;

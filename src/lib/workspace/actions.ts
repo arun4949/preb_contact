@@ -88,7 +88,7 @@ async function deliverInvite(params: { inviteId: string; email: string; role: In
     to: params.email,
     kind: "invite",
     workspaceId: params.workspaceId,
-    subject: `${params.inviterName} invited you to ${params.workspaceName} on Preb`,
+    subject: `You're invited to join ${params.workspaceName} on Preb`,
     react: InviteEmail({ url: `${appOrigin()}/invite/${token}`, inviterName: params.inviterName, workspaceName: params.workspaceName, role: params.role }),
   });
 }

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Body, Container, Head, Html, Img, Preview, Section, Text } from "@react-email/components";
+import { Body, Column, Container, Head, Html, Img, Preview, Row, Section, Text } from "@react-email/components";
 
 /**
  * Shared chrome for every Preb email. Email clients ignore our CSS tokens, so
@@ -31,7 +31,29 @@ export function brandAssetUrl(name: string) {
   return `${supabase}/storage/v1/object/public/brand/${name}`;
 }
 
-export function EmailLayout({ preview, children }: { preview: string; children: ReactNode }) {
+/**
+ * Every user email is written by and signed from Arun (Co-Founder). The
+ * portrait is pre-cropped round with a transparent background because Outlook
+ * ignores `border-radius` on images.
+ */
+export function FounderSignOff() {
+  return (
+    <Section style={{ marginTop: 32 }}>
+      <Text style={{ fontSize: 14, lineHeight: "22px", color: EMAIL_COLORS.secondary, margin: "0 0 12px" }}>Best regards,</Text>
+      <Row>
+        <Column style={{ width: 60, verticalAlign: "middle" }}>
+          <Img src={brandAssetUrl("portrait_arun_round.png")} alt="Arun" width={48} height={48} style={{ width: 48, height: 48, borderRadius: 24 }} />
+        </Column>
+        <Column style={{ verticalAlign: "middle" }}>
+          <Text style={{ fontSize: 14, lineHeight: "20px", fontWeight: 600, color: EMAIL_COLORS.text, margin: 0 }}>Arun</Text>
+          <Text style={{ fontSize: 13, lineHeight: "18px", color: EMAIL_COLORS.tertiary, margin: 0 }}>Co-Founder, Preb</Text>
+        </Column>
+      </Row>
+    </Section>
+  );
+}
+
+export function EmailLayout({ preview, children, signed = true }: { preview: string; children: ReactNode; signed?: boolean }) {
   return (
     <Html lang="en">
       <Head />
@@ -48,6 +70,7 @@ export function EmailLayout({ preview, children }: { preview: string; children: 
           >
             <Img src={brandAssetUrl("logoName.png")} alt="Preb" width={79} height={24} style={{ width: 79, height: 24, marginBottom: 24 }} />
             {children}
+            {signed ? <FounderSignOff /> : null}
           </Section>
           <Text style={{ fontSize: 12, lineHeight: "18px", color: EMAIL_COLORS.tertiary, margin: "16px 0 0" }}>
             Preb · Recruiting data enrichment
@@ -61,6 +84,8 @@ export function EmailLayout({ preview, children }: { preview: string; children: 
 export const emailStyles = {
   title: { fontSize: 20, fontWeight: 600, lineHeight: "28px", margin: "0 0 8px" },
   body: { fontSize: 14, lineHeight: "22px", color: EMAIL_COLORS.secondary, margin: "0 0 24px" },
+  /** A paragraph followed by another paragraph rather than the button. */
+  paragraph: { fontSize: 14, lineHeight: "22px", color: EMAIL_COLORS.secondary, margin: "0 0 12px" },
   button: {
     display: "inline-block",
     backgroundColor: EMAIL_COLORS.accent,

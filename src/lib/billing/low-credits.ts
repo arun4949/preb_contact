@@ -3,6 +3,7 @@ import "server-only";
 import { getPlan } from "@/lib/credits/plans";
 import { sendEmail } from "@/lib/email/resend";
 import { CreditsLowEmail } from "@/lib/email/templates/credits-low";
+import { firstNameFor } from "@/lib/email/name";
 import { log, logError, type Admin } from "@/lib/jobs/shared";
 
 /** Low = under 10 % of the plan. Trials skip this (they get the paused-list email instead). */
@@ -32,14 +33,14 @@ export async function maybeNotifyLowCredits(admin: Admin, workspaceId: string): 
       .select("id");
     if (!claimed?.length) return false;
 
-    const { data: owner } = await admin.from("profiles").select("email").eq("id", ws.owner_id).maybeSingle();
+    const { data: owner } = await admin.from("profiles").select("email, full_name").eq("id", ws.owner_id).maybeSingle();
     if (!owner?.email) return false;
     await sendEmail({
       to: owner.email,
       kind: "credits_low",
       workspaceId: ws.id,
       subject: `${ws.name} is running low on credits`,
-      react: CreditsLowEmail({ workspaceName: ws.name, available: balance, planCredits: plan.credits }),
+      react: CreditsLowEmail({ firstName: firstNameFor(owner.full_name, owner.email), workspaceName: ws.name, available: balance, planCredits: plan.credits }),
     });
     log("billing.low_credits_email", { workspaceId: ws.id, available: balance });
     return true;

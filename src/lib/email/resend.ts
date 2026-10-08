@@ -13,7 +13,10 @@ import type { Database } from "@/lib/supabase/types";
  */
 export type EmailKind = Database["public"]["Enums"]["email_kind"];
 
-export const EMAIL_FROM = process.env.EMAIL_FROM ?? "Preb <notifications@preb.co>";
+export const EMAIL_FROM = process.env.EMAIL_FROM ?? "Arun from Preb <notifications@preb.co>";
+
+/** Replies reach the team inbox, not the unmonitored sending address. */
+export const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO ?? "hello@preb.co";
 
 let client: Resend | null = null;
 export function resend() {
@@ -60,7 +63,7 @@ export async function sendEmail({
   // Render here rather than passing `react` to the SDK: its internal renderer
   // lookup fails when @react-email/render is only a nested dependency.
   const [html, text] = await Promise.all([render(react), render(react, { plainText: true })]);
-  const { data, error } = await resend().emails.send({ from, to, subject, html, text });
+  const { data, error } = await resend().emails.send({ from, to, subject, html, text, replyTo: EMAIL_REPLY_TO });
   if (error) throw new Error(`Email send failed: ${error.message}`);
 
   const admin = createAdminClient();

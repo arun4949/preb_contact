@@ -4,24 +4,26 @@ import { sendEmail } from "@/lib/email/resend";
 import { ListFinishedEmail } from "@/lib/email/templates/list-finished";
 import { ListPausedEmail } from "@/lib/email/templates/list-paused";
 import { OpsAlertEmail } from "@/lib/email/templates/ops-alert";
+import { firstNameFor } from "@/lib/email/name";
 import { logError, type Admin, type ListRow } from "./shared";
 
-async function creatorEmail(admin: Admin, list: Pick<ListRow, "created_by">): Promise<string | null> {
-  const { data } = await admin.from("profiles").select("email").eq("id", list.created_by).maybeSingle();
-  return data?.email ?? null;
+async function creator(admin: Admin, list: Pick<ListRow, "created_by">): Promise<{ email: string; firstName: string } | null> {
+  const { data } = await admin.from("profiles").select("email, full_name").eq("id", list.created_by).maybeSingle();
+  return data?.email ? { email: data.email, firstName: firstNameFor(data.full_name, data.email) } : null;
 }
 
 /** Engine emails never throw — a failed notification must not break settlement. */
 export async function notifyListFinished(admin: Admin, list: ListRow, stopped = false) {
   try {
-    const to = await creatorEmail(admin, list);
-    if (!to) return;
+    const recipient = await creator(admin, list);
+    if (!recipient) return;
     await sendEmail({
-      to,
+      to: recipient.email,
       kind: "list_finished",
       workspaceId: list.workspace_id,
-      subject: stopped ? `${list.name} was stopped` : `${list.name} is enriched`,
+      subject: stopped ? `${list.name} was stopped` : `${list.name} is ready`,
       react: ListFinishedEmail({
+        firstName: recipient.firstName,
         listId: list.id,
         listName: list.name,
         processed: list.processed_rows,
@@ -39,14 +41,14 @@ export async function notifyListFinished(admin: Admin, list: ListRow, stopped = 
 
 export async function notifyListPaused(admin: Admin, list: ListRow, remaining: number) {
   try {
-    const to = await creatorEmail(admin, list);
-    if (!to) return;
+    const recipient = await creator(admin, list);
+    if (!recipient) return;
     await sendEmail({
-      to,
+      to: recipient.email,
       kind: "list_paused",
       workspaceId: list.workspace_id,
       subject: `${list.name} is paused, add credits to continue`,
-      react: ListPausedEmail({ listId: list.id, listName: list.name, processed: list.processed_rows, remaining }),
+      react: ListPausedEmail({ firstName: recipient.firstName, listId: list.id, listName: list.name, processed: list.processed_rows, remaining }),
     });
   } catch (error) {
     logError("notify.list_paused_failed", error, { listId: list.id });

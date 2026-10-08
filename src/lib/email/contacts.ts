@@ -1,6 +1,7 @@
 import "server-only";
 
 import { resend } from "@/lib/email/resend";
+import { splitName } from "@/lib/email/name";
 
 /**
  * Adds a new user to Resend contacts as subscribed (and to the
@@ -15,16 +16,13 @@ export async function subscribeContact({ email, fullName }: { email: string; ful
     if (existing.data) return;
     if (existing.error && existing.error.name !== "not_found") throw new Error(existing.error.message);
 
-    // The signup trigger falls back to the email's local part when there is no
-    // real name; that is not a name to greet anyone with.
-    const name = (fullName ?? "").trim();
-    const [firstName, ...rest] = name.toLowerCase() === address.split("@")[0] ? [] : name.split(/\s+/);
+    const { firstName, lastName } = splitName(fullName, address);
     const segmentId = process.env.RESEND_SEGMENT_ID;
     const { error } = await resend().contacts.create({
       email: address,
       unsubscribed: false,
       firstName: firstName || undefined,
-      lastName: rest.join(" ") || undefined,
+      lastName: lastName || undefined,
       segments: segmentId ? [{ id: segmentId }] : undefined,
     });
     if (error) throw new Error(error.message);

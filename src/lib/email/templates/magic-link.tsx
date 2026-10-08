@@ -5,15 +5,11 @@ export function MagicLinkEmail({ url }: { url: string }) {
   return (
     <EmailLayout preview="Your sign-in link for Preb">
       <Text style={emailStyles.title}>Sign in to Preb</Text>
-      <Text style={emailStyles.body}>
-        Click the button below to sign in. The link is valid for one hour and can only be used once.
-      </Text>
+      <Text style={emailStyles.body}>Hi there, here is your personal sign-in link. It works once and stays valid for one hour.</Text>
       <Button href={url} style={emailStyles.button}>
         Sign in
       </Button>
-      <Text style={emailStyles.footnote}>
-        If you didn&apos;t request this email you can safely ignore it. Someone may have typed your address by mistake.
-      </Text>
+      <Text style={emailStyles.footnote}>If you didn&apos;t ask for this link, you can simply ignore this email.</Text>
     </EmailLayout>
   );
 }
