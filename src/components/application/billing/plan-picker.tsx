@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { RiArrowLeftLine, RiArrowRightLine, RiMailSendLine } from "@remixicon/react";
 import { Button, ButtonLink } from "@/components/base/buttons/button";
 import { Chip } from "@/components/base/badges/chip";
@@ -9,6 +8,7 @@ import { SegmentedControl, SegmentedControlItem } from "@/components/base/segmen
 import { Skeleton } from "@/components/base/skeleton/skeleton";
 import { Slider } from "@/components/base/slider/slider";
 import { useToast } from "@/components/base/toast/toast";
+import { useSettingsUrl } from "@/components/application/settings/use-settings-url";
 import type { PlanInterval } from "@/lib/credits/plans";
 import { confirmPlanSwitch, fetchPlanCatalogue, previewPlanSwitch, startCheckout, type PlanCatalogue, type PlanSwitchPreview } from "@/lib/billing/actions";
 import { formatUsd, formatUsdExact, formatUsdFine } from "@/lib/credits/money";
@@ -44,7 +44,7 @@ export function PlanPicker({ reason, onCancel }: PlanPickerProps) {
   const [pending, start] = useTransition();
   const [quote, setQuote] = useState<PlanSwitchPreview | null>(null);
   const toast = useToast();
-  const router = useRouter();
+  const { setCheckout } = useSettingsUrl();
 
   useEffect(() => {
     let active = true;
@@ -122,7 +122,7 @@ export function PlanPicker({ reason, onCancel }: PlanPickerProps) {
         return;
       }
       // The settings host toasts and refreshes Billing + header while the webhook grant lands.
-      router.replace("/lists?settings=billing&checkout=switched", { scroll: false });
+      setCheckout("switched");
     });
   };
 

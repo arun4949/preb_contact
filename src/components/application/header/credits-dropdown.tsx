@@ -5,7 +5,8 @@ import { RiCoinLine } from "@remixicon/react";
 import { Chip } from "@/components/base/badges/chip";
 import { Dropdown, DropdownPopover, DropdownTrigger } from "@/components/base/dropdown/dropdown";
 import { ProgressBar } from "@/components/base/progress-bar/progress-bar";
-import { ButtonLink, buttonStyles } from "@/components/base/buttons/button";
+import { Button, buttonStyles } from "@/components/base/buttons/button";
+import { useSettingsUrl } from "@/components/application/settings/use-settings-url";
 import { cx } from "@/utils/cx";
 import type { CreditSummary } from "@/lib/supabase/queries";
 
@@ -15,6 +16,7 @@ const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("en-US", { mon
 /** Header credits trigger + balance panel (Figma 1015:35). Red dot when < 10 % of the plan remains. */
 export function CreditsDropdown({ summary }: { summary: CreditSummary }) {
   const [open, setOpen] = useState(false);
+  const { openSettings } = useSettingsUrl();
   const low = summary.planCredits > 0 && summary.available < summary.planCredits * 0.1;
 
   return (
@@ -63,12 +65,27 @@ export function CreditsDropdown({ summary }: { summary: CreditSummary }) {
           </p>
         </div>
         <div className="flex items-center gap-2 border-t border-separator-border px-3 py-3">
-          <ButtonLink href="/lists?settings=billing&plan=1" size="small" className="flex-1" onClick={() => setOpen(false)}>
+          <Button
+            size="small"
+            className="flex-1"
+            onClick={() => {
+              setOpen(false);
+              openSettings("billing", { plan: true });
+            }}
+          >
             {summary.isTrial ? "Choose a plan" : "Buy credits"}
-          </ButtonLink>
-          <ButtonLink href="/lists?settings=billing" variant="secondary" size="small" className="flex-1" onClick={() => setOpen(false)}>
+          </Button>
+          <Button
+            variant="secondary"
+            size="small"
+            className="flex-1"
+            onClick={() => {
+              setOpen(false);
+              openSettings("billing");
+            }}
+          >
             Manage
-          </ButtonLink>
+          </Button>
         </div>
       </DropdownPopover>
     </Dropdown>

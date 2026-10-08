@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { RiDownloadLine, RiExternalLinkLine, RiLinkedinBoxLine, RiSearchLine, RiUserSearchLine } from "@remixicon/react";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Badge } from "@/components/base/badges/badge";
 import { Banner } from "@/components/base/banner/banner";
-import { ButtonLink } from "@/components/base/buttons/button";
+import { Button, ButtonLink } from "@/components/base/buttons/button";
+import { useSettingsUrl } from "@/components/application/settings/use-settings-url";
 import { EmptyState } from "@/components/base/empty-state/empty-state";
 import { Input } from "@/components/base/input/input";
 import { Pagination } from "@/components/base/pagination/pagination";
@@ -55,6 +56,8 @@ export function EnrichedContactsTable({ history, runState, q, workspaceId }: Enr
   const pathname = usePathname();
   const params = useSearchParams();
   const [search, setSearch] = useState(q);
+  const [pending, startNav] = useTransition();
+  const { openSettings } = useSettingsUrl();
   const refreshing = useRef(false);
 
   const refresh = () => {
@@ -71,7 +74,7 @@ export function EnrichedContactsTable({ history, runState, q, workspaceId }: Enr
       else next.set(k, v);
     }
     const qs = next.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    startNav(() => router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false }));
   };
 
   // Debounced search → URL.
@@ -141,16 +144,16 @@ export function EnrichedContactsTable({ history, runState, q, workspaceId }: Enr
           tone="warning"
           title="Paused, add credits to continue"
           actions={
-            <ButtonLink href="/enrich?settings=billing&plan=1" variant="secondary" size="small">
+            <Button variant="secondary" size="small" onClick={() => openSettings("billing", { plan: true })}>
               Buy credits
-            </ButtonLink>
+            </Button>
           }
         >
           A run is waiting for credits. It picks up again automatically within a minute of adding them.
         </Banner>
       ) : null}
 
-      <div className="flex w-full min-w-0 flex-col rounded-2xl border border-border-table bg-background-primary-default">
+      <div className={cx("flex w-full min-w-0 flex-col rounded-2xl border border-border-table bg-background-primary-default transition-opacity", pending && "opacity-70")}>
         <Table aria-label="Enriched contacts" selectionMode="none" className="min-w-[960px]" containerClassName="rounded-t-2xl">
           <TableHeader>
             {COLUMNS.map((col) => (

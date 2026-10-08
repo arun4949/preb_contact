@@ -79,8 +79,9 @@ export function SettingsBilling({ view, onViewChange, onClose, planReason, refre
   }, []);
 
   useEffect(() => {
+    if (view === "plans") return;
     load();
-  }, [load, refreshKey]);
+  }, [load, refreshKey, view]);
 
   const openPortal = () =>
     startPortal(async () => {

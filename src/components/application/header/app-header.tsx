@@ -1,5 +1,6 @@
 "use client";
 
+import { startTransition, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { RiAddLine } from "@remixicon/react";
@@ -31,7 +32,16 @@ export function AppHeader({ credits, ...account }: AppHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   useGlobalShortcuts();
-  const selected = NAV.find((t) => pathname.startsWith(t.href))?.id ?? "lists";
+  const routeTab = NAV.find((t) => pathname.startsWith(t.href))?.id ?? "lists";
+  // The underline moves on click, not when the server answers. The optimistic
+  // pick is tied to the pathname it was made on, so it expires by itself once
+  // the route changes (derived state, no effect).
+  const [optimistic, setOptimistic] = useState<{ tab: string; from: string } | null>(null);
+  const selected = optimistic && optimistic.from === pathname ? optimistic.tab : routeTab;
+  useEffect(() => {
+    NAV.forEach((t) => router.prefetch(t.href));
+    router.prefetch("/lists/new");
+  }, [router]);
 
   return (
     <header className="sticky top-0 z-40 border-b border-separator-border bg-background-primary-default">
@@ -49,7 +59,12 @@ export function AppHeader({ credits, ...account }: AppHeaderProps) {
           </Link>
           <Tabs
             selectedKey={selected}
-            onSelectionChange={(key) => router.push(NAV.find((t) => t.id === key)?.href ?? "/lists")}
+            onSelectionChange={(key) => {
+              const target = NAV.find((t) => t.id === key);
+              if (!target || target.id === selected) return;
+              setOptimistic({ tab: target.id, from: pathname });
+              startTransition(() => router.push(target.href));
+            }}
             className="flex h-16 w-auto justify-end"
           >
             <TabList aria-label="Main navigation" className="h-16 border-b-0">

@@ -2,6 +2,17 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Responsiveness pass — 2026-10-08 · every click reacts at once
+
+### Done
+- ✅ **Root causes** (measured on a local production build with a timer-free MutationObserver; Chrome throttles `setTimeout` to 1 s in background tabs, so timer-based numbers are wrong): opening Settings by `router.replace(?settings=…)` re-rendered the server layout + page (5–9 Supabase hops) before the modal could appear (**843 ms** → now **11 ms**); `ButtonLink` was a plain `<a>` so header "New list", credits "Buy credits"/"Manage", paused "Buy credits" and empty-state CTAs did **full page reloads** (now client navigations, **8 ms** prefetched); header tabs waited for the server before the underline moved (now **2 ms**, optimistic + prefetch).
+- ✅ `settings/use-settings-url.ts`: settings state still lives in the URL (`?settings=page&plan=1&short=N&checkout=…`, emails deep-link unchanged) but is updated with `window.history.replaceState`, which the Next router feeds to `useSearchParams` without a server round trip (Next docs: Native History API). All entry points (account menu, credits menu, paused panels, wizard/Enrich shortfall, plan switch) use it and **stay on the current page** (the account menu no longer jumps to /lists).
+- ✅ `ButtonLink` renders `next/link` for internal routes (plain `<a>` for `/api/`, downloads, mailto, `_blank`).
+- ✅ `getSessionContext`: profile + memberships in parallel; `getCreditSummary` reuses the session balance instead of a second `credits_available` RPC (one to two fewer hops per render and per server action).
+- ✅ Feedback: Log out keeps the menu open with "Logging out…"; Enrich search/pagination run in a transition and dim the table; profile field dims while saving; modal exit 200 ms.
+- ✅ Removed `router.refresh()` after actions that already `revalidatePath` (list dialogs, members, profile, manual enrichment); list actions now revalidate the `/lists` layout scope so detail pages update too. Termly re-initialises on route changes only. Skeletons: `(app)/loading.tsx`, `lists/new/loading.tsx`.
+- ℹ️ Checked: Supabase JWKS serves an ES256 key, so the proxy's `getClaims` verifies locally (no auth network call per request). Vercel and Supabase are both us-east-1.
+
 ## Plan picker redesign — 2026-10-08 · premium layout, no nested popup
 
 ### Done

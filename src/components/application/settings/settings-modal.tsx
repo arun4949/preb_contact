@@ -135,7 +135,8 @@ export function SettingsModal({
     } else {
       setVisible(false);
       setSavedPhase("hidden");
-      unmountTimer.current = setTimeout(() => setMounted(false), 320);
+      // Exit is quicker than enter (200 ms): closing should feel instant.
+      unmountTimer.current = setTimeout(() => setMounted(false), 220);
     }
     return () => {
       if (unmountTimer.current) clearTimeout(unmountTimer.current);
@@ -185,8 +186,8 @@ export function SettingsModal({
           // Kept light on purpose: an 8px blur over the full 871×614 panel
           // forces a huge re-filter every frame of the scale-down, which is
           // what made the close stutter. 4px + GPU promotion stays smooth.
-          "transform-gpu transition-[opacity,transform,filter] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-[opacity,transform,filter]",
-          visible ? "scale-100 opacity-100 blur-0" : "scale-[0.85] opacity-0 blur-[4px]",
+          "transform-gpu transition-[opacity,transform,filter] ease-[cubic-bezier(0.32,0.72,0,1)] will-change-[opacity,transform,filter]",
+          visible ? "scale-100 opacity-100 blur-0 duration-300" : "scale-[0.85] opacity-0 blur-[4px] duration-200",
         )}
       >
       {/* Panel */}

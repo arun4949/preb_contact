@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/base/toast/toast";
 import { SettingsModal, type SettingsPage } from "./settings-modal";
 import type { BillingView } from "./settings-billing";
+import { useSettingsUrl } from "./use-settings-url";
 import type { SettingsProfileProps } from "./settings-profile";
 
 const PAGES: SettingsPage[] = ["profile", "workspace", "billing"];
@@ -18,13 +19,14 @@ export interface SettingsHostProps {
  *   ?settings=profile|billing   opens the modal on that page
  *   &plan=1                     opens Billing on the plan picker (&short=N adds the shortfall line)
  *   &checkout=success|cancelled|switched   toast after returning from Stripe
- * Closing strips the params (replace, no history entry).
+ * Closing strips the params (history.replaceState: no history entry and no
+ * server round trip, see `use-settings-url.ts`).
  */
 export function SettingsHost({ profile }: SettingsHostProps) {
   const params = useSearchParams();
-  const pathname = usePathname();
   const router = useRouter();
   const toast = useToast();
+  const { closeSettings, setBillingView, stripParams } = useSettingsUrl();
 
   const requested = params.get("settings");
   const page: SettingsPage | null = PAGES.includes(requested as SettingsPage) ? (requested as SettingsPage) : null;
@@ -35,31 +37,6 @@ export function SettingsHost({ profile }: SettingsHostProps) {
 
   const [refreshKey, setRefreshKey] = useState(0);
   const handledCheckout = useRef<string | null>(null);
-
-  const stripParams = useCallback(
-    (keys: string[]) => {
-      const next = new URLSearchParams(params.toString());
-      keys.forEach((k) => next.delete(k));
-      const qs = next.toString();
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-    },
-    [params, pathname, router],
-  );
-
-  // Plan picker: a Billing sub-view driven by `&plan=1` (set by the Billing
-  // page, the credits dropdown, emails and the paused panels); leaving strips it.
-  const setBillingView = useCallback(
-    (view: BillingView) => {
-      if (view === "overview") {
-        stripParams(["plan", "short"]);
-        return;
-      }
-      const next = new URLSearchParams(params.toString());
-      next.set("plan", "1");
-      router.replace(`${pathname}?${next.toString()}`, { scroll: false });
-    },
-    [params, pathname, router, stripParams],
-  );
 
   // Return from Stripe. The refresh timers live in a ref: stripping the
   // `checkout` param re-runs this effect, and an effect cleanup would cancel
@@ -90,9 +67,7 @@ export function SettingsHost({ profile }: SettingsHostProps) {
     );
   }, [checkout, router, stripParams, toast]);
 
-  const close = useCallback(() => {
-    stripParams(["settings", "plan", "short"]);
-  }, [stripParams]);
+  const close = useCallback(() => closeSettings(), [closeSettings]);
 
   return (
     <SettingsModal

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 declare global {
   interface Window {
@@ -43,15 +43,16 @@ export function TermlyCMP({ websiteUUID, autoBlock, masterConsentsOrigin }: Term
   }, [scriptSrc]);
 
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
+  // Re-scan on route changes only: search-param changes (settings modal,
+  // filters) do not add scripts and would re-run the banner logic every click.
   useEffect(() => {
     try {
       window.Termly?.initialize();
     } catch (e) {
       console.warn("Termly initialize failed:", e);
     }
-  }, [pathname, searchParams]);
+  }, [pathname]);
 
   return null;
 }

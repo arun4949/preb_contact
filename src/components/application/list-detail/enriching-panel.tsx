@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { RiCoinLine, RiMailSendLine } from "@remixicon/react";
-import { ButtonLink } from "@/components/base/buttons/button";
+import { Button } from "@/components/base/buttons/button";
+import { useSettingsUrl } from "@/components/application/settings/use-settings-url";
 import { AgentThinking } from "@/components/application/agent-thinking/agent-thinking";
 import { useCountUp } from "@/hooks/use-count-up";
 import type { ListEta } from "@/lib/lists/queries";
@@ -57,6 +58,7 @@ const PAUSED_COPY: Partial<Record<ListRow["status"], string>> = {
 
 /** Centered progress panel for running or paused lists (plan § List detail · enriching). */
 export function EnrichingPanel({ list, eta }: { list: ListRow; eta: ListEta }) {
+  const { openSettings } = useSettingsUrl();
   const { steps, completed } = stepsFor(list);
   const paused = list.status in PAUSED_COPY;
   const target = enrichmentTarget(list);
@@ -88,9 +90,9 @@ export function EnrichingPanel({ list, eta }: { list: ListRow; eta: ListEta }) {
           <p className="text-body-regular text-text-secondary">{subtitle}</p>
           {!paused ? <AgentThinking variant="stars" label={THINKING[msg]} tone="subtle" showTimer={false} /> : null}
           {list.status === "paused_credits" ? (
-            <ButtonLink href="/lists?settings=billing&plan=1" size="small" leadingIcon={RiCoinLine} className="rounded-full">
+            <Button size="small" leadingIcon={RiCoinLine} className="rounded-full" onClick={() => openSettings("billing", { plan: true })}>
               Buy credits
-            </ButtonLink>
+            </Button>
           ) : null}
           <p className="mt-2 flex items-center gap-2 text-body-2-regular text-text-tertiary">
             <RiMailSendLine className="size-4 shrink-0" aria-hidden />

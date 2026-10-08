@@ -16,7 +16,7 @@ import { SettingsHost } from "@/components/application/settings/settings-host";
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const session = await getSessionContext();
   if (!session) redirect((await getUser()) ? "/onboarding" : "/auth/signout");
-  const credits = await getCreditSummary(session.workspace);
+  const credits = await getCreditSummary(session.workspace, session.creditsAvailable);
 
   return (
     <div className="flex min-h-dvh flex-col">

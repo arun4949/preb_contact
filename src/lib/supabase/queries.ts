@@ -44,13 +44,12 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
   if (!user) return null;
   const supabase = await createClient();
 
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+  // Both only need the user id: one round trip instead of two.
+  const [{ data: profile }, { data: memberships }] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+    supabase.from("workspace_members").select("role, workspace:workspaces(*)").eq("user_id", user.id),
+  ]);
   if (!profile) return null;
-
-  const { data: memberships } = await supabase
-    .from("workspace_members")
-    .select("role, workspace:workspaces(*)")
-    .eq("user_id", user.id);
 
   const rows = (memberships ?? []).filter((m) => m.workspace);
   if (rows.length === 0) return null;
@@ -137,19 +136,16 @@ export interface CreditSummary {
   isTrial: boolean;
 }
 
-/** Balance + next expiry for the credits dropdown. */
-export const getCreditSummary = cache(async (workspace: Workspace): Promise<CreditSummary> => {
+/** Balance + next expiry for the credits dropdown. `available` comes from the session context (same request, no second RPC). */
+export const getCreditSummary = cache(async (workspace: Workspace, available: number): Promise<CreditSummary> => {
   const supabase = await createClient();
-  const [{ data: available }, { data: grants }] = await Promise.all([
-    supabase.rpc("credits_available", { ws: workspace.id }),
-    supabase
-      .from("credit_grants")
-      .select("remaining, expires_at, source, amount")
-      .eq("workspace_id", workspace.id)
-      .gt("remaining", 0)
-      .gt("expires_at", new Date().toISOString())
-      .order("expires_at", { ascending: true }),
-  ]);
+  const { data: grants } = await supabase
+    .from("credit_grants")
+    .select("remaining, expires_at, source, amount")
+    .eq("workspace_id", workspace.id)
+    .gt("remaining", 0)
+    .gt("expires_at", new Date().toISOString())
+    .order("expires_at", { ascending: true });
   const rows = grants ?? [];
   const isTrial = !workspace.plan_key;
   // Denominator is the plan's per-period amount, not the sum of live grants:
@@ -157,8 +153,8 @@ export const getCreditSummary = cache(async (workspace: Workspace): Promise<Cred
   const planCredits = isTrial ? (rows.find((g) => g.source === "trial")?.amount ?? 50) : (getPlan(workspace.plan_key)?.credits ?? 0);
   const next = rows[0];
   return {
-    available: available ?? 0,
-    planCredits: Math.max(planCredits, available ?? 0),
+    available,
+    planCredits: Math.max(planCredits, available),
     nextExpiry: next ? { amount: next.remaining, at: next.expires_at } : null,
     isTrial,
   };

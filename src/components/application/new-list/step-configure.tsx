@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useSettingsUrl } from "@/components/application/settings/use-settings-url";
 import { RiCoinLine, RiUserSearchLine } from "@remixicon/react";
 import { Banner } from "@/components/base/banner/banner";
 import { Button } from "@/components/base/buttons/button";
@@ -31,8 +31,7 @@ export interface StepConfigureProps {
 /** Step 3 (Figma 1015:43): enrichment level cards, name, rows to enrich, estimate card, Start. */
 export function StepConfigure({ listId, defaultName, summary, creditsAvailable, onStarting }: StepConfigureProps) {
   const toast = useToast();
-  const router = useRouter();
-  const pathname = usePathname();
+  const { openSettings } = useSettingsUrl();
   const [pending, start] = useTransition();
   const [fields, setFields] = useState<EnrichmentField[]>(summary.enrichable > 0 ? ["work_email"] : []);
   const [name, setName] = useState(defaultName);
@@ -197,7 +196,7 @@ export function StepConfigure({ listId, defaultName, summary, creditsAvailable, 
             tone="warning"
             title={`You need ${fmt(short)} more credits to start`}
             actions={
-              <Button variant="secondary" size="small" onClick={() => router.push(`${pathname}?settings=billing&plan=1&short=${short}`)}>
+              <Button variant="secondary" size="small" onClick={() => openSettings("billing", { plan: true, short })}>
                 Buy credits
               </Button>
             }

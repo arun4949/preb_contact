@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/base/buttons/button";
 import { ConfirmDialog, Dialog } from "@/components/base/dialog/dialog";
 import { Input } from "@/components/base/input/input";
@@ -24,7 +23,6 @@ export function ListDialogs({ list, dialog, onClose, onDone }: ListDialogsProps)
   const [name, setName] = useState(list.name);
   const [pending, start] = useTransition();
   const toast = useToast();
-  const router = useRouter();
 
   // Reset the draft name whenever the rename dialog opens (derived state, no effect).
   const [prevDialog, setPrevDialog] = useState(dialog);
@@ -40,7 +38,6 @@ export function ListDialogs({ list, dialog, onClose, onDone }: ListDialogsProps)
         toast.success(success);
         onClose();
         onDone?.(kind);
-        router.refresh();
       } else {
         toast.error(res.error ?? "Something went wrong");
       }

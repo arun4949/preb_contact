@@ -354,7 +354,8 @@ export async function startList(listId: string, input: StartListInput): Promise<
   const queued = await queueList(session, supabase, list, input);
   if (queued) return queued;
 
-  revalidatePath("/lists");
+  // Layout scope: the dashboard and every /lists/[id] page re-render from the action response.
+  revalidatePath("/lists", "layout");
   redirect(`/lists/${list.id}`);
 }
 
@@ -366,7 +367,8 @@ export async function renameList(listId: string, name: string): Promise<Result> 
   if (!clean) return { ok: false, error: "Name can't be empty." };
   const { error } = await supabase.from("lists").update({ name: clean }).eq("id", list.id);
   if (error) return { ok: false, error: "Could not rename the list." };
-  revalidatePath("/lists");
+  // Layout scope: the dashboard and every /lists/[id] page re-render from the action response.
+  revalidatePath("/lists", "layout");
   return { ok: true, data: undefined };
 }
 
@@ -384,7 +386,8 @@ export async function stopList(listId: string): Promise<Result> {
     await admin.from("list_contacts").update({ status: "skipped", skip_reason: "stopped" }).eq("list_id", list.id).eq("status", "pending");
     await admin.from("credit_holds").update({ released_at: new Date().toISOString() }).eq("list_id", list.id).is("released_at", null);
   }
-  revalidatePath("/lists");
+  // Layout scope: the dashboard and every /lists/[id] page re-render from the action response.
+  revalidatePath("/lists", "layout");
   return { ok: true, data: undefined };
 }
 
@@ -402,7 +405,8 @@ export async function deleteList(listId: string): Promise<Result> {
   if (objects?.length) {
     await admin.storage.from(BUCKET).remove(objects.map((o) => `${session.workspace.id}/${list.id}/${o.name}`));
   }
-  revalidatePath("/lists");
+  // Layout scope: the dashboard and every /lists/[id] page re-render from the action response.
+  revalidatePath("/lists", "layout");
   return { ok: true, data: undefined };
 }
 

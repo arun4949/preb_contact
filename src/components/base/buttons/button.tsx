@@ -5,6 +5,7 @@ import type {
   ReactNode,
   Ref,
 } from "react";
+import Link from "next/link";
 import { cx, sortCx } from "@/utils/cx";
 import { directionalIconClass } from "@/utils/directional-icon";
 
@@ -178,6 +179,12 @@ export function Button({
   );
 }
 
+/** Internal app routes go through `next/link` (client navigation + prefetch); downloads, API routes, mailto and external URLs stay plain anchors. */
+function isClientRoute(props: Pick<ButtonLinkProps, "href" | "download" | "target">) {
+  const href = props.href ?? "";
+  return href.startsWith("/") && !href.startsWith("/api/") && !href.startsWith("//") && !props.download && props.target !== "_blank";
+}
+
 /** Anchor counterpart to Button for navigational actions. */
 export function ButtonLink({
   variant = "primary",
@@ -190,18 +197,9 @@ export function ButtonLink({
   ref,
   ...props
 }: ButtonLinkProps) {
-  return (
-    <a
-      ref={ref}
-      className={cx(
-        styles.base,
-        styles.size[size],
-        styles.variant[variant],
-        iconOnly && styles.iconOnlySize[size],
-        className,
-      )}
-      {...props}
-    >
+  const classes = cx(styles.base, styles.size[size], styles.variant[variant], iconOnly && styles.iconOnlySize[size], className);
+  const content = (
+    <>
       {Leading ? <Leading className={cx(styles.icon[size], directionalIconClass(Leading))} aria-hidden /> : null}
       {!iconOnly && children !== undefined && children !== null && (
         <span className={styles.label[size]}>{children}</span>
@@ -209,6 +207,19 @@ export function ButtonLink({
       {!iconOnly && Trailing ? (
         <Trailing className={cx(styles.icon[size], directionalIconClass(Trailing))} aria-hidden />
       ) : null}
+    </>
+  );
+  if (isClientRoute(props)) {
+    const { href, ...rest } = props;
+    return (
+      <Link ref={ref} href={href!} className={classes} {...rest}>
+        {content}
+      </Link>
+    );
+  }
+  return (
+    <a ref={ref} className={classes} {...props}>
+      {content}
     </a>
   );
 }

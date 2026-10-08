@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useSettingsUrl } from "@/components/application/settings/use-settings-url";
 import { RiAddLine, RiBuildingLine, RiCoinLine, RiDeleteBinLine, RiLightbulbLine, RiLinkM, RiUserLine } from "@remixicon/react";
 import { Banner } from "@/components/base/banner/banner";
 import { Chip } from "@/components/base/badges/chip";
@@ -36,19 +36,17 @@ function rowIsEmpty(r: Row) {
 
 export interface ManualEnrichFormProps {
   creditsAvailable: number;
-  /** Called after a run was queued, so the page can refresh the history. */
-  onStarted: () => void;
 }
 
-export function ManualEnrichForm({ creditsAvailable, onStarted }: ManualEnrichFormProps) {
+/** The action revalidates /enrich, so the history below updates from the action response itself. */
+export function ManualEnrichForm({ creditsAvailable }: ManualEnrichFormProps) {
   const toast = useToast();
-  const router = useRouter();
-  const pathname = usePathname();
+  const { openSettings } = useSettingsUrl();
   const [pending, start] = useTransition();
   const [fields, setFields] = useState<EnrichmentField[]>(["work_email"]);
   const [rows, setRows] = useState<Row[]>(() => [emptyRow()]);
   const [showErrors, setShowErrors] = useState(false);
-  const openPlans = (shortBy: number) => router.push(`${pathname}?settings=billing&plan=1&short=${shortBy}`);
+  const openPlans = (shortBy: number) => openSettings("billing", { plan: true, short: shortBy });
 
   const complete = rows.filter(rowIsComplete);
   const invalid = rows.filter((r) => !rowIsComplete(r) && !rowIsEmpty(r));
@@ -82,7 +80,6 @@ export function ManualEnrichForm({ creditsAvailable, onStarted }: ManualEnrichFo
         description: "Results appear below as soon as they are in.",
       });
       clear();
-      onStarted();
     });
   };
 

@@ -68,7 +68,6 @@ export function SettingsMembers() {
         toast.success(success);
         after?.();
         load();
-        router.refresh();
       } else {
         toast.error(res.error ?? "Something went wrong");
       }

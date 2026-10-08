@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import {
   RiBankCardLine,
   RiFeedbackLine,
@@ -14,6 +13,7 @@ import { Dropdown, DropdownDivider, DropdownGroup, DropdownItem, DropdownPopover
 import { openCookiePreferences } from "@/components/foundations/termly/termly-cmp";
 import { ThemeToggle } from "@/components/application/theme/theme-toggle";
 import { signOut } from "@/lib/auth/actions";
+import { useSettingsUrl } from "@/components/application/settings/use-settings-url";
 import { initialsOf } from "@/utils/initials";
 
 
@@ -28,10 +28,11 @@ export interface AccountDropdownProps {
 export function AccountDropdown({ name, email, avatarUrl, workspaceName }: AccountDropdownProps) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
-  const router = useRouter();
+  const { openSettings } = useSettingsUrl();
+  // Opens the settings modal on the current page without a server round trip.
   const go = (page: "profile" | "workspace" | "billing") => {
     setOpen(false);
-    router.push(`/lists?settings=${page}`);
+    openSettings(page);
   };
 
   return (
@@ -98,10 +99,10 @@ export function AccountDropdown({ name, email, avatarUrl, workspaceName }: Accou
         <DropdownGroup>
           <DropdownItem
             onSelect={() => {
-              setOpen(false);
-              start(() => signOut());
+              // Keep the menu open so "Logging out…" stays visible until the redirect.
+              if (!pending) start(() => signOut());
             }}
-            className={pending ? "opacity-60" : undefined}
+            className={pending ? "pointer-events-none opacity-60" : undefined}
           >
             <RiLogoutBoxRLine className="size-5 text-foreground-icon-secondary" aria-hidden />
             <span className="text-body-medium">{pending ? "Logging out…" : "Log out"}</span>
