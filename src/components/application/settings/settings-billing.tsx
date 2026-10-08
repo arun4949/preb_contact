@@ -10,6 +10,7 @@ import { ProgressBar } from "@/components/base/progress-bar/progress-bar";
 import { Skeleton } from "@/components/base/skeleton/skeleton";
 import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@/components/base/table/table";
 import { useToast } from "@/components/base/toast/toast";
+import { PlanPicker } from "@/components/application/billing/plan-picker";
 import { fetchBillingOverview, openBillingPortal } from "@/lib/billing/actions";
 import type { BillingOverview, LedgerEntry } from "@/lib/billing/queries";
 import { formatUsd, formatUsdFine } from "@/lib/credits/money";
@@ -43,8 +44,16 @@ function describe(entry: LedgerEntry): string {
   }
 }
 
+export type BillingView = "overview" | "plans";
+
 export interface SettingsBillingProps {
-  onChoosePlan: () => void;
+  /** "plans" swaps the overview for the plan picker (same modal page). */
+  view: BillingView;
+  onViewChange: (view: BillingView) => void;
+  /** Closes the settings modal (the picker's Cancel). */
+  onClose: () => void;
+  /** Shown above the plans, e.g. a credit shortfall. */
+  planReason?: string;
   /** Bumped by the host after a Checkout return so the page reloads. */
   refreshKey?: number;
 }
@@ -54,7 +63,7 @@ export interface SettingsBillingProps {
  * schedule, Manage billing → Stripe portal, credit ledger. Data is loaded
  * on open through a server action so the modal can live in the app shell.
  */
-export function SettingsBilling({ onChoosePlan, refreshKey = 0 }: SettingsBillingProps) {
+export function SettingsBilling({ view, onViewChange, onClose, planReason, refreshKey = 0 }: SettingsBillingProps) {
   const [data, setData] = useState<BillingOverview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [portalPending, startPortal] = useTransition();
@@ -78,6 +87,8 @@ export function SettingsBilling({ onChoosePlan, refreshKey = 0 }: SettingsBillin
       const res = await openBillingPortal();
       if (res && !res.ok) toast.error(res.error);
     });
+
+  if (view === "plans") return <PlanPicker reason={planReason} onCancel={onClose} />;
 
   if (error) {
     return (
@@ -146,7 +157,7 @@ export function SettingsBilling({ onChoosePlan, refreshKey = 0 }: SettingsBillin
                 {portalPending ? "Opening…" : "Manage billing"}
               </Button>
             ) : null}
-            <Button size="small" onClick={onChoosePlan} disabled={!data.canManage}>
+            <Button size="small" onClick={() => onViewChange("plans")} disabled={!data.canManage}>
               {data.plan ? "Change plan" : "Choose a plan"}
             </Button>
           </div>

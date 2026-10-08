@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { RiCoinLine, RiUserSearchLine } from "@remixicon/react";
 import { Banner } from "@/components/base/banner/banner";
 import { Button } from "@/components/base/buttons/button";
@@ -9,7 +10,6 @@ import { Chip } from "@/components/base/badges/chip";
 import { Input } from "@/components/base/input/input";
 import { ProgressBar } from "@/components/base/progress-bar/progress-bar";
 import { useToast } from "@/components/base/toast/toast";
-import { PlanPickerDialog } from "@/components/application/billing/plan-picker-dialog";
 import { estimateCredits, type EnrichmentField } from "@/lib/credits/estimate";
 import { FIELD_CARDS } from "@/lib/credits/fields";
 import { CREDIT_COST } from "@/lib/fullenrich/mapping";
@@ -31,13 +31,14 @@ export interface StepConfigureProps {
 /** Step 3 (Figma 1015:43): enrichment level cards, name, rows to enrich, estimate card, Start. */
 export function StepConfigure({ listId, defaultName, summary, creditsAvailable, onStarting }: StepConfigureProps) {
   const toast = useToast();
+  const router = useRouter();
+  const pathname = usePathname();
   const [pending, start] = useTransition();
   const [fields, setFields] = useState<EnrichmentField[]>(summary.enrichable > 0 ? ["work_email"] : []);
   const [name, setName] = useState(defaultName);
   // Reverse lookup is opt-in; a list made only of emails has nothing else to do, so it starts on.
   const [reverse, setReverse] = useState(summary.enrichable === 0 && summary.emailOnly > 0);
   const [rowsText, setRowsText] = useState(String(summary.enrichable + (summary.enrichable === 0 ? summary.emailOnly : 0)));
-  const [picker, setPicker] = useState(false);
 
   const reverseRowsAll = reverse ? summary.emailOnly : 0;
   const totalRows = summary.enrichable + reverseRowsAll;
@@ -196,13 +197,13 @@ export function StepConfigure({ listId, defaultName, summary, creditsAvailable, 
             tone="warning"
             title={`You need ${fmt(short)} more credits to start`}
             actions={
-              <Button variant="secondary" size="small" onClick={() => setPicker(true)}>
+              <Button variant="secondary" size="small" onClick={() => router.push(`${pathname}?settings=billing&plan=1&short=${short}`)}>
                 Buy credits
               </Button>
             }
           >
             Reduce the rows to enrich, choose fewer fields
-            {summary.emailOnly > 0 ? " or skip the reverse lookup" : ""} to start now.
+            {summary.emailOnly > 0 ? " or skip the reverse lookup" : ""} to start now. After checkout you will upload the file again.
           </Banner>
         ) : null}
       </section>
@@ -212,11 +213,6 @@ export function StepConfigure({ listId, defaultName, summary, creditsAvailable, 
           {pending ? "Starting…" : "Start enrichment"}
         </Button>
       </div>
-      <PlanPickerDialog
-        isOpen={picker}
-        onClose={() => setPicker(false)}
-        reason={`You need ${fmt(short)} more credits to start this list. Checkout opens in this tab, so you will upload the file again afterwards.`}
-      />
     </div>
   );
 }

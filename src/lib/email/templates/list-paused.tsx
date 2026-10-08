@@ -20,7 +20,7 @@ export function ListPausedEmail({ firstName, listId, listName, processed, remain
         so we paused it. {n(remaining)} contacts are still waiting. As soon as you add credits, it picks up again automatically within a
         minute.
       </Text>
-      <Button href={appUrl("/lists?settings=billing")} style={emailStyles.button}>
+      <Button href={appUrl("/lists?settings=billing&plan=1")} style={emailStyles.button}>
         Buy credits
       </Button>
       <Text style={emailStyles.footnote}>

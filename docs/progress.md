@@ -2,6 +2,12 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Plan picker redesign — 2026-10-08 · premium layout, no nested popup
+
+### Done
+- ✅ **Picker lives inside Settings › Billing** (`billing/plan-picker.tsx`, `plan-picker-dialog.tsx` deleted): "Choose a plan" / "Change plan" swaps the Billing content for the picker; the modal title row shows a back arrow + "Choose a plan"; Escape goes back first, then closes. URL-driven: `?settings=billing&plan=1` (credits dropdown, paused panels, emails) and `&short=N` for the shortfall line. Wizard step 3 and the Enrich form now push that URL instead of mounting their own dialog (the modal is portalled from the layout, so wizard/form state survives Cancel).
+- ✅ **Layout**: stats row of three aligned figures (Credits / month · Price /month · Per credit, captions above, values on one baseline, annual adds "billed yearly · save $X"), slider with tick labels below the track, "what one credit buys" as an aligned definition list (work email / personal email / mobile / rollover), CTA "Continue to checkout · $36.50/month" or "Review change"; confirm step uses the same card style.
+
 ## Enrich tab (manual single-contact enrichment) — 2026-10-08
 
 ### Done

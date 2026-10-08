@@ -3,9 +3,9 @@
 import { useDirection } from "@/components/foundations/direction/direction";
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import { createPortal } from "react-dom";
-import { RiBankCardLine, RiCheckboxCircleFill, RiCloseLine, RiTeamLine, RiUser3Line } from "@remixicon/react";
+import { RiArrowLeftLine, RiBankCardLine, RiCheckboxCircleFill, RiCloseLine, RiTeamLine, RiUser3Line } from "@remixicon/react";
 import { cx } from "@/utils/cx";
-import { SettingsBilling } from "./settings-billing";
+import { SettingsBilling, type BillingView } from "./settings-billing";
 import { SettingsMembers } from "./settings-members";
 import { SettingsProfile, type SettingsProfileProps } from "./settings-profile";
 
@@ -40,8 +40,11 @@ export interface SettingsModalProps {
   /** Page selected each time the modal opens. */
   defaultPage?: SettingsPage;
   profile: Omit<SettingsProfileProps, "onSaved">;
-  /** Billing → "Choose / Change plan" opens the plan picker (owned by the host). */
-  onChoosePlan: () => void;
+  /** Billing sub-view: the overview, or the plan picker in its place (owned by the host, URL `&plan=1`). */
+  billingView: BillingView;
+  onBillingViewChange: (view: BillingView) => void;
+  /** Shown above the plans, e.g. a credit shortfall. */
+  planReason?: string;
   /** Bumped by the host after a Checkout return so Billing reloads. */
   billingRefreshKey?: number;
 }
@@ -85,7 +88,9 @@ export function SettingsModal({
   onClose,
   defaultPage = "profile",
   profile,
-  onChoosePlan,
+  billingView,
+  onBillingViewChange,
+  planReason,
   billingRefreshKey,
 }: SettingsModalProps) {
   const direction = useDirection();
@@ -139,21 +144,25 @@ export function SettingsModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- defaultPage only matters at the open transition
   }, [isOpen]);
 
-  // Escape closes; focus moves into the dialog on open.
+  const inPlans = page === "billing" && billingView === "plans";
+
+  // Escape leaves the plan picker first, then closes; focus moves into the dialog on open.
   useEffect(() => {
     if (!isOpen) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key !== "Escape") return;
+      if (inPlans) onBillingViewChange("overview");
+      else onClose();
     };
     document.addEventListener("keydown", onKeyDown);
     panelRef.current?.focus();
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, inPlans, onBillingViewChange]);
 
   if (!mounted || typeof document === "undefined") return null;
 
   return createPortal(
-    // z-90: dialogs opened from inside (plan picker, z-100) must stack above.
+    // z-90: toasts and the sheet (z-100) stack above.
     <div dir={direction} className="fixed inset-0 z-90 flex items-center justify-center p-4" role="presentation">
       {/* Backdrop — dark-mode modal reference uses black at 70%. */}
       <button
@@ -253,9 +262,28 @@ export function SettingsModal({
         {/* Content pane — fixed title row, scrollable page below */}
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex shrink-0 items-start justify-between gap-4 px-4 pt-6 pb-3 sm:px-8 sm:pt-8">
-            <div className="flex flex-col gap-0.5">
-              <h2 className="text-title-3-medium text-text-primary">{PAGE_TITLES[page].title}</h2>
-              <p className="text-body-2-regular text-text-secondary">{PAGE_TITLES[page].subtitle}</p>
+            <div className="flex min-w-0 items-start gap-3">
+              {inPlans ? (
+                <button
+                  type="button"
+                  aria-label="Back to billing"
+                  onClick={() => onBillingViewChange("overview")}
+                  className={cx(
+                    "mt-0.5 flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full",
+                    "bg-background-tertiary-default text-foreground-icon-secondary",
+                    "transition-colors duration-150 ease hover:bg-background-tertiary-hover",
+                    "outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
+                  )}
+                >
+                  <RiArrowLeftLine className="size-4 rtl:rotate-180" aria-hidden />
+                </button>
+              ) : null}
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <h2 className="text-title-3-medium text-text-primary">{inPlans ? "Choose a plan" : PAGE_TITLES[page].title}</h2>
+                <p className="text-body-2-regular text-text-secondary">
+                  {inPlans ? "Pick how many credits you need each month. Change or cancel anytime." : PAGE_TITLES[page].subtitle}
+                </p>
+              </div>
             </div>
             <button
               type="button"
@@ -277,7 +305,7 @@ export function SettingsModal({
               onScroll={(e) => setContentScrolled(e.currentTarget.scrollTop > 0)}
             >
               {page === "billing" ? (
-                <SettingsBilling onChoosePlan={onChoosePlan} refreshKey={billingRefreshKey} />
+                <SettingsBilling view={billingView} onViewChange={onBillingViewChange} onClose={onClose} planReason={planReason} refreshKey={billingRefreshKey} />
               ) : page === "workspace" ? (
                 <SettingsMembers />
               ) : (

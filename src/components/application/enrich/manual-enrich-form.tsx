@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { RiAddLine, RiBuildingLine, RiCoinLine, RiDeleteBinLine, RiLightbulbLine, RiLinkM, RiUserLine } from "@remixicon/react";
 import { Banner } from "@/components/base/banner/banner";
 import { Chip } from "@/components/base/badges/chip";
@@ -9,7 +10,6 @@ import { IconButton } from "@/components/base/buttons/icon-button";
 import { CheckboxCard } from "@/components/base/checkbox/checkbox-card";
 import { Input } from "@/components/base/input/input";
 import { useToast } from "@/components/base/toast/toast";
-import { PlanPickerDialog } from "@/components/application/billing/plan-picker-dialog";
 import { estimateCredits, type EnrichmentField } from "@/lib/credits/estimate";
 import { FIELD_CARDS, FIELD_LABEL } from "@/lib/credits/fields";
 import { CREDIT_COST } from "@/lib/fullenrich/mapping";
@@ -42,11 +42,13 @@ export interface ManualEnrichFormProps {
 
 export function ManualEnrichForm({ creditsAvailable, onStarted }: ManualEnrichFormProps) {
   const toast = useToast();
+  const router = useRouter();
+  const pathname = usePathname();
   const [pending, start] = useTransition();
   const [fields, setFields] = useState<EnrichmentField[]>(["work_email"]);
   const [rows, setRows] = useState<Row[]>(() => [emptyRow()]);
   const [showErrors, setShowErrors] = useState(false);
-  const [picker, setPicker] = useState(false);
+  const openPlans = (shortBy: number) => router.push(`${pathname}?settings=billing&plan=1&short=${shortBy}`);
 
   const complete = rows.filter(rowIsComplete);
   const invalid = rows.filter((r) => !rowIsComplete(r) && !rowIsEmpty(r));
@@ -73,7 +75,7 @@ export function ManualEnrichForm({ creditsAvailable, onStarted }: ManualEnrichFo
       });
       if (!res.ok) {
         toast.error(res.error);
-        if (res.shortBy) setPicker(true);
+        if (res.shortBy) openPlans(res.shortBy);
         return;
       }
       toast.success(complete.length === 1 ? "Enrichment started" : `Enrichment started for ${complete.length} contacts`, {
@@ -254,7 +256,7 @@ export function ManualEnrichForm({ creditsAvailable, onStarted }: ManualEnrichFo
             tone="warning"
             title={`You need ${fmt(short)} more credits to start`}
             actions={
-              <Button type="button" variant="secondary" size="small" onClick={() => setPicker(true)}>
+              <Button type="button" variant="secondary" size="small" onClick={() => openPlans(short)}>
                 Buy credits
               </Button>
             }
@@ -268,7 +270,6 @@ export function ManualEnrichForm({ creditsAvailable, onStarted }: ManualEnrichFo
           </Button>
         </div>
       </section>
-      <PlanPickerDialog isOpen={picker} onClose={() => setPicker(false)} reason={`You need ${fmt(short)} more credits to enrich these contacts.`} />
     </form>
   );
 }
