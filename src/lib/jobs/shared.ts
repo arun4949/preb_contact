@@ -12,8 +12,9 @@ export type ContactKind = Database["public"]["Enums"]["list_mode"];
 export const CONTACT_KINDS: readonly ContactKind[] = ["enrich", "reverse"];
 
 export const PROVIDER = "fullenrich";
-/** Batches served from our own cache (cross-workspace hits, charged normally). */
+/** Batches served from the workspace's own cache (free, no provider call). */
 export const CACHE_PROVIDER = "cache";
+/** Cached enrichment results live this long (privacy policy § 8), then the daily job purges them. */
 export const CACHE_TTL_DAYS = 90;
 export const BATCH_SIZE = 100;
 

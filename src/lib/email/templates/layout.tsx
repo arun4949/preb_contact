@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Body, Column, Container, Head, Html, Img, Preview, Row, Section, Text } from "@react-email/components";
+import { Body, Column, Container, Head, Html, Img, Link, Preview, Row, Section, Text } from "@react-email/components";
 
 /**
  * Shared chrome for every Preb email. Email clients ignore our CSS tokens, so
@@ -53,7 +53,21 @@ export function FounderSignOff() {
   );
 }
 
-export function EmailLayout({ preview, children, signed = true }: { preview: string; children: ReactNode; signed?: boolean }) {
+/** Deep link to Settings › Profile, where the product-news switch lives. */
+export const EMAIL_PREFERENCES_PATH = "/lists?settings=profile";
+
+export function EmailLayout({
+  preview,
+  children,
+  signed = true,
+  preferencesUrl,
+}: {
+  preview: string;
+  children: ReactNode;
+  signed?: boolean;
+  /** Emails that count as product news link to the preference switch in the footer. */
+  preferencesUrl?: string;
+}) {
   return (
     <Html lang="en">
       <Head />
@@ -74,6 +88,14 @@ export function EmailLayout({ preview, children, signed = true }: { preview: str
           </Section>
           <Text style={{ fontSize: 12, lineHeight: "18px", color: EMAIL_COLORS.tertiary, margin: "16px 0 0" }}>
             Preb · Recruiting data enrichment
+            {preferencesUrl ? (
+              <>
+                {" · "}
+                <Link href={preferencesUrl} style={{ color: EMAIL_COLORS.tertiary, textDecoration: "underline" }}>
+                  Email preferences
+                </Link>
+              </>
+            ) : null}
           </Text>
         </Container>
       </Body>

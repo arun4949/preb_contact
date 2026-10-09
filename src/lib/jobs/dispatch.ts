@@ -116,7 +116,7 @@ async function dispatchList(admin: Admin, list: ListRow, hook: string, summary: 
       return;
     }
 
-    // Cross-workspace cache (F2): served from our cache, charged normally, no provider call.
+    // Same-workspace cache: rows this workspace enriched within 90 days are served free, no provider call.
     const cacheServed = await serveFromCache(admin, list, Math.min(BATCH_SIZE, remaining), kind);
     if (cacheServed > 0) {
       summary.fromCache += cacheServed;
@@ -247,9 +247,10 @@ function errorJson(error: unknown): Json {
 }
 
 /**
- * Serve pending contacts whose input was enriched (by any workspace) within
- * 90 days from `enrichment_cache`. They go through a synthetic batch so the
- * settler charges them like provider rows. Returns the number served.
+ * Serve pending contacts whose input this workspace enriched within 90 days
+ * from `enrichment_cache` (per-workspace store, nothing crosses workspaces).
+ * They go through a synthetic, free batch so the list finalises like any
+ * other. Returns the number served.
  */
 async function serveFromCache(admin: Admin, list: ListRow, limit: number, kind: ContactKind): Promise<number> {
   const { data: pending } = await admin
@@ -267,17 +268,16 @@ async function serveFromCache(admin: Admin, list: ListRow, limit: number, kind: 
   const since = new Date(Date.now() - CACHE_TTL_DAYS * 86_400_000).toISOString();
   const { data: hits } = await admin
     .from("enrichment_cache")
-    .select("input_hash, fields, result, source_workspace_id")
+    .select("input_hash, fields, result")
+    .eq("workspace_id", list.workspace_id)
     .in("input_hash", hashes)
     .gte("fetched_at", since);
   const usable = new Map<string, EnrichmentRecord>();
-  const ownHashes = new Set<string>();
   const required = kind === "reverse" ? ["reverse"] : list.enrich_fields;
   for (const hit of hits ?? []) {
     // Only reuse when the cached run covered every field this list asks for.
     if (!required.every((f) => hit.fields.includes(f))) continue;
     usable.set(hit.input_hash, hit.result as unknown as EnrichmentRecord);
-    if (hit.source_workspace_id === list.workspace_id) ownHashes.add(hit.input_hash);
   }
   if (usable.size === 0) return 0;
 
@@ -307,12 +307,17 @@ async function serveFromCache(admin: Admin, list: ListRow, limit: number, kind: 
     ...usable.get(c.input_hash!)!,
     custom: { contact_id: c.id, list_id: list.id, batch_id: batch.id },
   }));
-  await applyRecords(admin, batch, records, list.enrich_fields);
-  // Same-workspace hits are free and shown as "Already enriched" (like parse-time hits).
-  const ownIds = claimed.filter((c) => ownHashes.has(c.input_hash!)).map((c) => c.id);
-  if (ownIds.length) {
-    await admin.from("list_contacts").update({ status: "cached", credits_cost: 0 }).in("id", ownIds).eq("batch_id", batch.id);
-  }
+  await applyRecords(admin, batch, records, list.enrich_fields, { writeCache: false });
+  // Cache hits are free and shown as "Already enriched" (like parse-time hits).
+  await admin
+    .from("list_contacts")
+    .update({ status: "cached", credits_cost: 0 })
+    .eq("batch_id", batch.id)
+    .in(
+      "id",
+      claimed.map((c) => c.id),
+    )
+    .not("status", "eq", "submitted");
   await admin
     .from("list_contacts")
     .update({ status: "failed", skip_reason: "no_result" })

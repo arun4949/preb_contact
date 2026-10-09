@@ -66,7 +66,11 @@ export async function applyRecords(
   batch: Pick<BatchRow, "id" | "workspace_id" | "list_id" | "kind">,
   records: readonly EnrichmentRecord[],
   fields: readonly string[],
+  options: { writeCache?: boolean } = {},
 ): Promise<{ applied: number; cached: number }> {
+  // Rows served from the cache must not refresh `fetched_at`: the 90-day
+  // retention counts from the enrichment, not from the last reuse.
+  const writeCache = options.writeCache ?? true;
   let applied = 0;
   let cached = 0;
   const now = new Date().toISOString();
@@ -95,16 +99,17 @@ export async function applyRecords(
       await admin.from("list_contacts").update(name).eq("id", contactId).is("full_name", null).is("first_name", null).is("last_name", null);
     }
     const cacheable = kind === "reverse" ? Boolean(record.profile) : Boolean(record.contact_info);
-    if (row.input_hash && cacheable) {
+    if (writeCache && row.input_hash && cacheable) {
+      // Per-workspace store (privacy policy § 8): a workspace only ever reuses its own results.
       const { error: cacheErr } = await admin.from("enrichment_cache").upsert(
         {
+          workspace_id: batch.workspace_id,
           input_hash: row.input_hash,
           fields: cacheFields,
           result: record as unknown as Json,
-          source_workspace_id: batch.workspace_id,
           fetched_at: now,
         },
-        { onConflict: "input_hash" },
+        { onConflict: "workspace_id,input_hash" },
       );
       if (!cacheErr) cached += 1;
     }

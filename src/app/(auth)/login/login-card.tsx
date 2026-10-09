@@ -23,7 +23,12 @@ const ERRORS: Record<string, string> = {
   work_email: "Please sign in with your work email. Personal and disposable mailboxes can't start a Preb workspace.",
 };
 
-export function LoginCard({ next, error }: { next: string; error?: string }) {
+/** Non-error notices after a redirect, e.g. a completed account deletion. */
+const NOTICES: Record<string, string> = {
+  account_deleted: "Your account has been deleted. Thank you for trying Preb.",
+};
+
+export function LoginCard({ next, error, notice }: { next: string; error?: string; notice?: string }) {
   const [state, action, pending] = useActionState<MagicLinkState, FormData>(sendMagicLink, { status: "idle" });
 
   const card = "flex w-full max-w-[400px] flex-col rounded-3xl border border-border-button-default bg-background-primary-default p-6 shadow-xs sm:p-8";
@@ -65,6 +70,10 @@ export function LoginCard({ next, error }: { next: string; error?: string }) {
       {error && ERRORS[error] ? (
         <Banner tone="error" className="mt-5">
           {ERRORS[error]}
+        </Banner>
+      ) : notice && NOTICES[notice] ? (
+        <Banner tone="success" className="mt-5">
+          {NOTICES[notice]}
         </Banner>
       ) : null}
 

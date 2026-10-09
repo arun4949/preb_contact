@@ -1,6 +1,6 @@
 import { Button, Text } from "@react-email/components";
 import { CREDIT_COST } from "@/lib/fullenrich/mapping";
-import { appUrl, EmailLayout, emailStyles } from "./layout";
+import { appUrl, EMAIL_PREFERENCES_PATH, EmailLayout, emailStyles } from "./layout";
 
 export interface WelcomeEmailProps {
   firstName: string;
@@ -11,7 +11,7 @@ export interface WelcomeEmailProps {
 
 export function WelcomeEmail({ firstName, workspaceName, trialCredits }: WelcomeEmailProps) {
   return (
-    <EmailLayout preview="Your Preb workspace is ready">
+    <EmailLayout preview="Your Preb workspace is ready" preferencesUrl={appUrl(EMAIL_PREFERENCES_PATH)}>
       <Text style={emailStyles.title}>Welcome to Preb{firstName ? `, ${firstName}` : ""}</Text>
       <Text style={emailStyles.paragraph}>
         I&apos;m Arun, one of the founders of Preb. Thank you for signing up, it really means a lot to us.
@@ -27,7 +27,8 @@ export function WelcomeEmail({ firstName, workspaceName, trialCredits }: Welcome
         Enrich your first list
       </Button>
       <Text style={emailStyles.footnote}>
-        If anything is unclear or you have feedback, just reply to this email. Our team reads every message.
+        If anything is unclear or you have feedback, just reply to this email. Our team reads every message. We also send occasional product
+        news, which you can turn off anytime in your profile settings.
       </Text>
     </EmailLayout>
   );

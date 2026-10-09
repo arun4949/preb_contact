@@ -42,7 +42,15 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       />
       <main className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col px-4 py-8 md:px-6 lg:px-10">{children}</main>
       <Suspense fallback={null}>
-        <SettingsHost profile={{ name: session.profile.full_name ?? "", email: session.email, avatarUrl: session.profile.avatar_url }} />
+        <SettingsHost
+          profile={{
+            name: session.profile.full_name ?? "",
+            email: session.email,
+            avatarUrl: session.profile.avatar_url,
+            productNews: session.profile.product_news,
+            ownsWorkspace: session.role === "owner",
+          }}
+        />
       </Suspense>
       <FeaturebaseIdentity jwt={featurebaseJwt} />
     </div>

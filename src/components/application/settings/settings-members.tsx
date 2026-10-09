@@ -25,7 +25,8 @@ import {
 import type { WorkspaceMember } from "@/lib/supabase/queries";
 import { initialsOf } from "@/utils/initials";
 import { cx } from "@/utils/cx";
-import { SettingsCard, SettingsSectionLabel } from "./settings-rows";
+import { DeleteWorkspaceDialog } from "./delete-dialogs";
+import { SettingsCard, SettingsRow, SettingsSectionLabel } from "./settings-rows";
 
 const ROLE_LABEL: Record<string, string> = { owner: "Owner", admin: "Admin", member: "Member" };
 const date = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -43,6 +44,7 @@ export function SettingsMembers() {
   const [confirm, setConfirm] = useState<{ kind: "remove" | "leave" | "revoke"; id: string; label: string } | null>(null);
   const [pending, start] = useTransition();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [deletingWorkspace, setDeletingWorkspace] = useState(false);
   const toast = useToast();
   const router = useRouter();
 
@@ -199,6 +201,22 @@ export function SettingsMembers() {
           )}
         </div>
       ) : null}
+
+      {/* Owner only: delete the workspace (privacy policy § 11) */}
+      {data.myRole === "owner" ? (
+        <div className="flex w-full flex-col gap-2">
+          <SettingsSectionLabel>Workspace</SettingsSectionLabel>
+          <SettingsCard>
+            <SettingsRow label="Delete workspace" description="Deletes every list, contact, uploaded file and credit. The subscription ends immediately.">
+              <Button variant="danger" size="small" className="shrink-0" onClick={() => setDeletingWorkspace(true)}>
+                Delete workspace
+              </Button>
+            </SettingsRow>
+          </SettingsCard>
+        </div>
+      ) : null}
+
+      <DeleteWorkspaceDialog isOpen={deletingWorkspace} onClose={() => setDeletingWorkspace(false)} workspaceName={data.workspaceName} />
 
       <ConfirmDialog
         isOpen={confirm !== null}

@@ -9,6 +9,7 @@ export const NOTIFICATION_KINDS = [
   "member_left",
   "member_removed",
   "role_changed",
+  "workspace_deleted",
   "list_finished",
   "list_stopped",
   "list_paused_credits",

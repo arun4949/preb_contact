@@ -6,7 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { creditsExpiringCopy } from "@/lib/notifications/copy";
 import { notifyWorkspace } from "@/lib/notifications/emit";
 import { notifyOps } from "./notify";
-import { log, logError, releaseHolds } from "./shared";
+import { CACHE_TTL_DAYS, log, logError, releaseHolds } from "./shared";
 
 const BUCKET = "list-uploads";
 const WEBHOOK_RETENTION_DAYS = 30;
@@ -15,6 +15,8 @@ const DRAFT_RETENTION_HOURS = 24;
 const EXPIRY_WARNING_DAYS = 7;
 /** Notifications older than this are deleted. */
 const NOTIFICATION_RETENTION_DAYS = 90;
+/** Tombstones of deleted accounts (trial guard) are kept this long (privacy policy § 8). */
+const DELETED_ACCOUNT_RETENTION_MONTHS = 12;
 /** Alert when the upstream balance is below this many credits… */
 const LOW_BALANCE_FLOOR = Number(process.env.UPSTREAM_LOW_BALANCE ?? "200");
 
@@ -25,15 +27,17 @@ export interface DailySummary {
   webhookEventsDeleted: number;
   expiryWarnings: number;
   notificationsDeleted: number;
+  cacheRowsDeleted: number;
+  tombstonesDeleted: number;
   upstreamBalance: number | null;
   alerted: boolean;
   errors: string[];
 }
 
-/** Housekeeping: expire grants, provider balance alert, cleanup of drafts and old webhook payloads. */
+/** Housekeeping: expire grants, provider balance alert, cleanup of drafts, cache rows, tombstones and old webhook payloads. */
 export async function runDaily(): Promise<DailySummary> {
   const admin = createAdminClient();
-  const summary: DailySummary = { expiredGrants: 0, holdsReleased: 0, draftsDeleted: 0, webhookEventsDeleted: 0, expiryWarnings: 0, notificationsDeleted: 0, upstreamBalance: null, alerted: false, errors: [] };
+  const summary: DailySummary = { expiredGrants: 0, holdsReleased: 0, draftsDeleted: 0, webhookEventsDeleted: 0, expiryWarnings: 0, notificationsDeleted: 0, cacheRowsDeleted: 0, tombstonesDeleted: 0, upstreamBalance: null, alerted: false, errors: [] };
   const step = async (name: string, fn: () => Promise<void>) => {
     try {
       await fn();
@@ -117,6 +121,22 @@ export async function runDaily(): Promise<DailySummary> {
       await admin.from("lists").delete().eq("id", d.id);
       summary.draftsDeleted += 1;
     }
+  });
+
+  await step("cleanup_enrichment_cache", async () => {
+    // Per-workspace cache rows expire 90 days after the enrichment (privacy policy § 8).
+    const cutoff = new Date(Date.now() - CACHE_TTL_DAYS * 86_400_000).toISOString();
+    const { count, error } = await admin.from("enrichment_cache").delete({ count: "exact" }).lt("fetched_at", cutoff);
+    if (error) throw new Error(error.message);
+    summary.cacheRowsDeleted = count ?? 0;
+  });
+
+  await step("cleanup_deleted_accounts", async () => {
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - DELETED_ACCOUNT_RETENTION_MONTHS);
+    const { count, error } = await admin.from("deleted_accounts").delete({ count: "exact" }).lt("deleted_at", cutoff.toISOString());
+    if (error) throw new Error(error.message);
+    summary.tombstonesDeleted = count ?? 0;
   });
 
   await step("cleanup_webhook_events", async () => {

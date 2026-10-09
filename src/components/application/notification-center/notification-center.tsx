@@ -58,6 +58,7 @@ const KIND_ICON: Partial<Record<NotificationKind, IconComponent>> = {
   member_left: RiTeamLine,
   member_removed: RiTeamLine,
   role_changed: RiTeamLine,
+  workspace_deleted: RiTeamLine,
   list_finished: RiFileList3Line,
   list_stopped: RiFileList3Line,
   list_paused_upstream: RiFileList3Line,

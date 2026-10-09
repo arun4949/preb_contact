@@ -18,6 +18,7 @@ function session(overrides: Partial<SessionContext["workspace"]> = {}): SessionC
       avatar_url: "https://img.test/jane.png",
       default_workspace_id: "ws-1",
       onboarded_at: null,
+      product_news: true,
       created_at: "2026-09-01T00:00:00.000Z",
       updated_at: "2026-09-01T00:00:00.000Z",
     },

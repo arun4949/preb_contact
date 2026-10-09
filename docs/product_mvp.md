@@ -52,8 +52,8 @@ Consequence for the MVP: everything that touches the provider must sit behind on
 - Monthly credits expire 3 months after grant; annual credits are granted up front and expire after 12 months. Credits are consumed oldest‑expiring first.
 - New workspaces get **50 trial credits** (expire in 30 days). One trial per person.
 - Before a run starts, the workspace needs at least the *typical* estimate available. We put a hold on that amount; actual consumption is settled per batch from the provider's real cost. If a run exhausts the balance, it **pauses** with a buy button and **resumes automatically** after purchase.
-- A contact enriched in the same workspace within the last 90 days is free again (we serve it from our store). A contact enriched by another workspace is served from our store too and charged normally.
-- Everything we enrich is stored permanently with timestamps (for our future own engine) until the user deletes the list.
+- A contact enriched in the same workspace within the last 90 days is free again (we serve it from the workspace's own cache). Nothing is reused across workspaces: Preb acts as a processor only (privacy policy, 2026-10-09).
+- Results live in the list until the user deletes it. The per-workspace cache is purged with the list and after 90 days; a deleted workspace takes its cache with it.
 
 ## 7. Experience principles (non‑negotiable)
 

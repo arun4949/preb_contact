@@ -4,6 +4,7 @@ import { redirectOrigin } from "@/lib/auth/origin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdminEmail, isFreeEmailDomain } from "@/lib/auth/work-email";
 import { finishInviteeSignup } from "@/lib/auth/first-login";
+import { deleteUserCompletely } from "@/lib/account/deletion";
 
 /** OAuth (PKCE) return: exchange the code for a session, then continue to `next`. */
 export async function GET(request: NextRequest) {
@@ -31,12 +32,19 @@ export async function GET(request: NextRequest) {
           .ilike("email", email)
           .gt("expires_at", new Date().toISOString());
         // Brand-new free-mail account with no invite: it was created seconds
-        // ago by the OAuth exchange, so remove it again (cascades to profile,
-        // workspace, membership) and explain.
+        // ago by the OAuth exchange, so remove it again (the trigger already
+        // created a workspace, which `owner_id … on delete restrict` protects,
+        // hence the full deletion path) and explain.
         const createdJustNow = Date.now() - new Date(user.created_at).getTime() < 60_000;
         if (!invites && (createdJustNow || !memberships)) {
           await supabase.auth.signOut();
-          if (createdJustNow) await admin.auth.admin.deleteUser(user.id);
+          if (createdJustNow) {
+            try {
+              await deleteUserCompletely(admin, user.id);
+            } catch (error) {
+              console.error("[auth/callback] free-mail cleanup failed", error instanceof Error ? error.message : error);
+            }
+          }
           return NextResponse.redirect(`${origin}/login?error=work_email`);
         }
       }

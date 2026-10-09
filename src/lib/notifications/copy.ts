@@ -167,6 +167,16 @@ export function memberLeftCopy(name: string, workspaceName: string): Notificatio
   };
 }
 
+export function workspaceDeletedCopy(workspaceName: string): NotificationCopy {
+  return {
+    kind: "workspace_deleted",
+    title: `${workspaceName} was deleted`,
+    body: "The owner deleted the workspace with all its lists and credits. Create your own workspace or ask a teammate for an invite.",
+    href: null,
+    status: "neutral",
+  };
+}
+
 export function roleChangedCopy(workspaceName: string, role: "admin" | "member"): NotificationCopy {
   return {
     kind: "role_changed",

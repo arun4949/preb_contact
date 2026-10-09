@@ -15,11 +15,11 @@ import { estimateCredits, type EnrichmentField } from "@/lib/credits/estimate";
 import { MANUAL_HEADERS, MANUAL_MAPPING, MANUAL_MAX_CONTACTS, manualListName, type ManualEnrichmentInput, type ManualEnrichmentResult } from "@/lib/lists/manual";
 import { cachedContactPatch } from "@/lib/jobs/results";
 import { profileName } from "@/lib/fullenrich/mapping";
+import { CACHE_TTL_DAYS } from "@/lib/jobs/shared";
 import { runTick } from "@/lib/jobs/tick";
 import type { EnrichmentRecord } from "@/lib/fullenrich/types";
 
 const BUCKET = "list-uploads";
-const CACHE_TTL_DAYS = 90;
 const INSERT_BATCH = 1000;
 
 type Result<T = undefined> = { ok: true; data: T } | { ok: false; error: string };
@@ -109,6 +109,14 @@ function inputHash(key: string) {
   return createHash("sha256").update(key).digest("hex");
 }
 
+/** Drop the workspace's cached results for these inputs (chunked: PostgREST URL length). */
+async function purgeCacheRows(admin: ReturnType<typeof createAdminClient>, workspaceId: string, hashes: readonly string[]): Promise<void> {
+  const unique = [...new Set(hashes)];
+  for (let i = 0; i < unique.length; i += 500) {
+    await admin.from("enrichment_cache").delete().eq("workspace_id", workspaceId).in("input_hash", unique.slice(i, i + 500));
+  }
+}
+
 /**
  * Cache lookup (same workspace, < 90 days) and the `list_contacts` insert,
  * shared by the file wizard and manual entry. Replaces any previous rows of
@@ -133,7 +141,7 @@ async function insertContacts(
       .from("enrichment_cache")
       .select("input_hash, fields, result")
       .in("input_hash", hashList.slice(i, i + INSERT_BATCH))
-      .eq("source_workspace_id", workspaceId)
+      .eq("workspace_id", workspaceId)
       .gte("fetched_at", since);
     for (const hit of data ?? []) {
       cacheHits.set(hit.input_hash, { record: hit.result as unknown as EnrichmentRecord, reverse: hit.fields.includes("reverse") });
@@ -391,16 +399,22 @@ export async function stopList(listId: string): Promise<Result> {
   return { ok: true, data: undefined };
 }
 
-/** Hard delete: rows cascade, the original upload is removed from Storage. */
+/**
+ * Hard delete: rows cascade, the original upload is removed from Storage and
+ * the workspace's cached results for the list's contacts are dropped too
+ * (privacy policy § 8: "or earlier when the related list is deleted").
+ */
 export async function deleteList(listId: string): Promise<Result> {
   const { session, supabase, list } = await loadOwnList(listId);
   if (["queued", "enriching", "stopping"].includes(list.status)) {
     return { ok: false, error: "Stop the list before deleting it." };
   }
+  const admin = createAdminClient();
+  // Hashes must be read before the delete: list_contacts cascades away with the list.
+  const { data: hashRows } = await admin.from("list_contacts").select("input_hash").eq("list_id", list.id).not("input_hash", "is", null);
   const { error } = await supabase.from("lists").delete().eq("id", list.id);
   if (error) return { ok: false, error: "You don't have permission to delete this list." };
-  const admin = createAdminClient();
-  await admin.from("credit_holds").update({ released_at: new Date().toISOString() }).eq("list_id", list.id).is("released_at", null);
+  await purgeCacheRows(admin, session.workspace.id, (hashRows ?? []).map((r) => r.input_hash!));
   const { data: objects } = await admin.storage.from(BUCKET).list(`${session.workspace.id}/${list.id}`);
   if (objects?.length) {
     await admin.storage.from(BUCKET).remove(objects.map((o) => `${session.workspace.id}/${list.id}/${o.name}`));

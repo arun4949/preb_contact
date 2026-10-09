@@ -79,7 +79,7 @@ export function ListDialogs({ list, dialog, onClose, onDone }: ListDialogsProps)
         isOpen={dialog === "delete"}
         onOpenChange={(o) => !o && onClose()}
         title="Delete this list?"
-        description="The list, its rows and the uploaded file are removed permanently. Credits already used are not refunded."
+        description="The list, its rows, the uploaded file and the cached results for its contacts are removed permanently. Credits already used are not refunded."
         confirmLabel="Delete list"
         isPending={pending}
         onConfirm={() => run("delete", () => deleteList(list.id), "List deleted")}

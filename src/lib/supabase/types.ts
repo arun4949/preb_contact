@@ -211,6 +211,24 @@ export type Database = {
           },
         ]
       }
+      deleted_accounts: {
+        Row: {
+          deleted_at: string
+          email_hash: string
+          google_provider_id: string | null
+        }
+        Insert: {
+          deleted_at?: string
+          email_hash: string
+          google_provider_id?: string | null
+        }
+        Update: {
+          deleted_at?: string
+          email_hash?: string
+          google_provider_id?: string | null
+        }
+        Relationships: []
+      }
       email_sends: {
         Row: {
           email: string
@@ -325,7 +343,7 @@ export type Database = {
           input_hash: string
           provider: string
           result: Json
-          source_workspace_id: string | null
+          workspace_id: string
         }
         Insert: {
           fetched_at?: string
@@ -333,7 +351,7 @@ export type Database = {
           input_hash: string
           provider?: string
           result: Json
-          source_workspace_id?: string | null
+          workspace_id: string
         }
         Update: {
           fetched_at?: string
@@ -341,12 +359,12 @@ export type Database = {
           input_hash?: string
           provider?: string
           result?: Json
-          source_workspace_id?: string | null
+          workspace_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "enrichment_cache_source_workspace_id_fkey"
-            columns: ["source_workspace_id"]
+            foreignKeyName: "enrichment_cache_workspace_id_fkey"
+            columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
@@ -684,6 +702,7 @@ export type Database = {
           full_name: string | null
           id: string
           onboarded_at: string | null
+          product_news: boolean
           updated_at: string
         }
         Insert: {
@@ -694,6 +713,7 @@ export type Database = {
           full_name?: string | null
           id: string
           onboarded_at?: string | null
+          product_news?: boolean
           updated_at?: string
         }
         Update: {
@@ -704,6 +724,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           onboarded_at?: string | null
+          product_news?: boolean
           updated_at?: string
         }
         Relationships: [

@@ -57,6 +57,7 @@ export function OnboardingForm({ mode, defaultName, defaultWorkspace }: { mode: 
         <Button type="submit" className="mt-2 w-full" disabled={pending || done} aria-busy={pending || done}>
           {pending || done ? "Creating workspace…" : "Create workspace"}
         </Button>
+        <p className="text-body-2-regular text-text-tertiary">We send occasional product news. You can turn it off anytime in your profile settings.</p>
       </form>
     </div>
   );
