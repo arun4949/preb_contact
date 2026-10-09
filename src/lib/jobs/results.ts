@@ -3,6 +3,8 @@ import "server-only";
 import { mapRecord, toPrebCredits, type RecordKind, profileName } from "@/lib/fullenrich/mapping";
 import type { EnrichmentRecord, EnrichmentResult, EnrichmentStatus } from "@/lib/fullenrich/types";
 import type { Database, Json, TablesUpdate } from "@/lib/supabase/types";
+import { hashesOf, recordIdentifiers } from "@/lib/suppression/identifiers";
+import { scrubRaw, SUPPRESSED_PATCH, suppressedHashes } from "@/lib/suppression/check";
 import { log, type Admin, type BatchRow } from "./shared";
 
 type BatchStatus = Database["public"]["Enums"]["batch_status"];
@@ -77,9 +79,26 @@ export async function applyRecords(
   const kind: RecordKind = batch.kind;
   // Reverse results are cached under their own field tag so enrich lists never reuse them.
   const cacheFields = kind === "reverse" ? ["reverse"] : [...fields];
-  for (const record of records) {
+  // Suppression list (privacy policy § 12): results of people who objected are
+  // discarded before they are stored. The provider still charged for them.
+  const idsByRecord = records.map(recordIdentifiers);
+  const suppressed = await suppressedHashes(admin, idsByRecord.flatMap(hashesOf));
+  for (const [index, record] of records.entries()) {
     const contactId = record.custom?.contact_id;
     if (!contactId) continue;
+    const hits = idsByRecord[index].filter((i) => suppressed.has(hashesOf([i])[0]));
+    if (hits.length) {
+      const { data: existing } = await admin.from("list_contacts").select("raw").eq("id", contactId).eq("batch_id", batch.id).maybeSingle();
+      const raw = scrubRaw((existing?.raw ?? {}) as Record<string, string>, hits.map((h) => h.value));
+      await admin
+        .from("list_contacts")
+        .update({ ...SUPPRESSED_PATCH, raw: raw as Json, credits_cost: contactPatchFromRecord(record, now, kind).credits_cost ?? 0, enriched_at: now })
+        .eq("id", contactId)
+        .eq("batch_id", batch.id);
+      applied += 1;
+      log("results.suppressed", { batchId: batch.id, contactId });
+      continue;
+    }
     const { data: row, error } = await admin
       .from("list_contacts")
       .update(contactPatchFromRecord(record, now, kind))

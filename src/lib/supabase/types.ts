@@ -211,6 +211,44 @@ export type Database = {
           },
         ]
       }
+      contact_suppressions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          note: string | null
+          value_hash: string
+          value_hint: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind: string
+          note?: string | null
+          value_hash: string
+          value_hint: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          note?: string | null
+          value_hash?: string
+          value_hint?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_suppressions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deleted_accounts: {
         Row: {
           deleted_at: string
@@ -941,6 +979,7 @@ export type Database = {
         Returns: number
       }
       credits_available: { Args: { ws: string }; Returns: number }
+      apply_contact_suppression: { Args: { p_kind: string; p_value: string; p_cache_hashes: string[] }; Returns: number }
       expire_grants: { Args: never; Returns: number }
       grant_credits: {
         Args: {

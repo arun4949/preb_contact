@@ -30,6 +30,7 @@ export const SKIP_REASON_LABEL: Record<string, string> = {
   row_limit: "Over the row limit",
   no_result: "No result from provider",
   provider_lost: "Provider lost the request",
+  suppressed: "Person asked not to be contacted",
 };
 
 export type ContactUiStatus =
@@ -37,7 +38,8 @@ export type ContactUiStatus =
   | { kind: "enriched" }
   | { kind: "cached" }
   | { kind: "not_found" }
-  | { kind: "skipped"; reason: string };
+  | { kind: "skipped"; reason: string }
+  | { kind: "suppressed" };
 
 export function contactUiStatus(c: Pick<ContactRow, "status" | "skip_reason">): ContactUiStatus {
   switch (c.status) {
@@ -53,6 +55,7 @@ export function contactUiStatus(c: Pick<ContactRow, "status" | "skip_reason">): 
     case "failed":
       return { kind: "skipped", reason: SKIP_REASON_LABEL[c.skip_reason ?? ""] ?? "Failed" };
     case "skipped":
+      if (c.skip_reason === "suppressed") return { kind: "suppressed" };
       return { kind: "skipped", reason: SKIP_REASON_LABEL[c.skip_reason ?? ""] ?? "Skipped" };
   }
 }

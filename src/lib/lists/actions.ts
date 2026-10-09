@@ -16,6 +16,8 @@ import { MANUAL_HEADERS, MANUAL_MAPPING, MANUAL_MAX_CONTACTS, manualListName, ty
 import { cachedContactPatch } from "@/lib/jobs/results";
 import { profileName } from "@/lib/fullenrich/mapping";
 import { CACHE_TTL_DAYS } from "@/lib/jobs/shared";
+import { hashesOf, inputIdentifiers } from "@/lib/suppression/identifiers";
+import { scrubRaw, SUPPRESSED_PATCH, suppressedHashes } from "@/lib/suppression/check";
 import { runTick } from "@/lib/jobs/tick";
 import type { EnrichmentRecord } from "@/lib/fullenrich/types";
 
@@ -102,6 +104,8 @@ export interface ParseSummary extends RowSummary {
   cached: number;
   /** Email-only rows already identified in this workspace in the last 90 days (free; not counted in `emailOnly`). */
   cachedReverse: number;
+  /** Rows of people on the suppression list (privacy policy § 12): stored as skipped, never enriched. */
+  suppressed: number;
   truncated: boolean;
 }
 
@@ -127,7 +131,7 @@ async function insertContacts(
   workspaceId: string,
   listId: string,
   rows: NormalisedRow[],
-): Promise<Result<{ cached: number; cachedReverse: number }>> {
+): Promise<Result<{ cached: number; cachedReverse: number; suppressedEnrich: number; suppressedEmailOnly: number }>> {
   // Cache lookup (same workspace, < 90 days) → free, pre-filled rows. Enrichable
   // rows reuse enrich records; email-only rows reuse reverse-lookup records
   // (cached under the "reverse" field tag), so a repeat email list costs nothing.
@@ -148,10 +152,40 @@ async function insertContacts(
     }
   }
 
+  // Suppression list (privacy policy § 12): people who objected are never enriched again.
+  const idsByRow = new Map<number, ReturnType<typeof inputIdentifiers>>();
+  for (const r of rows) {
+    const ids = inputIdentifiers(r);
+    if (ids.length) idsByRow.set(r.rowIndex, ids);
+  }
+  const suppressed = idsByRow.size ? await suppressedHashes(admin, [...idsByRow.values()].flatMap(hashesOf)) : new Set<string>();
+
   let cached = 0;
   let cachedReverse = 0;
+  let suppressedEnrich = 0;
+  let suppressedEmailOnly = 0;
   const now = new Date().toISOString();
   const inserts: TablesInsert<"list_contacts">[] = rows.map((r) => {
+    const ids = idsByRow.get(r.rowIndex) ?? [];
+    const hits = ids.filter((i) => suppressed.has(hashesOf([i])[0]));
+    if (hits.length) {
+      if (r.enrichable) suppressedEnrich += 1;
+      else if (r.skipReason === "email_only") suppressedEmailOnly += 1;
+      return {
+        list_id: listId,
+        workspace_id: workspaceId,
+        row_index: r.rowIndex,
+        raw: scrubRaw(r.raw, hits.map((h) => h.value)) as Json,
+        first_name: r.first_name,
+        last_name: r.last_name,
+        full_name: r.full_name,
+        company_name: r.company_name,
+        domain: r.domain,
+        kind: "enrich",
+        credits_cost: 0,
+        ...SUPPRESSED_PATCH,
+      };
+    }
     const hash = r.dedupKey ? hashes.get(r.dedupKey) ?? inputHash(r.dedupKey) : null;
     const base: TablesInsert<"list_contacts"> = {
       list_id: listId,
@@ -199,7 +233,7 @@ async function insertContacts(
     }
   }
 
-  return { ok: true, data: { cached, cachedReverse } };
+  return { ok: true, data: { cached, cachedReverse, suppressedEnrich, suppressedEmailOnly } };
 }
 
 /**
@@ -231,7 +265,7 @@ export async function parseList(listId: string, mapping: ColumnMapping, hasHeade
 
   const inserted = await insertContacts(admin, session.workspace.id, list.id, rows);
   if (!inserted.ok) return inserted;
-  const { cached, cachedReverse } = inserted.data;
+  const { cached, cachedReverse, suppressedEnrich, suppressedEmailOnly } = inserted.data;
 
   const { error: updErr } = await supabase
     .from("lists")
@@ -243,7 +277,18 @@ export async function parseList(listId: string, mapping: ColumnMapping, hasHeade
     .eq("id", list.id);
   if (updErr) return { ok: false, error: "Could not save the mapping." };
 
-  return { ok: true, data: { ...summary, emailOnly: summary.emailOnly - cachedReverse, cached, cachedReverse, truncated: sheet.truncated } };
+  return {
+    ok: true,
+    data: {
+      ...summary,
+      enrichable: summary.enrichable - suppressedEnrich,
+      emailOnly: summary.emailOnly - cachedReverse - suppressedEmailOnly,
+      cached,
+      cachedReverse,
+      suppressed: suppressedEnrich + suppressedEmailOnly,
+      truncated: sheet.truncated,
+    },
+  };
 }
 
 /* ------------------------------------------------------------------ start */

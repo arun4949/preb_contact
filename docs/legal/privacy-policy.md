@@ -24,8 +24,7 @@ Brunnenstr. 11
 Germany
 
 Represented by: Leon Kranz and Arun Gupta
-Privacy requests: privacy@preb.co
-General contact: hello@preb.co
+Email: hello@preb.co (also for all privacy requests)
 
 We have not appointed a data protection officer because the legal thresholds for a mandatory appointment are not met. Our founders handle privacy requests personally.
 
@@ -65,13 +64,13 @@ Payments are handled by Stripe. When you buy a plan, Stripe collects your card d
 
 ### 3.4 Usage, device and log data
 
-When you use preb.co, our hosting provider records technical data about each request: your IP address, browser type and version, operating system, the pages and endpoints you call, timestamps, referring page and error codes. Our authentication provider keeps sign-in logs. If error monitoring is enabled, an error report may contain the URL, your browser details, your IP address and a technical description of what went wrong. Error monitoring does not record your screen or replay your session.
+When you use preb.co, our hosting provider records technical data about each request: your IP address, browser type and version, operating system, the pages and endpoints you call, timestamps, referring page and error codes. Our authentication provider keeps sign-in logs. We use no error monitoring or session recording service.
 
 Inside the application we keep records of what happens in your workspace: lists created, enrichment runs started, stopped or paused, credits consumed, members invited and plan changes. Some of these events appear in your notification center.
 
 ### 3.5 Support and feedback data
 
-Our support chat, help center and feedback board are provided by Featurebase. When you open them while signed in, we pass a signed identity token so that the support conversation shows who is writing. The token contains your user ID, email address, name, profile picture, account creation date, role, and your workspace's name, plan, monthly plan price, available credits, trial status, subscription status, billing period end and billing customer identifier. The content of your messages, feature requests and votes is stored by Featurebase.
+Our support chat, help center and feedback board are provided by Featurebase. When you open them while signed in, we pass a signed identity token so that the support conversation shows who is writing. The token contains your user ID, email address, name, profile picture, account creation date, role, and your workspace's name, plan, monthly plan price, available credits, trial status, subscription status and billing period end. The content of your messages, feature requests and votes is stored by Featurebase.
 
 ### 3.6 Communication data
 
@@ -128,7 +127,7 @@ We use a small number of cookies and browser storage entries.
 
 **Consent-based.** Analytics, measurement or marketing cookies are only set after you accept them in the consent banner. Our consent manager blocks such scripts until you decide. You can change or withdraw your choice at any time through the "Cookie preferences" link in the account menu and in the website footer. We honour the Global Privacy Control (GPC) browser signal as an opt-out from non-essential cookies.
 
-[TBD before publication: list the analytics and marketing tools the marketing website will use, if any, with cookie names and lifetimes. Confirm with Leon.]
+We currently use no analytics or marketing cookies at all. If we introduce any, we will list them in the Cookie Policy and set them only after your consent.
 
 A full list of cookies with names, purposes and lifetimes is published in our Cookie Policy.
 
@@ -147,7 +146,6 @@ We share personal data only with service providers that help us run Preb, and on
 | Google LLC (USA) | Google sign-in (only if you choose it) | Name, email, profile picture, Google account ID | USA |
 | Cordnet OÜ, trading as Featurebase (Estonia) | Support chat, help center, feedback board | Data listed in Section 3.5 and the content of your messages | Germany (hosting), Estonia |
 | Termly LLC (USA) | Cookie consent banner and consent records | Consent choices, truncated IP address, browser details | USA |
-| Functional Software, Inc., trading as Sentry (USA), where enabled | Error monitoring | Error reports with URL, browser details and IP address | USA |
 | Specialist B2B contact data providers | Finding and verifying work emails, personal emails, phone numbers and professional profile data for Customer Content | Contact names, company names and domains, LinkedIn URLs, email addresses, together with technical reference IDs | USA and EU, see our Sub-processor List |
 
 Our enrichment data providers process Contact data only on our instructions and only to deliver the result our Customer requested. They are named, together with their own sub-processors and locations, in our Sub-processor List, which forms part of the DPA.
@@ -168,13 +166,13 @@ The European Commission has decided that companies certified under the EU-US Dat
 
 | Provider | Transfer mechanism |
 |---|---|
-| Vercel, Resend, Stripe, Google, Sentry | EU-US Data Privacy Framework (and UK Extension), supplemented by Standard Contractual Clauses in the provider's data processing agreement |
+| Vercel, Resend, Stripe, Google | EU-US Data Privacy Framework (and UK Extension), supplemented by Standard Contractual Clauses in the provider's data processing agreement |
 | Termly | EU-US Data Privacy Framework as stated by the provider, supplemented by Standard Contractual Clauses |
 | Supabase | Standard Contractual Clauses (Module 2 and Module 3) included in the Supabase data processing addendum |
 | Enrichment data providers | Standard Contractual Clauses included in their data processing agreements |
 | Featurebase | No third-country transfer for hosting (Germany). Its own sub-processors are covered by Standard Contractual Clauses |
 
-You can request a copy of the relevant transfer safeguards by writing to privacy@preb.co.
+You can request a copy of the relevant transfer safeguards by writing to hello@preb.co.
 
 ---
 
@@ -196,7 +194,6 @@ We keep personal data only as long as we need it for the purposes above or as th
 | Email send log | 12 months, or deleted at once with the account |
 | Hashed email address and Google account identifier of a deleted account, used only to prevent repeated free trials | 12 months after deletion |
 | Server request logs at our hosting provider | Up to 30 days |
-| Error reports | 90 days |
 | Support conversations and feedback | For as long as your account exists, unless you ask us to delete them earlier |
 | Credit grants and ledger entries | For the life of the workspace, then as part of billing records |
 | Invoices, payment records and the data required to prove them | 10 years after the end of the year in which they were issued (§ 147 AO, § 257 HGB) |
@@ -242,9 +239,9 @@ You have the following rights with respect to the personal data we process as co
 
 ## 11. How to exercise your rights and delete your account
 
-Write to privacy@preb.co from the email address linked to your account, or send a letter to the postal address in Section 1. Tell us which right you want to exercise. We may ask you to confirm your identity, for example by replying from your account email or by signing in. We answer within one month. If a request is complex we may extend this by up to two months and will tell you why.
+Write to hello@preb.co from the email address linked to your account, or send a letter to the postal address in Section 1. Tell us which right you want to exercise. We may ask you to confirm your identity, for example by replying from your account email or by signing in. We answer within one month. If a request is complex we may extend this by up to two months and will tell you why.
 
-**Deleting your account or workspace.** You can do both yourself in the application. Settings, Profile, "Delete account" removes your profile, your sign-in, your notifications and your memberships, and deletes every workspace you own together with all its lists, contacts, uploaded files and credits. Workspace owners can also delete only the workspace under Settings, Members, "Delete workspace". Both actions ask you to type your email address or the workspace name, take effect immediately and cannot be undone. A running subscription is cancelled at once, and credits already used are not refunded. Remaining team members are informed in the application. Copies in backups are removed within 30 days. Billing records that we must keep under tax law are retained for the statutory period and are not used for anything else. Export your lists before deleting, because deletion is permanent. If you prefer, you can also email privacy@preb.co and we delete the account for you within 30 days.
+**Deleting your account or workspace.** You can do both yourself in the application. Settings, Profile, "Delete account" removes your profile, your sign-in, your notifications and your memberships, and deletes every workspace you own together with all its lists, contacts, uploaded files and credits. Workspace owners can also delete only the workspace under Settings, Members, "Delete workspace". Both actions ask you to type your email address or the workspace name, take effect immediately and cannot be undone. A running subscription is cancelled at once, and credits already used are not refunded. Remaining team members are informed in the application. Copies in backups are removed within 30 days. Billing records that we must keep under tax law are retained for the statutory period and are not used for anything else. Export your lists before deleting, because deletion is permanent. If you prefer, you can also email hello@preb.co and we delete the account for you within 30 days.
 
 **Members and invitations.** Workspace owners and admins can remove members at any time, and members can leave a workspace themselves. Removing a member does not delete the lists they created, because those belong to the workspace.
 
@@ -264,7 +261,7 @@ If a recruiting team has used Preb to find your contact details, this section is
 
 **How long it is kept.** We keep your data for the Customer for as long as the Customer keeps the list, and in a workspace-level cache for a maximum of 90 days. Our data providers keep results for 3 months. See Section 8.
 
-**Your rights.** You can exercise your GDPR rights (Section 10) against the Customer. If you do not know who the Customer is, or you prefer to contact us, write to privacy@preb.co. We will:
+**Your rights.** You can exercise your GDPR rights (Section 10) against the Customer. If you do not know who the Customer is, or you prefer to contact us, write to hello@preb.co. We will:
 
 - tell you, if we can, which Customer processed your data, or forward your request to them;
 - help the Customer respond to your request within the legal deadlines;
@@ -321,7 +318,7 @@ Depending on your state, you have the right to:
 
 ### 13.4 How to submit a request
 
-Email privacy@preb.co with the subject "Privacy request", or write to the address in Section 1. We will verify your identity by matching the information you provide with the information in our records, usually by asking you to reply from your account email address. An authorised agent may submit a request on your behalf if they provide written permission signed by you and we can verify your identity.
+Email hello@preb.co with the subject "Privacy request", or write to the address in Section 1. We will verify your identity by matching the information you provide with the information in our records, usually by asking you to reply from your account email address. An authorised agent may submit a request on your behalf if they provide written permission signed by you and we can verify your identity.
 
 We respond within 45 days. If we need more time, we will tell you and may take up to 45 additional days. To appeal a decision, reply to our response and tell us that you wish to appeal. We will answer within 45 days and, if we deny the appeal, tell you how to contact your state attorney general.
 
@@ -333,7 +330,7 @@ See Section 8 for the retention period of each category of personal information.
 
 ## 14. Children
 
-Preb is a business service for adults. We do not knowingly collect personal data from anyone under 18, and our terms do not allow minors to create an account. If you believe a minor has provided us with personal data, contact privacy@preb.co and we will delete it.
+Preb is a business service for adults. We do not knowingly collect personal data from anyone under 18, and our terms do not allow minors to create an account. If you believe a minor has provided us with personal data, contact hello@preb.co and we will delete it.
 
 ---
 
@@ -368,7 +365,6 @@ Brunnenstr. 11
 53123 Bonn
 Germany
 
-privacy@preb.co for privacy requests
-hello@preb.co for everything else
+hello@preb.co for privacy requests and everything else
 
 Related documents: Terms of Service, Data Processing Agreement, Sub-processor List, Cookie Policy, Imprint.

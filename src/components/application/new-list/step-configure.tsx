@@ -164,6 +164,7 @@ export function StepConfigure({ listId, defaultName, summary, creditsAvailable, 
             {summary.cached > 0 ? ` · ${fmt(summary.cached)} already enriched (free)` : ""}
             {summary.cachedReverse > 0 ? ` · ${fmt(summary.cachedReverse)} already identified (free)` : ""}
             {reverse ? ` · ${fmt(summary.emailOnly)} email-only (reverse lookup)` : ""}
+            {summary.suppressed > 0 ? ` · ${fmt(summary.suppressed)} skipped because the person asked not to be contacted` : ""}
           </p>
         </div>
       </section>

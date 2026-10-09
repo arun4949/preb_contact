@@ -76,7 +76,6 @@ describe("signFeaturebaseJwt", () => {
       creditsAvailable: 420,
       isTrial: false,
       subscriptionStatus: "active",
-      stripeCustomerId: "cus_123",
     });
   });
 
@@ -84,7 +83,7 @@ describe("signFeaturebaseJwt", () => {
     process.env.FEATUREBASE_JWT_SECRET = SECRET;
     const trial = await jwtVerify((await signFeaturebaseJwt(session({ plan_key: null, stripe_customer_id: null, subscription_status: null })))!, new TextEncoder().encode(SECRET));
     const [trialCompany] = trial.payload.companies as Array<Record<string, unknown>>;
-    expect(trialCompany).toMatchObject({ isTrial: true, planName: "Trial", planKey: "trial", monthlySpend: 0, subscriptionStatus: "none", stripeCustomerId: "" });
+    expect(trialCompany).toMatchObject({ isTrial: true, planName: "Trial", planKey: "trial", monthlySpend: 0, subscriptionStatus: "none" });
 
     const annual = await jwtVerify((await signFeaturebaseJwt(session({ plan_key: "p2_12k_y" })))!, new TextEncoder().encode(SECRET));
     const [annualCompany] = annual.payload.companies as Array<Record<string, unknown>>;

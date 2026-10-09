@@ -44,6 +44,8 @@ function statusLabel(c: ContactRow): string {
       return "Pending";
     case "skipped":
       return `Skipped: ${s.reason}`;
+    case "suppressed":
+      return "Suppressed";
   }
 }
 

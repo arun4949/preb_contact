@@ -108,7 +108,15 @@ export function LoginCard({ next, error, notice }: { next: string; error?: strin
       </form>
 
       <p className="mt-6 text-caption-1-regular text-text-secondary">
-        By continuing you agree to our Terms of Service and Privacy Policy.
+        By continuing you agree to our{" "}
+        <a href="/terms" className="underline-offset-2 hover:text-text-primary hover:underline">
+          Terms of Service
+        </a>{" "}
+        and{" "}
+        <a href="/privacy" className="underline-offset-2 hover:text-text-primary hover:underline">
+          Privacy Policy
+        </a>
+        .
       </p>
     </div>
   );

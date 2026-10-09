@@ -59,7 +59,6 @@ export async function signFeaturebaseJwt(session: SessionContext): Promise<strin
         creditsAvailable: session.creditsAvailable,
         isTrial: !workspace.plan_key,
         subscriptionStatus: workspace.subscription_status ?? "none",
-        stripeCustomerId: workspace.stripe_customer_id ?? "",
         currentPeriodEnd: workspace.current_period_end ?? "",
       },
     ],

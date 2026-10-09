@@ -146,6 +146,12 @@ export function StatusCell({ c, running = true }: { c: ContactRow; running?: boo
           Skipped · {s.reason}
         </Chip>
       );
+    case "suppressed":
+      return (
+        <Chip variant="caption" color="neutral" title="This person asked not to be contacted through Preb. No data is shown or exported.">
+          Suppressed
+        </Chip>
+      );
   }
 }
 

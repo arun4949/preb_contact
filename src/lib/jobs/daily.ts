@@ -17,6 +17,8 @@ const EXPIRY_WARNING_DAYS = 7;
 const NOTIFICATION_RETENTION_DAYS = 90;
 /** Tombstones of deleted accounts (trial guard) are kept this long (privacy policy § 8). */
 const DELETED_ACCOUNT_RETENTION_MONTHS = 12;
+/** The email send log (rate limits, delivery proof) is kept this long (privacy policy § 8). */
+const EMAIL_LOG_RETENTION_MONTHS = 12;
 /** Alert when the upstream balance is below this many credits… */
 const LOW_BALANCE_FLOOR = Number(process.env.UPSTREAM_LOW_BALANCE ?? "200");
 
@@ -29,6 +31,7 @@ export interface DailySummary {
   notificationsDeleted: number;
   cacheRowsDeleted: number;
   tombstonesDeleted: number;
+  emailLogDeleted: number;
   upstreamBalance: number | null;
   alerted: boolean;
   errors: string[];
@@ -37,7 +40,7 @@ export interface DailySummary {
 /** Housekeeping: expire grants, provider balance alert, cleanup of drafts, cache rows, tombstones and old webhook payloads. */
 export async function runDaily(): Promise<DailySummary> {
   const admin = createAdminClient();
-  const summary: DailySummary = { expiredGrants: 0, holdsReleased: 0, draftsDeleted: 0, webhookEventsDeleted: 0, expiryWarnings: 0, notificationsDeleted: 0, cacheRowsDeleted: 0, tombstonesDeleted: 0, upstreamBalance: null, alerted: false, errors: [] };
+  const summary: DailySummary = { expiredGrants: 0, holdsReleased: 0, draftsDeleted: 0, webhookEventsDeleted: 0, expiryWarnings: 0, notificationsDeleted: 0, cacheRowsDeleted: 0, tombstonesDeleted: 0, emailLogDeleted: 0, upstreamBalance: null, alerted: false, errors: [] };
   const step = async (name: string, fn: () => Promise<void>) => {
     try {
       await fn();
@@ -137,6 +140,14 @@ export async function runDaily(): Promise<DailySummary> {
     const { count, error } = await admin.from("deleted_accounts").delete({ count: "exact" }).lt("deleted_at", cutoff.toISOString());
     if (error) throw new Error(error.message);
     summary.tombstonesDeleted = count ?? 0;
+  });
+
+  await step("cleanup_email_sends", async () => {
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - EMAIL_LOG_RETENTION_MONTHS);
+    const { count, error } = await admin.from("email_sends").delete({ count: "exact" }).lt("sent_at", cutoff.toISOString());
+    if (error) throw new Error(error.message);
+    summary.emailLogDeleted = count ?? 0;
   });
 
   await step("cleanup_webhook_events", async () => {

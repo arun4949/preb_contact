@@ -9,6 +9,7 @@ import {
   RiLogoutBoxRLine,
   RiMegaphoneLine,
   RiPulseLine,
+  RiUserForbidLine,
   RiQuestionLine,
   RiSettings3Line, RiTeamLine } from "@remixicon/react";
 import { Avatar } from "@/components/base/avatar/avatar";
@@ -123,6 +124,15 @@ export function AccountDropdown({ name, email, avatarUrl, workspaceName, isAdmin
               >
                 <RiPulseLine className="size-5 text-foreground-icon-secondary" aria-hidden />
                 <span className="text-body-medium">Ops</span>
+              </DropdownItem>
+              <DropdownItem
+                onSelect={() => {
+                  setOpen(false);
+                  router.push("/admin/suppressions");
+                }}
+              >
+                <RiUserForbidLine className="size-5 text-foreground-icon-secondary" aria-hidden />
+                <span className="text-body-medium">Suppressions</span>
               </DropdownItem>
             </DropdownGroup>
           </>

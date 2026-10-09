@@ -9,11 +9,11 @@ Copy rules: no em dashes, en dashes or " - " as punctuation (AGENTS.md). The enr
 | Document | File | Status |
 |---|---|---|
 | Privacy Policy | `privacy-policy.md` | Draft v1.0, awaiting founder review |
-| Terms of Service (B2B only, incl. acceptable use, credits, refunds) | `terms-of-service.md` | Not started |
-| Data Processing Agreement (Art. 28 GDPR, SCCs by reference, CCPA service provider terms) | `dpa.md` | Not started |
-| Sub-processor List (names the enrichment provider and its sub-processors) | `sub-processors.md` | Not started |
-| Cookie Policy (can be generated from Termly, cookie table) | `cookie-policy.md` | Not started |
-| Contact opt-out / suppression page text ("Your data and Preb") | `contact-opt-out.md` | Not started |
+| Terms of Service (B2B only, incl. acceptable use, credits, refunds) | `terms-of-service.md` | Draft v1.0, awaiting founder review |
+| Data Processing Agreement (Art. 28 GDPR, SCCs by reference, CCPA service provider terms) | `dpa.md` | Draft v1.0, awaiting founder review |
+| Sub-processor List (names the enrichment provider and its sub-processors) | `sub-processors.md` | Draft v1.0, awaiting founder review |
+| Cookie Policy | Termly | Covered by Termly (CTO decision 2026-10-09), no markdown file |
+| Contact opt-out / suppression page text ("Your data and Preb") | `contact-opt-out.md` | Draft v1.0, awaiting founder review |
 | Imprint | handled by Leon | Texts exist |
 
 ## Decisions the texts are built on (2026-10-09)
@@ -23,13 +23,15 @@ Copy rules: no em dashes, en dashes or " - " as punctuation (AGENTS.md). The enr
 - Infrastructure in the **USA** (Supabase us-east-1, Vercel US East), controller in Germany. Transfers via DPF where certified, otherwise SCCs.
 - English only. No data protection officer.
 - Supervisory authority: LDI NRW (Düsseldorf).
+- Terms (2026-10-09): German law, Bonn courts, no arbitration; permitted use is recruiting and hiring only; no refunds except by law; credits non-refundable and expiring; cancel at period end; B2B only.
+- DPA (2026-10-09): two-tier Sub-processor List. Tier 1 is Preb's direct sub-processors (Supabase, Vercel, FullEnrich); tier 2 is the providers they publish for customer data (FullEnrich: DigitalOcean, Enrow, Icypeas, Datagma, BounceBan, EmailListVerify, ListMint; Supabase and Vercel: AWS, Cloudflare). Reason: EDPB Opinion 22/2024 expects the controller to know the whole chain. 30 days notice of changes, 14 days to object. FullEnrich data stays in the EU, transfers under SCCs with Preb as exporter.
+- Business risk noted 2026-10-09: FullEnrich's terms forbid making enriched data available to third parties and ask integrators to sign a specific agreement. Preb's model is that integration. Raise it with FullEnrich when negotiating the partnership.
 
-## Open placeholders in privacy-policy.md
+## Open placeholders
 
-- `[date of publication]` at the top.
-- Section 5: cookie and analytics tools of the marketing website (ask Leon).
-- Section 6 and 7: confirm the DPF status of Supabase and Termly on dataprivacyframework.gov before publishing. Vercel, Resend, Stripe, Google and Sentry are certified per their own pages.
-- Section 6: keep or drop the Sentry row depending on whether a Sentry DSN is set on Vercel.
+- `[date of publication]` at the top of every text: set when the pages are built.
+- Confirm the DPF status of Supabase and Termly on dataprivacyframework.gov before publishing. Vercel, Resend, Stripe and Google are certified per their own pages.
+- Answered 2026-10-09: no analytics or marketing tools on the website so far (privacy policy says so); no Sentry (removed from all texts); DPA Annex 2 statements on 2FA and restore tests confirmed by the CTO.
 
 ## Code and process changes the policy depends on
 
@@ -37,13 +39,13 @@ The policy describes the target state. These items must be done before or at pub
 
 1. ~~Enrichment cache~~ Done 2026-10-09 (migration 0017: per-workspace key, purged with the list, 90-day purge in the daily job).
 2. ~~Product news~~ Done 2026-10-09: Settings › Profile switch mirrored to the Resend contact, onboarding note, welcome footer. Product news go out as Resend Broadcasts (built-in unsubscribe link). The Resend webhook `contact.updated` / `contact.deleted` at `/api/webhooks/resend` syncs unsubscribes back; its signing secret is `RESEND_WEBHOOK_SECRET` (set in Vercel too).
-3. ~~Deletion~~ Done 2026-10-09: self-service Delete account (Profile) and Delete workspace (Members, owner only). Still to do: create the `privacy@preb.co` mailbox for requests by email.
-4. ~~`email_sends` retention~~ Rows are deleted with the account; a 12-month purge job is still open. Sentry error reports: 90 days is Sentry's default.
-5. Suppression list for Contacts who object (table plus check in the dispatcher and in display/export).
+3. ~~Deletion~~ Done 2026-10-09: self-service Delete account (Profile) and Delete workspace (Members, owner only). Privacy requests go to hello@preb.co (CTO decision 2026-10-09, no separate privacy mailbox).
+4. ~~`email_sends` retention~~ Done 2026-10-09: deleted with the account and purged after 12 months by the daily job.
+5. ~~Suppression list~~ Done 2026-10-09 (migration 0018): `/admin/suppressions` for founders; suppressed people are skipped at upload, provider results that match are discarded, stored results are cleared, rows show "Suppressed" and export empty.
 6. Termly: maintain the cookie list, enable GPC handling, confirm autoBlock covers the Featurebase widget and any website analytics. Add a "Cookie preferences" link to the website footer.
-7. Link Privacy Policy, Terms and Imprint from every page (website and app) and enter the privacy URL in the Google OAuth consent screen.
-8. Optional data minimisation: remove `stripeCustomerId` from the Featurebase identity token (`src/lib/featurebase/jwt.ts`); if kept, Section 3.5 already discloses it.
-9. Two-factor authentication on Supabase, Vercel, Stripe, Resend, Featurebase and Google accounts for both founders (Section 9 states this).
+7. Link Privacy Policy, Terms and Imprint from every page (website and app) and enter the privacy URL in the Google OAuth consent screen. App side done 2026-10-09 (login line links to /terms and /privacy, auth footer already did); website side and Google console open until the pages exist.
+8. ~~Featurebase data minimisation~~ Done 2026-10-09: the Stripe customer id is no longer sent to Featurebase.
+9. ~~Two-factor authentication~~ Confirmed by the CTO 2026-10-09.
 
 ## Reference material reviewed
 
