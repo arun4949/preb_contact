@@ -66,7 +66,7 @@ Consequence for the MVP: everything that touches the provider must sit behind on
 
 ## 8. Out of scope for the MVP
 
-CRM integrations, Chrome extension, prospecting/search, folders, company enrichment, public API, per‑user credit limits, SSO/SAML, notification center (stretch), retry of not‑found contacts.
+CRM integrations, Chrome extension, prospecting/search, folders, company enrichment, public API, per‑user credit limits, SSO/SAML, retry of not‑found contacts. (The notification center, once a stretch goal, shipped on 2026-10-09: header bell with workspace events plus admin announcements.)
 
 ## 9. Success criteria for the sprint
 

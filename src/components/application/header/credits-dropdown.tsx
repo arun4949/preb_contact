@@ -13,7 +13,7 @@ import type { CreditSummary } from "@/lib/supabase/queries";
 const fmt = (n: number) => n.toLocaleString("en-US");
 const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
-/** Header credits trigger + balance panel (Figma 1015:35). Red dot when < 10 % of the plan remains. */
+/** Header credits trigger + balance panel (Figma 1015:35). Red dot when < 10 % of the plan remains. Phone shows the coin only (the balance is one tap away) so the tabs, bell and avatar fit at 375 px. */
 export function CreditsDropdown({ summary }: { summary: CreditSummary }) {
   const [open, setOpen] = useState(false);
   const { openSettings } = useSettingsUrl();
@@ -23,11 +23,11 @@ export function CreditsDropdown({ summary }: { summary: CreditSummary }) {
     <Dropdown isOpen={open} onOpenChange={setOpen}>
       <DropdownTrigger
         aria-label={`Credits: ${fmt(summary.available)} available`}
-        className={cx(buttonStyles.base, buttonStyles.size.medium, buttonStyles.variant.ghost, "relative gap-1.5 px-2.5")}
+        className={cx(buttonStyles.base, buttonStyles.size.medium, buttonStyles.variant.ghost, "relative gap-1.5 px-2 sm:px-2.5")}
       >
         <RiCoinLine className="size-5 shrink-0 text-foreground-icon-primary" aria-hidden />
         <span className="hidden text-body-medium sm:inline">Credits</span>
-        <span className="text-body-medium tabular-nums">{fmt(summary.available)}</span>
+        <span className="hidden text-body-medium tabular-nums sm:inline">{fmt(summary.available)}</span>
         {low ? (
           <span aria-hidden className="absolute end-1.5 top-1.5 size-2 rounded-full bg-notification-error-foreground ring-2 ring-background-primary-default" />
         ) : null}

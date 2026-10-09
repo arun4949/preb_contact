@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   RiBankCardLine,
   RiFeedbackLine,
   RiShieldCheckLine,
   RiLogoutBoxRLine,
+  RiMegaphoneLine,
+  RiPulseLine,
   RiQuestionLine,
   RiSettings3Line, RiTeamLine } from "@remixicon/react";
 import { Avatar } from "@/components/base/avatar/avatar";
@@ -23,10 +26,13 @@ export interface AccountDropdownProps {
   email: string;
   avatarUrl: string | null;
   workspaceName: string;
+  /** Preb admins (`ADMIN_EMAILS`) get the Admin group. */
+  isAdmin?: boolean;
 }
 
 /** Avatar trigger + account menu (Figma 1015:33). Settings/Billing open the settings modal; Help and feedback open the Featurebase messenger. */
-export function AccountDropdown({ name, email, avatarUrl, workspaceName }: AccountDropdownProps) {
+export function AccountDropdown({ name, email, avatarUrl, workspaceName, isAdmin = false }: AccountDropdownProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const { openSettings } = useSettingsUrl();
@@ -96,6 +102,31 @@ export function AccountDropdown({ name, email, avatarUrl, workspaceName }: Accou
             <span className="text-body-medium">Cookie preferences</span>
           </DropdownItem>
         </DropdownGroup>
+        {isAdmin ? (
+          <>
+            <DropdownDivider />
+            <DropdownGroup label="Admin">
+              <DropdownItem
+                onSelect={() => {
+                  setOpen(false);
+                  router.push("/admin/notifications");
+                }}
+              >
+                <RiMegaphoneLine className="size-5 text-foreground-icon-secondary" aria-hidden />
+                <span className="text-body-medium">Announcements</span>
+              </DropdownItem>
+              <DropdownItem
+                onSelect={() => {
+                  setOpen(false);
+                  router.push("/admin/ops");
+                }}
+              >
+                <RiPulseLine className="size-5 text-foreground-icon-secondary" aria-hidden />
+                <span className="text-body-medium">Ops</span>
+              </DropdownItem>
+            </DropdownGroup>
+          </>
+        ) : null}
         <DropdownDivider />
         <div className="flex items-center justify-between gap-2 p-2">
           <span className="text-body-medium text-text-primary">Theme</span>

@@ -77,9 +77,8 @@ export function TabList<T extends object>({ className, ref, ...props }: TabListP
     if (!el) return;
     const measure = () => {
       const selected = el.querySelector<HTMLElement>("[role='tab'][data-selected]");
-      if (selected) {
-        setUnderline({ left: selected.offsetLeft, width: selected.offsetWidth });
-      }
+      // No selected tab (the selected key matches none): hide the underline.
+      setUnderline(selected ? { left: selected.offsetLeft, width: selected.offsetWidth } : null);
     };
     measure();
     const ro = new ResizeObserver(measure);

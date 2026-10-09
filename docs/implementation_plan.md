@@ -63,7 +63,7 @@ Accounts to reuse: Stripe *Preb.co* (live, `acct_1TbKWFI8j3KU4u56`, old scheduli
 | KPI tiles | `stat-cards` (`variant="plain"`, `columns={4}`) | List detail summary: Contacts, Valid emails, Risky, Phones. Values are strings → pair with `use-count-up`. |
 | Gauge on list card | **custom `ContactGauge`** (SVG) | `radial-chart-card` is a 329 px full card, wrong shape for a card thumbnail. Build a 180° gauge: track `var(--color-border-button-default)`, valid arc `chart-1`, risky `chart-3`, animated `pathLength` with `motion`, number via `useCountUp`. Reuse `formatNumber` from `charts/chart-card.tsx` if installed. |
 | Toasts | `notification` + `NotificationViewport` | Purpose‑built toast stack (fixed, portal, animated). Write `ToastProvider` context with `toast.success/error()` that renders `<Notification autoDismissDuration onDismiss>`. |
-| Notification bell (stretch) | `notification-center` | Tabs hardcoded → edit `TABS`. |
+| Notification bell | `notification-center` (installed, forked in place) | Tabs All · Activity · Announcements with unread counts, day groups, clickable rows, read state from `read_at`; lives in `header/notifications-dropdown.tsx` inside a `dropdown` popover. Internal scroll fade = `components/base/scroll-fade`. |
 | Settings | `settings-modal` | Fork pages: replace `NAV_GROUPS`/`PAGE_TITLES`/`SettingsPage` with `profile | workspace | billing`; delete Tools/Storage/Marketplace/plan‑art files; reuse `SettingsCard`, `SettingsSectionLabel`, `SettingsRow`, `SettingsValueField` from `settings-rows.tsx`. |
 | Auth | `auth-card`, `social-button` | `providers={["google"]}`, `mode="signin"` with email‑only form (hide password → fork minimal), `mode="verify"` style for "check your inbox". |
 | Progress | `agent-progress` (fork → `EnrichmentProgress`) | Remove internal timers; props `steps`, `completedCount`, `activeProgress (0–1)`, `statusLabel`. Keep visuals. |
@@ -176,8 +176,10 @@ Next.js on Vercel ──► Supabase (Postgres · Auth · Storage `list-uploads`
 | `enrichment_cache` | `input_hash`, `fields text[]`, `result jsonb`, `provider`, `fetched_at`, `source_workspace_id`. |
 | `provider_rate_limit` | single row token bucket: `window_start`, `count`. |
 | `webhook_events` | `provider`, `external_id` unique, `payload`, `processed_at`, `error`. |
+| `notifications` (0014) | one row per recipient: `user_id`, `workspace_id`, `kind` (text + check: admin, member_*, list_*, credits_*, trial_ending, plan_*), `title`, `body`, `href`, `status neutral|information|success|error`, `dedupe_key` (unique per user), `admin_notification_id`, `data`, `read_at`. RLS: select/update own rows, column grant limits the app to `read_at`; writes via service role / definer functions. In the realtime publication. 90-day retention (daily job). |
+| `admin_notifications` (0014) | announcements by Preb admins: `created_by`, `title`, `body`, `href`, `audience all|users|workspaces`, `target_ids`, `recipient_count`. Service-role only. `send_admin_notification()` fans out in one statement; trigger `notify_member_joined` on `workspace_members` writes joined/welcome rows. |
 
-RLS: `is_workspace_member(ws)` + `is_workspace_admin(ws)` helpers; members read everything in their workspace; only owner/admin invite/remove/delete lists/manage billing; grants/holds/ledger/batches/cache/webhook_events writable by service role only. Storage bucket `list-uploads` private, path `${workspace_id}/${list_id}/original.ext`, RLS by prefix, signed upload URL for the client, server reads via service role. Realtime publication **only on `lists`**.
+RLS: `is_workspace_member(ws)` + `is_workspace_admin(ws)` helpers; members read everything in their workspace; only owner/admin invite/remove/delete lists/manage billing; grants/holds/ledger/batches/cache/webhook_events writable by service role only. Storage bucket `list-uploads` private, path `${workspace_id}/${list_id}/original.ext`, RLS by prefix, signed upload URL for the client, server reads via service role. Realtime publication on `lists` and `notifications`; the browser socket must carry the JWT (`utils/supabase/realtime.ts`) or RLS hides every change.
 
 ### CSV / XLSX ingest
 - Client: `file-upload` → signed upload to Storage; PapaParse `preview: 200` for header detection + mapping preview (delimiter auto `, ; \t`, BOM strip, `TextDecoder` fallback Latin‑1); XLSX first sheet via SheetJS in a web worker for preview.
@@ -227,12 +229,12 @@ Spec lives in `docs/screens.md`; agent calls `get_screenshot` per node while bui
 docs/product_mvp.md · docs/screens.md · docs/fullenrich.md · docs/setup_manual.md · docs/decisions.md
 supabase/migrations/0001_schema.sql … (RLS, functions, triggers, realtime, storage bucket)
 src/app/(auth)/login · (auth)/onboarding · auth/callback · auth/confirm · invite/[token]
-src/app/(app)/layout.tsx (header, providers) · lists · lists/new · lists/[id] · admin/ops
+src/app/(app)/layout.tsx (header, providers) · lists · lists/new · lists/[id] · enrich · admin/ops · admin/notifications
 src/app/api/webhooks/{fullenrich,stripe}/route.ts · api/jobs/{tick,daily}/route.ts · api/lists/[id]/export/route.ts
 src/lib/fullenrich/{client,types,mapping,signature,cost}.ts
 src/lib/credits/{estimate,plans,server}.ts · src/lib/stripe/{client,checkout,portal,webhooks}.ts
 src/lib/csv/{parse,automap,normalize,export,xlsx}.ts · src/lib/email/resend.ts (send + per‑address rate limit via `email_sends`) · src/lib/email/templates/{layout,magic-link,…}.tsx
-src/lib/supabase/{admin,queries}.ts · src/lib/jobs/{dispatch,reconcile,settle,rate-limit}.ts
+src/lib/supabase/{admin,queries}.ts · src/lib/jobs/{dispatch,reconcile,settle,rate-limit}.ts · src/lib/notifications/{types,copy,emit,queries,actions,admin-actions,announcement,time}.ts
 src/components/base/{dialog,sheet,empty-state,skeleton,progress-bar,stepper,banner,toast}/
 src/components/application/{header,list-card,contact-gauge,enrichment-progress,mapping-table,data-table,settings/*}
 vercel.ts (crons) · .env.example · vitest.config.ts · playwright.config.ts
@@ -370,6 +372,7 @@ Only these need your hands. Each is 5–15 minutes. Saved to `docs/setup_manual.
 - Post-launch (2026-10-08): email-only rows are pre-filled from the same-workspace reverse cache at parse time (`ParseSummary.cachedReverse`, shared `cachedContactPatch()`); an all-cached list may start (no hold, completed by the tick); stale-cookie login loop → `GET /auth/signout`; list detail refreshes on realtime `SUBSCRIBED` and on tab visible.
 - Post-launch (2026-10-08, late): Sentry source maps and the `/terms` / `/privacy` pages leave this repo's scope — they belong to the separate website / landing-page project (CTO decision). M8 links stay as-is until that project ships.
 - Pricing v2 (2026-10-08, management decision): credit unit halved (`CREDIT_MULTIPLIER = 2`, costs 2 / 6 / 20 / 2), catalogue re-cut to 11 monthly + 11 annual USD tiers with fixed prices (`lib/credits/plans.ts`, keys `p2_*`), `MARGIN_MULTIPLIER` removed, money formatted by `lib/credits/money.ts` (`en-US`, `$36.50`; briefly EUR/`en-IE`, reverted same day), per-credit price promoted into the plan-picker headline; trial 50; migration 0012 (trial + one-off doubling of grants/holds/ledger/costs, marker row in `webhook_events` provider `migration`); `scripts/stripe-catalogue.ts` now uses `products.list` (search lagged and produced duplicates), retires products not in `PLANS` (unset default price → deactivate → archive). Test and live catalogues synced, migration 0012 applied (2026-10-08).
+- 2026-10-09 (notification center): migrations 0014–0016 (`notifications`, `admin_notifications`, join trigger, announcement fan-out RPC, dedupe index); `src/lib/notifications/*`; emitters in `jobs/notify.ts`, `jobs/dispatch.ts`, `billing/low-credits.ts`, `api/webhooks/stripe` (`subscriptionChange()`), `jobs/daily.ts` (expiry warnings + retention), `workspace/actions.ts`; BoardUI `notification-center` installed and forked, new `base/scroll-fade`, header bell, Admin group in the account menu, `/admin/notifications`; realtime sockets now authenticated via `utils/supabase/realtime.ts` (fixes silent non-delivery on RLS tables); phone header shows the coin without the number. CTO decisions: `ADMIN_EMAILS` env only (M10), creator-only list events, in-app-only announcements, tabs All · Activity · Announcements.
 - Post-launch: `/onboarding` moved under `(auth)` and doubles as the landing page for signed-in users without a workspace (app layout redirects there instead of `/login`); `lib/workspace/create.ts` creates an owned workspace without a trial; `lib/workspace/naming.ts` mirrors the trigger's naming.
 
 ## Verification

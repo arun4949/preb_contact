@@ -7,7 +7,7 @@ import { LIST_STATUS_META } from "@/components/application/list-card/list-status
 import type { ContactQuery } from "@/lib/lists/contact-query";
 import type { ContactsPage, ListEta } from "@/lib/lists/queries";
 import type { ListRow } from "@/lib/supabase/queries";
-import { createClient } from "@/utils/supabase/client";
+import { createRealtimeClient } from "@/utils/supabase/realtime";
 import { useColumnVisibility } from "./columns";
 import { ContactsTable } from "./contacts-table";
 import { ContactsToolbar } from "./contacts-toolbar";
@@ -70,17 +70,24 @@ export function ListDetail({ list, contacts, query, eta, extras, canDelete }: Li
 
   useEffect(() => {
     if (done) return;
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`list:${list.id}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "lists", filter: `id=eq.${list.id}` }, () => refresh())
-      // The engine may finish (e.g. an all-cached list) before the channel is open;
-      // one refresh on connect closes that gap.
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") refresh();
-      });
+    let cancelled = false;
+    let cleanup: (() => void) | null = null;
+    // The socket needs the user's JWT before joining (RLS), see createRealtimeClient.
+    void createRealtimeClient().then((supabase) => {
+      if (cancelled) return;
+      const channel = supabase
+        .channel(`list:${list.id}`)
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "lists", filter: `id=eq.${list.id}` }, () => refresh())
+        // The engine may finish (e.g. an all-cached list) before the channel is open;
+        // one refresh on connect closes that gap.
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") refresh();
+        });
+      cleanup = () => void supabase.removeChannel(channel);
+    });
     return () => {
-      void supabase.removeChannel(channel);
+      cancelled = true;
+      cleanup?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [list.id, done]);

@@ -131,3 +131,35 @@ export function subscriptionPatch(sub: Stripe.Subscription, planKey: string | nu
     current_period_end: end ? new Date(end * 1000).toISOString() : null,
   };
 }
+
+/* ----------------------------------------------------- change detection */
+
+export type SubscriptionChangeKind = "plan_started" | "plan_changed" | "plan_cancel_scheduled" | "plan_cancel_reverted" | "plan_canceled";
+
+export interface SubscriptionBefore {
+  plan_key: string | null;
+  subscription_status: string | null;
+  cancel_at_period_end: boolean;
+}
+
+/** Statuses under which a plan counts as running (billing hiccups included). */
+const RUNNING = new Set(["active", "trialing", "past_due", "unpaid"]);
+const isRunning = (status: string | null) => status !== null && RUNNING.has(status);
+
+/**
+ * Which user-facing event a subscription webhook represents, by diffing the
+ * stored workspace row with the patch about to be written. `null` for status
+ * churn that changes nothing for the customer (e.g. incomplete → active with
+ * the same plan already announced, or a repeated event).
+ */
+export function subscriptionChange(before: SubscriptionBefore, patch: SubscriptionPatch): SubscriptionChangeKind | null {
+  if (patch.subscription_status === "canceled") {
+    return before.plan_key && before.subscription_status !== "canceled" ? "plan_canceled" : null;
+  }
+  if (!isRunning(patch.subscription_status) || !patch.plan_key) return null;
+  if (!before.plan_key || !isRunning(before.subscription_status)) return "plan_started";
+  if (before.plan_key !== patch.plan_key) return "plan_changed";
+  if (!before.cancel_at_period_end && patch.cancel_at_period_end) return "plan_cancel_scheduled";
+  if (before.cancel_at_period_end && !patch.cancel_at_period_end) return "plan_cancel_reverted";
+  return null;
+}

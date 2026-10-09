@@ -9,8 +9,12 @@ import {
   invoiceSubscriptionId,
   invoiceWorkspaceId,
   STRIPE_PROVIDER,
+  subscriptionChange,
   subscriptionPatch,
 } from "@/lib/stripe/webhooks";
+import { getPlan } from "@/lib/credits/plans";
+import { creditsGrantedCopy, planCopy } from "@/lib/notifications/copy";
+import { notifyWorkspace } from "@/lib/notifications/emit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/types";
 import { log, logError, type Admin } from "@/lib/jobs/shared";
@@ -127,6 +131,10 @@ async function onInvoicePaid(admin: Admin, invoice: Stripe.Invoice) {
   if (error) throw new Error(`grant_credits failed: ${error.message}`);
   await admin.from("workspaces").update({ low_credits_notified_at: null }).eq("id", wsId);
   log("stripe.granted", { workspaceId: wsId, invoiceId: invoice.id, credits: decision.credits, grantId, subscription: invoiceSubscriptionId(invoice) });
+  await notifyWorkspace(admin, wsId, creditsGrantedCopy({ credits: decision.credits, note: decision.note, expiresAt: decision.expiresAt }), {
+    roles: ["owner", "admin"],
+    dedupeKey: `credits_granted:${invoice.id}`,
+  });
 }
 
 async function onSubscription(admin: Admin, sub: Stripe.Subscription, deleted: boolean) {
@@ -139,7 +147,7 @@ async function onSubscription(admin: Admin, sub: Stripe.Subscription, deleted: b
   const planKey = planKeyFromLookup(price?.lookup_key) ?? (price ? (await planForPriceId(price.id))?.key ?? null : null);
   const patch = subscriptionPatch(sub, planKey, deleted);
   // A stale event for a replaced subscription must not clobber the current one.
-  const { data: ws } = await admin.from("workspaces").select("stripe_subscription_id").eq("id", wsId).maybeSingle();
+  const { data: ws } = await admin.from("workspaces").select("stripe_subscription_id, plan_key, subscription_status, cancel_at_period_end").eq("id", wsId).maybeSingle();
   if (ws?.stripe_subscription_id && ws.stripe_subscription_id !== sub.id && !deleted) {
     const current = await stripe().subscriptions.retrieve(ws.stripe_subscription_id).catch(() => null);
     if (current && current.status !== "canceled") {
@@ -148,6 +156,16 @@ async function onSubscription(admin: Admin, sub: Stripe.Subscription, deleted: b
     }
   }
   if (deleted && ws?.stripe_subscription_id && ws.stripe_subscription_id !== sub.id) return;
-  await admin.from("workspaces").update(patch).eq("id", wsId);
+  const { error: updateError } = await admin.from("workspaces").update(patch).eq("id", wsId);
+  if (updateError) throw new Error(`workspace update failed: ${updateError.message}`);
   log("stripe.subscription", { workspaceId: wsId, ...patch, deleted });
+
+  // In-app: only real changes for the customer (started, switched, cancel scheduled/reverted, canceled).
+  const change = ws ? subscriptionChange(ws, patch) : null;
+  if (change) {
+    const planName = getPlan(change === "plan_canceled" ? ws?.plan_key ?? null : patch.plan_key)?.name ?? null;
+    const previousPlanName = getPlan(ws?.plan_key ?? null)?.name ?? null;
+    const dedupeKey = change === "plan_started" ? `sub:${sub.id}:started` : change === "plan_canceled" ? `sub:${sub.id}:canceled` : null;
+    await notifyWorkspace(admin, wsId, planCopy(change, { planName, previousPlanName, periodEnd: patch.current_period_end }), { roles: ["owner", "admin"], dedupeKey });
+  }
 }

@@ -1,5 +1,5 @@
 // Generated from the Supabase project via MCP `generate_typescript_types`
-// after migration 0001 (+ email_sends from 0003). Regenerate after every migration.
+// after migration 0014 (notifications). Regenerate after every migration.
 export type Json =
   | string
   | number
@@ -16,6 +16,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_notifications: {
+        Row: {
+          audience: string
+          body: string
+          created_at: string
+          created_by: string
+          href: string | null
+          id: string
+          recipient_count: number
+          target_ids: string[]
+          title: string
+        }
+        Insert: {
+          audience: string
+          body: string
+          created_at?: string
+          created_by: string
+          href?: string | null
+          id?: string
+          recipient_count?: number
+          target_ids?: string[]
+          title: string
+        }
+        Update: {
+          audience?: string
+          body?: string
+          created_at?: string
+          created_by?: string
+          href?: string | null
+          id?: string
+          recipient_count?: number
+          target_ids?: string[]
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_notifications_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_grants: {
         Row: {
           amount: number
@@ -561,6 +605,76 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          admin_notification_id: string | null
+          body: string
+          created_at: string
+          data: Json
+          dedupe_key: string | null
+          href: string | null
+          id: string
+          kind: string
+          read_at: string | null
+          status: string
+          title: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          admin_notification_id?: string | null
+          body?: string
+          created_at?: string
+          data?: Json
+          dedupe_key?: string | null
+          href?: string | null
+          id?: string
+          kind: string
+          read_at?: string | null
+          status?: string
+          title: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          admin_notification_id?: string | null
+          body?: string
+          created_at?: string
+          data?: Json
+          dedupe_key?: string | null
+          href?: string | null
+          id?: string
+          kind?: string
+          read_at?: string | null
+          status?: string
+          title?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_admin_notification_id_fkey"
+            columns: ["admin_notification_id"]
+            isOneToOne: false
+            referencedRelation: "admin_notifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -824,6 +938,20 @@ export type Database = {
       recompute_list_counters: {
         Args: { p_list_id: string }
         Returns: undefined
+      }
+      send_admin_notification: {
+        Args: {
+          p_audience: string
+          p_body: string
+          p_created_by: string
+          p_href: string
+          p_target_ids: string[]
+          p_title: string
+        }
+        Returns: {
+          id: string
+          recipient_count: number
+        }[]
       }
       settle_batch: {
         Args: { p_batch_id: string }

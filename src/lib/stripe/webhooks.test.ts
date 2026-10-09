@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type Stripe from "stripe";
 import { PLANS } from "@/lib/credits/plans";
-import { decideGrant, subscriptionPatch, type InvoiceLineSummary } from "./webhooks";
+import { decideGrant, subscriptionChange, subscriptionPatch, type InvoiceLineSummary, type SubscriptionBefore, type SubscriptionPatch } from "./webhooks";
 import { planKeyFromLookup as fromCatalogue } from "./catalogue";
 
 const p1k = PLANS.find((p) => p.key === "p2_1k_m")!;
@@ -86,5 +86,44 @@ describe("subscriptionPatch", () => {
   it("clears the plan when deleted or canceled", () => {
     expect(subscriptionPatch(sub, "p2_1k_m", true).plan_key).toBeNull();
     expect(subscriptionPatch({ ...sub, status: "canceled" } as Stripe.Subscription, "p2_1k_m").stripe_subscription_id).toBeNull();
+  });
+});
+
+describe("subscriptionChange", () => {
+  const patch = (over: Partial<SubscriptionPatch>): SubscriptionPatch => ({
+    stripe_subscription_id: "sub_1",
+    plan_key: "p2_1k_m",
+    subscription_status: "active",
+    cancel_at_period_end: false,
+    current_period_end: null,
+    ...over,
+  });
+  const none: SubscriptionBefore = { plan_key: null, subscription_status: null, cancel_at_period_end: false };
+  const running: SubscriptionBefore = { plan_key: "p2_1k_m", subscription_status: "active", cancel_at_period_end: false };
+
+  it("starts when no plan was stored", () => {
+    expect(subscriptionChange(none, patch({}))).toBe("plan_started");
+  });
+  it("starts when the stored plan was incomplete and becomes active", () => {
+    expect(subscriptionChange({ ...running, subscription_status: "incomplete" }, patch({}))).toBe("plan_started");
+  });
+  it("stays quiet while incomplete", () => {
+    expect(subscriptionChange(none, patch({ subscription_status: "incomplete" }))).toBeNull();
+  });
+  it("changes when the plan key differs", () => {
+    expect(subscriptionChange(running, patch({ plan_key: "p2_2k_m" }))).toBe("plan_changed");
+  });
+  it("detects a scheduled cancel and its reversal", () => {
+    expect(subscriptionChange(running, patch({ cancel_at_period_end: true }))).toBe("plan_cancel_scheduled");
+    expect(subscriptionChange({ ...running, cancel_at_period_end: true }, patch({}))).toBe("plan_cancel_reverted");
+  });
+  it("cancels once", () => {
+    const canceled = patch({ stripe_subscription_id: null, plan_key: null, subscription_status: "canceled" });
+    expect(subscriptionChange(running, canceled)).toBe("plan_canceled");
+    expect(subscriptionChange({ plan_key: null, subscription_status: "canceled", cancel_at_period_end: false }, canceled)).toBeNull();
+  });
+  it("ignores repeated events and past_due churn", () => {
+    expect(subscriptionChange(running, patch({}))).toBeNull();
+    expect(subscriptionChange({ ...running, subscription_status: "past_due" }, patch({}))).toBeNull();
   });
 });

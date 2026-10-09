@@ -5,6 +5,8 @@ import { AppHeader } from "@/components/application/header/app-header";
 import { SettingsHost } from "@/components/application/settings/settings-host";
 import { FeaturebaseIdentity } from "@/components/foundations/featurebase/featurebase";
 import { signFeaturebaseJwt } from "@/lib/featurebase/jwt";
+import { isAdminEmail } from "@/lib/auth/work-email";
+import { getNotifications, getUnreadCount } from "@/lib/notifications/queries";
 
 /**
  * Signed-in shell. `proxy.ts` already bounced anonymous requests to /login;
@@ -18,9 +20,11 @@ import { signFeaturebaseJwt } from "@/lib/featurebase/jwt";
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const session = await getSessionContext();
   if (!session) redirect((await getUser()) ? "/onboarding" : "/auth/signout");
-  const [credits, featurebaseJwt] = await Promise.all([
+  const [credits, featurebaseJwt, notifications, unreadCount] = await Promise.all([
     getCreditSummary(session.workspace, session.creditsAvailable),
     signFeaturebaseJwt(session),
+    getNotifications(),
+    getUnreadCount(),
   ]);
 
   return (
@@ -30,7 +34,11 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         email={session.email}
         avatarUrl={session.profile.avatar_url}
         workspaceName={session.workspace.name}
+        isAdmin={isAdminEmail(session.email)}
         credits={credits}
+        userId={session.userId}
+        notifications={notifications}
+        unreadCount={unreadCount}
       />
       <main className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col px-4 py-8 md:px-6 lg:px-10">{children}</main>
       <Suspense fallback={null}>

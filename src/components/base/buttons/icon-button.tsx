@@ -69,6 +69,9 @@ const styles = sortCx({
   },
 });
 
+/** The icon-button recipe, for triggers that must render their own element (e.g. a React Aria `DropdownTrigger`). */
+export const iconButtonStyles = styles;
+
 export function IconButton({
   icon: Icon,
   size = "medium",

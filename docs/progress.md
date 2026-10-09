@@ -2,6 +2,41 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Notification center + admin announcements — 2026-10-09 · header bell, workspace events, admin dashboard (complete, walked in a browser)
+
+### Decisions (CTO)
+- Admin allow-list stays the env var `ADMIN_EMAILS` (no hardcoded addresses). **Set `ADMIN_EMAILS=arun@preb.co,leon@preb.co` in Vercel** (M10); locally it stays the Gmail test account.
+- Enrichment notifications go to the list creator only; team events to every member; billing/credit events to owners and admins; low credits to everyone (owners/admins get the billing link, members plain news).
+- Announcements are in-app only (no email). Tabs: **All · Activity · Announcements**.
+
+### Done
+- ✅ **Migrations 0014–0016** (applied via MCP, types regenerated): `notifications` (one row per recipient, `kind` text + check, `dedupe_key` unique per user, `read_at`; RLS select/update own rows, column-level grant so the app can only write `read_at`, inserts service-role only; added to the realtime publication), `admin_notifications` (service-role only), trigger `notify_member_joined` on `workspace_members` (covers both join paths: signup through an invite inside `handle_new_user`, and `acceptInvite`; owners excluded), `send_admin_notification()` fans an announcement out to all users / selected users / whole workspaces in one statement. Advisors: no new findings.
+- ✅ **Server** `src/lib/notifications/`: `copy.ts` (every text, tested, no dashes), `emit.ts` (`notifyUsers` / `notifyWorkspace`, never throw, role-aware copy, dedupe via upsert), `queries.ts`, `actions.ts` (feed, mark read, mark all read; **no `revalidatePath`**, the bell owns its state), `admin-actions.ts` (recipients, send through the RPC, history with read counts), `announcement.ts` (shared validation).
+- ✅ **Events wired** (one line next to the existing email or state change): list ready/stopped (`notify.ts`, manual runs say "Enrichment of … is ready" and link to `/enrich`), paused for credits, paused upstream and failed (`dispatch.ts`, in-app only, ops keeps its email), low credits (`low-credits.ts`), credits added on `invoice.paid`, plan started / changed / cancel scheduled / cancel reverted / canceled (`subscriptionChange()` in `lib/stripe/webhooks.ts` diffs the stored row against the patch; unit-tested), credits and trial expiring 7 days ahead + 90-day retention (`daily.ts`), member removed / left / role changed (`workspace/actions.ts`), joined / welcome (trigger).
+- ✅ **UI**: BoardUI `notification-center` installed via MCP and forked (tabs with unread counts, rows grouped Today / Yesterday / This week / Earlier, clickable rows, Preb mark for announcements, kind icons, per-tab empty states, internal scroll region with the AGENTS.md top fade via new `components/base/scroll-fade`). Header bell between New list and Credits (`header/notifications-dropdown.tsx`): unread badge, popover, realtime INSERT → server-action refetch → toast (coalesced per burst, hidden tab = no toast), optimistic read state, refetch on tab focus. Account menu gets an **Admin** group (Announcements · Ops) for `ADMIN_EMAILS`.
+- ✅ **`/admin/notifications`**: composer (title 80, message 500, optional link, audience All users / Selected users with search / Workspaces, live preview of the exact row, "Send to N users" with confirm), history table (audience, recipients, read %). Non-admins get the branded 404.
+- 🐞 **Realtime fix (pre-existing)**: the browser client never put the user's JWT on the realtime socket, so `postgres_changes` on RLS tables silently delivered nothing (the 5 s poll hid it on list detail / Enrich). New `utils/supabase/realtime.ts: createRealtimeClient()` sets the auth before subscribing; used by the bell, list detail and the Enrich table. Verified: inserts now arrive live.
+- ✅ **Bell restyled (CTO feedback: the round blue ghost trigger looked cheap)**: now the BoardUI Finance template bell (`template-notification-center-menu`): secondary square `icon-button` recipe (bordered, `shadow-xs`, `RiNotificationLine`) with the template's red count dot; `icon-button.tsx` exports `iconButtonStyles` so the React Aria `DropdownTrigger` can wear it. The template's raw `bg-red-600` is the token `bg-foreground-icon-error` (same red in light, red-400 in dark). Checked at 1440/375 px, light/dark, hover and open.
+- ✅ **Header tab on admin pages (CTO feedback)**: `/admin/notifications` and `/admin/ops` no longer highlight Lists. React Aria force-selects the first tab when nothing is selected, so pages outside the tabs render the same two items as plain links (identical styling, no underline, still keyboard-reachable); `TabList` hides its underline when no tab is selected. No admin tab added (CTO). Also fixed a hydration warning: the announcement preview stamped `new Date()` on server and client; it now uses a fixed "now" label. Verified: admin pages none selected, Tab key reaches Lists then Enrich, Enter navigates, Lists/Enrich pages unchanged, 0 hydration warnings, 1440 light and 375 dark.
+- ✅ Phone header: the coin trigger shows the icon only below `sm` (balance one tap away) so Lists · Enrich · + · bell · coin · avatar fit at 375 px.
+- ✅ `npm run lint` ✓ (2 upstream warnings) · `npx tsc --noEmit` ✓ · `npm test` ✓ (**82**, new: copy, timeAgo/groupOf, subscriptionChange) · `npm run build` ✓.
+
+### Browser walk (Playwright headless, localhost, no browser MCP available)
+- ✅ Empty bell, light/dark, 1440 and 375 px; Escape closes; `N` shortcut suppressed while open.
+- ✅ Test invitee created through the real path (pending invite + `auth.admin.createUser`) → trigger produced "Nora joined …" for the two members and a welcome for her; Arun's row click opened the Members modal and cleared the badge.
+- ✅ Announcement to 2 selected users: confirm dialog → toast → history row; the other open tab's badge went 1 → 2 **live** and showed the toast, "View" opened `/enrich` and marked it read. Non-admin: 3 unread (welcome + 2 announcements), no Admin group, `/admin/notifications` → 404 page.
+- ✅ Members modal: role Member → Admin → "You are now an admin of …" in the member's bell.
+- ✅ Manual enrichment of a cached contact (free) → "Enrichment of Satya Nadella is ready" arrived live, link to `/enrich`.
+- ✅ Integration smoke on a throwaway workspace (signed fake Stripe events against the local endpoint, real `maybeNotifyLowCredits` / `runDaily`): plan_started, quiet on a no-change update, credits_granted (dedupe by invoice), cancel scheduled / reverted / canceled, low credits once with billing link, trial_ending + credits_expiring once per grant, paused upstream + failed to the creator. 8/8.
+- ✅ Cleanup: test user deleted (cascade), test announcements, joined rows and the manual test list removed; prod tables back to 0 notifications. One side effect: the low-credits and list-finished test emails went to the CTO's Gmail aliases.
+
+### Next (CTO)
+1. **M10**: set `ADMIN_EMAILS=arun@preb.co,leon@preb.co` in Vercel Production (`docs/setup_manual.md`). Without it nobody sees the Admin group on prod.
+2. Deploy; open the bell on preb.co, send a first announcement from `/admin/notifications` (the composer previews the exact row).
+3. Note: `notFound()` pages stream with HTTP 200 and the branded 404 body (same for `/admin/ops`); harmless, flagged for a later pass.
+
+---
+
 ## Featurebase support chat — 2026-10-08 · messenger on every page, identified in the app
 
 ### Done

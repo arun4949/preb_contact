@@ -17,7 +17,7 @@ import { EmailCell, PhoneCell, StatusCell } from "@/components/application/list-
 import { SEARCH_SHORTCUT_ATTR } from "@/components/application/header/use-shortcuts";
 import type { ManualHistory, ManualRunState } from "@/lib/enrich/queries";
 import type { ContactRow } from "@/lib/lists/segments";
-import { createClient } from "@/utils/supabase/client";
+import { createRealtimeClient } from "@/utils/supabase/realtime";
 import { cx } from "@/utils/cx";
 import { initialsOf } from "@/utils/initials";
 
@@ -95,15 +95,22 @@ export function EnrichedContactsTable({ history, runState, q, workspaceId }: Enr
       if (document.visibilityState === "visible") refresh();
     };
     document.addEventListener("visibilitychange", onVisible);
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`enrich:${workspaceId}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "lists", filter: `workspace_id=eq.${workspaceId}` }, () => refresh())
-      .subscribe();
+    let cancelled = false;
+    let cleanup: (() => void) | null = null;
+    // The socket needs the user's JWT before joining (RLS), see createRealtimeClient.
+    void createRealtimeClient().then((supabase) => {
+      if (cancelled) return;
+      const channel = supabase
+        .channel(`enrich:${workspaceId}`)
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "lists", filter: `workspace_id=eq.${workspaceId}` }, () => refresh())
+        .subscribe();
+      cleanup = () => void supabase.removeChannel(channel);
+    });
     return () => {
+      cancelled = true;
       clearInterval(t);
       document.removeEventListener("visibilitychange", onVisible);
-      void supabase.removeChannel(channel);
+      cleanup?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runState.running, workspaceId]);

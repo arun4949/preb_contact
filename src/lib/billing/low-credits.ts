@@ -5,6 +5,8 @@ import { sendEmail } from "@/lib/email/resend";
 import { CreditsLowEmail } from "@/lib/email/templates/credits-low";
 import { firstNameFor } from "@/lib/email/name";
 import { log, logError, type Admin } from "@/lib/jobs/shared";
+import { creditsLowCopy } from "@/lib/notifications/copy";
+import { notifyWorkspace } from "@/lib/notifications/emit";
 
 /** Low = under 10 % of the plan. Trials skip this (they get the paused-list email instead). */
 export const LOW_CREDIT_RATIO = 0.1;
@@ -25,13 +27,22 @@ export async function maybeNotifyLowCredits(admin: Admin, workspaceId: string): 
     if (balance >= plan.credits * LOW_CREDIT_RATIO) return false;
 
     // Claim the flag first so concurrent settlements send at most one email.
+    const claimedAt = new Date().toISOString();
     const { data: claimed } = await admin
       .from("workspaces")
-      .update({ low_credits_notified_at: new Date().toISOString() })
+      .update({ low_credits_notified_at: claimedAt })
       .eq("id", ws.id)
       .is("low_credits_notified_at", null)
       .select("id");
     if (!claimed?.length) return false;
+
+    // In-app: every member hears about it; only owners/admins get the billing link.
+    await notifyWorkspace(
+      admin,
+      ws.id,
+      (role) => creditsLowCopy({ workspaceName: ws.name, available: balance, planCredits: plan.credits, canBuy: role !== "member" }),
+      { dedupeKey: `credits_low:${ws.id}:${claimedAt}` },
+    );
 
     const { data: owner } = await admin.from("profiles").select("email, full_name").eq("id", ws.owner_id).maybeSingle();
     if (!owner?.email) return false;

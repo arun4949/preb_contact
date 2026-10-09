@@ -16,8 +16,8 @@ Reference screenshots live in Figma file `Preb Playground` (key `1ubk4a4JolmKs8u
 ## Global frame
 
 - **Page ground** `bg-background-full`; content surfaces `bg-background-primary-default`.
-- **Header** (sticky, 64 px, `border-b border-separator-border`): left Preb logo + wordmark (`public/logo.svg`, `public/logoName.svg`) · nav `tabs` underline variant with only **Lists** · right: `+ New list` primary pill `button`, `Credits` `dropdown` trigger (coin icon, red `status-dot` when balance < 10 %), bell `icon-button` (stretch goal), avatar `dropdown`.
-- **Content width** max 1440 px, `px-6 lg:px-10`, `py-8`. Mobile (< 768): header shows logo, New list icon button, avatar; content `px-4`.
+- **Header** (sticky, 64 px, `border-b border-separator-border`): left Preb logo + wordmark (`public/logo.svg`, `public/logoName.svg`) · nav `tabs` underline variant **Lists · Enrich** (pages outside them, e.g. `/admin/*`, select no tab: same items as plain links, no underline) · right: `+ New list` primary pill `button`, **bell** (BoardUI Finance template recipe: secondary `icon-button` 36 px with `RiNotificationLine`, red 16 px count dot `bg-foreground-icon-error` top-end, "9+" cap; opens § 9), `Credits` `dropdown` trigger (coin icon, red `status-dot` when balance < 10 %; below `sm` the coin only), avatar `dropdown`.
+- **Content width** max 1440 px, `px-6 lg:px-10`, `py-8`. Mobile (< 768): header shows logo mark, both tabs, New list icon button, bell, coin, avatar; content `px-4`.
 - **Cards/panels** `rounded-3xl border border-border-button-default bg-background-primary-default`. Controls `rounded-xl`. Pills `rounded-full`.
 - **Type**: page title `text-title-2-medium`, section title `text-title-3-semibold`, card title `text-headline-medium`, body `text-body-regular`, secondary `text-body-regular text-text-secondary`, meta `text-body-2-regular text-text-tertiary`, labels `text-caption-1-semibold`.
 - **Motion**: page/section enter 200 ms fade+4 px rise; card hover lift 1 px + border `-hover`; numbers count up (`use-count-up`); respect `prefers-reduced-motion`.
@@ -77,7 +77,7 @@ Common: `stepper` (Upload · Map · Configure) under the header, page header wit
 - Mobile: filters in a `sheet` (button "Filters"), table horizontal scroll with sticky Name column.
 
 ## 4 · Account dropdown (`1015:33`)
-Header block: avatar, name `text-body-medium`, workspace `text-body-2-regular text-text-secondary`. Group: Settings · Billing. (Workspace switcher group if member of several.) Group: Help center · Share feedback. Divider. Log out.
+Header block: avatar, name `text-body-medium`, workspace `text-body-2-regular text-text-secondary`. Group: Settings · Billing. (Workspace switcher group if member of several.) Group: Help center · Share feedback · Cookie preferences. **Admin** group (only for `ADMIN_EMAILS`): Announcements → `/admin/notifications`, Ops → `/admin/ops`. Theme row. Divider. Log out.
 
 ## 5 · Credits dropdown (`1015:35`)
 Title `Credit balance`. Row: coin icon, `1,240 available` right‑aligned, `progress-bar` vs plan amount, meta `200 credits expire Dec 1`. Footer link `Manage credits` → Settings › Billing. If trial: `chip` "Trial · 50 credits".
@@ -92,3 +92,9 @@ BoardUI `settings-modal`, pages: **Profile** (avatar upload, full name, email re
 
 ## 8 · System states
 `loading.tsx` skeletons per route; `error.tsx` card with retry; `not-found.tsx`; toasts for every action result; offline banner if Realtime drops.
+
+## 9 · Notification center (header bell)
+Popover 430 px (`dropdown`, `bottom end`, full width minus 32 px on phone) holding the forked `notification-center`: title `Notifications` + `N unread`, ghost `Mark all read`, `segmented-control` **All · Activity · Announcements** with unread counter pills, list on `bg-background-secondary-default` with day groups (Today · Yesterday · This week · Earlier, `text-caption-1-semibold text-text-tertiary`), rows `rounded-notification-card bg-background-primary-default` (visual circle: status/kind icon, or the Preb mark in `bg-accent-50` for announcements; title `text-body-medium` while unread, `text-body-regular` once read; body `text-body-2-regular` clamped to 3 lines; relative time `2m · 3h · Yesterday · Tue · Oct 2`; accent unread dot). Row click marks read and follows `href` (app path via router, `https://` in a new tab). Internal scroll region max 516 px with the top blur fade. Empty states per tab ("You're all caught up" / "No announcements yet"). Live: realtime INSERT → refetch → toast (one per burst, with View when the item has a link; "N new notifications" for several); refetch on tab focus.
+
+## 10 · Admin announcements (`/admin/notifications`, admins only)
+Page title `Announcements`; two cards on `lg`: **New announcement** (Title `input` 80 chars with counter, Message `textarea` 500 chars with counter, Link optional, Audience `segmented-control` All users · Selected users · Workspaces, picker = search `input` + `checkbox` rows with avatar/name/email/workspace chip, `N selected` + Clear; footer `Will reach N users.` or the validation message, primary `Send to N users` → `ConfirmDialog` (primary tone)) and **Preview** (the exact `NotificationRow` as users will see it). Below: **Sent announcements** `table` (title + body, audience chip, recipients, read count with %, sent, by) with an inline empty state.

@@ -3,7 +3,7 @@ import "server-only";
 import { ProviderError, startBulkEnrichment, startReverseEmailLookup } from "@/lib/fullenrich/client";
 import type { EnrichmentRecord } from "@/lib/fullenrich/types";
 import type { Json } from "@/lib/supabase/types";
-import { notifyListPaused, notifyOps } from "./notify";
+import { notifyListFailed, notifyListPaused, notifyListPausedUpstream, notifyOps } from "./notify";
 import { buildEnrichPayload, buildReversePayload } from "./payload";
 import { claimRateSlot } from "./rate-limit";
 import { applyRecords } from "./results";
@@ -198,12 +198,15 @@ async function dispatchList(admin: Admin, list: ListRow, hook: string, summary: 
         .is("provider_enrichment_id", null)
         .gte("created_at", minutesAgo(60));
       if ((failures ?? 0) >= MAX_FAILED_BATCHES) {
-        await admin
+        const { data: failedRow } = await admin
           .from("lists")
           .update({ status: "failed", error: "The enrichment service rejected this list repeatedly. Our team has been notified." })
           .eq("id", list.id)
-          .eq("status", status);
+          .eq("status", status)
+          .select("id")
+          .maybeSingle();
         await releaseHolds(admin, list.id);
+        if (failedRow) await notifyListFailed(admin, list);
         await notifyOps("List failed after repeated provider rejections", [
           `list_id: ${list.id}`,
           `workspace_id: ${list.workspace_id}`,
@@ -231,6 +234,7 @@ async function pauseUpstream(admin: Admin, list: ListRow, current: ListRow["stat
     .maybeSingle();
   log("dispatch.paused_upstream", { listId: list.id, reason });
   if (updated && current !== "paused_upstream") {
+    await notifyListPausedUpstream(admin, list);
     await notifyOps("Upstream credits exhausted, lists paused", [reason, `list_id: ${list.id}`, `workspace_id: ${list.workspace_id}`, "Top up the provider account; lists retry every 15 minutes."]);
   }
 }

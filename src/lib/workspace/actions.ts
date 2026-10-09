@@ -8,6 +8,8 @@ import { createInviteToken } from "@/lib/auth/invite";
 import { isRateLimited, sendEmail } from "@/lib/email/resend";
 import { InviteEmail } from "@/lib/email/templates/invite";
 import { appOrigin } from "@/lib/jobs/shared";
+import { memberLeftCopy, memberRemovedCopy, roleChangedCopy } from "@/lib/notifications/copy";
+import { notifyUsers, notifyWorkspace } from "@/lib/notifications/emit";
 
 type Result<T = undefined> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -216,6 +218,7 @@ export async function changeMemberRole(userId: string, role: InviteRole): Promis
     .neq("role", "owner")
     .select("user_id");
   if (error || !data?.length) return { ok: false, error: "Could not change the role." };
+  await notifyUsers(createAdminClient(), [userId], roleChangedCopy(session.workspace.name, role), { workspaceId: session.workspace.id });
   revalidatePath("/", "layout");
   return { ok: true, data: undefined };
 }
@@ -244,6 +247,12 @@ export async function removeMember(userId: string): Promise<Result<{ left: boole
     .update({ default_workspace_id: other?.workspace_id ?? null })
     .eq("id", userId)
     .eq("default_workspace_id", session.workspace.id);
+
+  if (self) {
+    await notifyWorkspace(admin, session.workspace.id, memberLeftCopy(session.profile.full_name ?? session.email, session.workspace.name), { roles: ["owner", "admin"] });
+  } else {
+    await notifyUsers(admin, [userId], memberRemovedCopy(session.workspace.name));
+  }
 
   revalidatePath("/", "layout");
   return { ok: true, data: { left: self } };

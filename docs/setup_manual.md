@@ -100,3 +100,12 @@ The messenger (app id `6a37abfc48ab5024a97ba42e`, constant in `src/lib/featureba
 - [ ] 3. **Security → Validate JWT**: paste a token from a dev render (temporarily `console.log` the result of `signFeaturebaseJwt`) and confirm the company shape is accepted (Featurebase docs name the company id key both `id` and `companyId`; the validator is the source of truth).
 - [ ] 4. Test with a **non-admin** account: Featurebase SSO cannot identify users who are admins of the Featurebase organisation, so the CTO's own login stays anonymous in the messenger.
 - [ ] 5. Termly runs with `autoBlock`. Confirm the launcher loads with cookies rejected; if the resource blocker holds `do.featurebase.app` back, allowlist it or mark it essential in the Termly dashboard.
+
+## M10 · Admin allow-list for announcements · 2026-10-09
+
+The notification center's admin dashboard (`/admin/notifications`, plus `/admin/ops` and the **Admin** group in the account menu) is gated by `ADMIN_EMAILS` only; nothing is hardcoded.
+
+- [ ] 1. **Vercel → Settings → Environment Variables (Production)**: set `ADMIN_EMAILS=arun@preb.co,leon@preb.co` (comma-separated, case-insensitive). Redeploy. Locally `.env.local` keeps the Gmail test account.
+- [ ] 2. Sign in on preb.co, open the account menu → **Admin → Announcements**, send a first announcement (the preview shows the exact row). Non-admins get the branded 404 on that URL.
+- [ ] 3. Optional: `OPS_ALERT_EMAIL` still decides where ops emails go (falls back to the first `ADMIN_EMAILS` entry).
+

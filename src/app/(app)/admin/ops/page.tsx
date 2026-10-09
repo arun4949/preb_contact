@@ -22,7 +22,8 @@ const when = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "sh
 
 /**
  * /admin/ops (plan § Observability): allow-listed founders only. Service-role
- * reads across all workspaces — never link to it from the product UI.
+ * reads across all workspaces. Reached from the account menu's Admin group
+ * (admins only) next to /admin/notifications.
  */
 export default async function OpsPage() {
   const session = await getSessionContext();

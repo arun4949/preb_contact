@@ -5,6 +5,8 @@ import { ListFinishedEmail } from "@/lib/email/templates/list-finished";
 import { ListPausedEmail } from "@/lib/email/templates/list-paused";
 import { OpsAlertEmail } from "@/lib/email/templates/ops-alert";
 import { firstNameFor } from "@/lib/email/name";
+import { listFailedCopy, listFinishedCopy, listPausedCreditsCopy, listPausedUpstreamCopy } from "@/lib/notifications/copy";
+import { notifyUsers } from "@/lib/notifications/emit";
 import { logError, type Admin, type ListRow } from "./shared";
 
 async function creator(admin: Admin, list: Pick<ListRow, "created_by">): Promise<{ email: string; firstName: string } | null> {
@@ -12,8 +14,9 @@ async function creator(admin: Admin, list: Pick<ListRow, "created_by">): Promise
   return data?.email ? { email: data.email, firstName: firstNameFor(data.full_name, data.email) } : null;
 }
 
-/** Engine emails never throw — a failed notification must not break settlement. */
+/** Engine emails never throw — a failed notification must not break settlement. In-app rows go to the list creator first. */
 export async function notifyListFinished(admin: Admin, list: ListRow, stopped = false) {
+  await notifyUsers(admin, [list.created_by], listFinishedCopy(list, stopped), { workspaceId: list.workspace_id });
   try {
     const recipient = await creator(admin, list);
     if (!recipient) return;
@@ -40,6 +43,7 @@ export async function notifyListFinished(admin: Admin, list: ListRow, stopped = 
 }
 
 export async function notifyListPaused(admin: Admin, list: ListRow, remaining: number) {
+  await notifyUsers(admin, [list.created_by], listPausedCreditsCopy(list, remaining), { workspaceId: list.workspace_id });
   try {
     const recipient = await creator(admin, list);
     if (!recipient) return;
@@ -53,6 +57,16 @@ export async function notifyListPaused(admin: Admin, list: ListRow, remaining: n
   } catch (error) {
     logError("notify.list_paused_failed", error, { listId: list.id });
   }
+}
+
+/** In-app only (ops gets the email): the provider paused us, the list resumes by itself. */
+export async function notifyListPausedUpstream(admin: Admin, list: ListRow) {
+  await notifyUsers(admin, [list.created_by], listPausedUpstreamCopy(list), { workspaceId: list.workspace_id });
+}
+
+/** In-app only (ops gets the email): the provider rejected the list repeatedly. */
+export async function notifyListFailed(admin: Admin, list: ListRow) {
+  await notifyUsers(admin, [list.created_by], listFailedCopy(list), { workspaceId: list.workspace_id });
 }
 
 export function opsEmail(): string | null {

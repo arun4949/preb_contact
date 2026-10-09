@@ -3,12 +3,18 @@ import "server-only";
 import { getAccountCredits } from "@/lib/fullenrich/client";
 import { CREDIT_MULTIPLIER } from "@/lib/fullenrich/mapping";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { creditsExpiringCopy } from "@/lib/notifications/copy";
+import { notifyWorkspace } from "@/lib/notifications/emit";
 import { notifyOps } from "./notify";
 import { log, logError, releaseHolds } from "./shared";
 
 const BUCKET = "list-uploads";
 const WEBHOOK_RETENTION_DAYS = 30;
 const DRAFT_RETENTION_HOURS = 24;
+/** Owners/admins are told this many days before a grant (or the trial) expires. */
+const EXPIRY_WARNING_DAYS = 7;
+/** Notifications older than this are deleted. */
+const NOTIFICATION_RETENTION_DAYS = 90;
 /** Alert when the upstream balance is below this many credits… */
 const LOW_BALANCE_FLOOR = Number(process.env.UPSTREAM_LOW_BALANCE ?? "200");
 
@@ -17,6 +23,8 @@ export interface DailySummary {
   holdsReleased: number;
   draftsDeleted: number;
   webhookEventsDeleted: number;
+  expiryWarnings: number;
+  notificationsDeleted: number;
   upstreamBalance: number | null;
   alerted: boolean;
   errors: string[];
@@ -25,7 +33,7 @@ export interface DailySummary {
 /** Housekeeping: expire grants, provider balance alert, cleanup of drafts and old webhook payloads. */
 export async function runDaily(): Promise<DailySummary> {
   const admin = createAdminClient();
-  const summary: DailySummary = { expiredGrants: 0, holdsReleased: 0, draftsDeleted: 0, webhookEventsDeleted: 0, upstreamBalance: null, alerted: false, errors: [] };
+  const summary: DailySummary = { expiredGrants: 0, holdsReleased: 0, draftsDeleted: 0, webhookEventsDeleted: 0, expiryWarnings: 0, notificationsDeleted: 0, upstreamBalance: null, alerted: false, errors: [] };
   const step = async (name: string, fn: () => Promise<void>) => {
     try {
       await fn();
@@ -39,6 +47,35 @@ export async function runDaily(): Promise<DailySummary> {
     const { data, error } = await admin.rpc("expire_grants");
     if (error) throw new Error(error.message);
     summary.expiredGrants = data ?? 0;
+  });
+
+  await step("expiring_grants", async () => {
+    // One in-app warning per grant (dedupe key), 7 days ahead; the trial grant gets trial copy.
+    const now = Date.now();
+    const until = new Date(now + EXPIRY_WARNING_DAYS * 86_400_000).toISOString();
+    const { data: grants } = await admin
+      .from("credit_grants")
+      .select("id, workspace_id, remaining, expires_at, source")
+      .gt("remaining", 0)
+      .gt("expires_at", new Date(now).toISOString())
+      .lte("expires_at", until)
+      .limit(500);
+    for (const g of grants ?? []) {
+      const days = Math.max(0, Math.ceil((new Date(g.expires_at).getTime() - now) / 86_400_000));
+      const written = await notifyWorkspace(
+        admin,
+        g.workspace_id,
+        creditsExpiringCopy({ amount: g.remaining, expiresAt: g.expires_at, days, trial: g.source === "trial" }),
+        { roles: ["owner", "admin"], dedupeKey: `expiring:${g.id}` },
+      );
+      summary.expiryWarnings += written;
+    }
+  });
+
+  await step("cleanup_notifications", async () => {
+    const cutoff = new Date(Date.now() - NOTIFICATION_RETENTION_DAYS * 86_400_000).toISOString();
+    const { count } = await admin.from("notifications").delete({ count: "exact" }).lt("created_at", cutoff);
+    summary.notificationsDeleted = count ?? 0;
   });
 
   await step("release_orphan_holds", async () => {
