@@ -43,7 +43,7 @@ export function ManualEnrichForm({ creditsAvailable }: ManualEnrichFormProps) {
   const toast = useToast();
   const { openSettings } = useSettingsUrl();
   const [pending, start] = useTransition();
-  const [fields, setFields] = useState<EnrichmentField[]>(["work_email"]);
+  const [fields, setFields] = useState<EnrichmentField[]>(["personal_email", "mobile_phone"]);
   const [rows, setRows] = useState<Row[]>(() => [emptyRow()]);
   const [showErrors, setShowErrors] = useState(false);
   const openPlans = (shortBy: number) => openSettings("billing", { plan: true, short: shortBy });

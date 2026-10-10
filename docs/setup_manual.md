@@ -50,7 +50,7 @@ These are the only tasks Claude Code cannot do through MCP. Tick them off as you
 
 ## M5 · Vercel — project, domain, env · go-live (CTO only; the agent has no Vercel access)
 
-Decision (go-live session): the app runs on the apex **`preb.co`** (no `app.` subdomain, no Framer site — the marketing site will be built in this app later). Production environment only for now; no preview environment.
+Decision (go-live session, 2026-10-08): the app ran on the apex `preb.co`. **Superseded on 2026-10-10:** the marketing website moves to Framer (built by Leon) on `preb.co`, and the app moves to **`app.preb.co`**. Follow **M11** for the switch; the `preb.co` values in steps 2 to 6 below are historical. Production environment only; no preview environment.
 
 - [x] 1. Vercel project created and linked in your team. The team needs the **Pro plan** (1‑minute cron jobs).
 - [ ] 2. **Settings → Domains → Add** `preb.co`; also add `www.preb.co` and set it to redirect to `preb.co`. Vercel shows the DNS values (an **A** record for the apex, a CNAME for `www`).
@@ -108,4 +108,32 @@ The notification center's admin dashboard (`/admin/notifications`, plus `/admin/
 - [ ] 1. **Vercel → Settings → Environment Variables (Production)**: set `ADMIN_EMAILS=arun@preb.co,leon@preb.co` (comma-separated, case-insensitive). Redeploy. Locally `.env.local` keeps the Gmail test account.
 - [ ] 2. Sign in on preb.co, open the account menu → **Admin → Announcements**, send a first announcement (the preview shows the exact row). Non-admins get the branded 404 on that URL.
 - [ ] 3. Optional: `OPS_ALERT_EMAIL` still decides where ops emails go (falls back to the first `ADMIN_EMAILS` entry).
+
+## M11 · Domain switch: website on preb.co (Framer), app on app.preb.co · 2026-10-10
+
+Context: the in-app website was removed (the app's code no longer serves `/` as a marketing page; `/` redirects to `/lists` or `/login`). The app reads its own domain only from `NEXT_PUBLIC_APP_URL`; links to Terms and Privacy point to `https://preb.co/terms` and `https://preb.co/privacy` (constant in `src/lib/site-links`). Checked live on 2026-10-10: no open invites, no lists enriching, no open provider batches.
+
+Do the steps in this order so sign-in, billing and webhooks never point at a host that is not serving the app.
+
+**A · Free app.preb.co (the old Pre app still runs there)**
+- [x] 1. Decide what happens to the old Pre app. In its Vercel project remove the domain `app.preb.co` (or move the old app to another subdomain).
+- [x] 2. (Done 2026-10-10: old app retired, the agent disabled the three endpoints via MCP; they are not deleted.) The old app still has live webhooks on `app.preb.co` that will reach the new app once it moves: Stripe `https://app.preb.co/api/webhooks/stripe/billing` and `https://app.preb.co/api/integrations/stripe/webhook`, Resend `https://app.preb.co/api/webhooks/resend` (same path as Preb's, it will be rejected with 401 because the signing secret differs). If the old app is retired, disable those three endpoints yourself; if it moves, re-point them to its new host. (The agent never edits the old app's Stripe objects.)
+
+**B · Bring the app up on app.preb.co**
+- [x] 3. Vercel (new Preb project) → **Settings → Domains → Add** `app.preb.co`. If DNS shows a CNAME for `app` already pointing at Vercel, keep it; otherwise add the CNAME Vercel shows. Keep `preb.co` on this project for now.
+- [x] 4. Vercel → **Environment Variables (Production)**: `NEXT_PUBLIC_APP_URL=https://app.preb.co` (`FULLENRICH_WEBHOOK_BASE_URL` is not set in Production and is not needed there). If `FULLENRICH_WEBHOOK_BASE_URL` is set in Production, change it to `https://app.preb.co` (or delete it; the app then uses `NEXT_PUBLIC_APP_URL`). Redeploy.
+- [x] 5. Supabase → **Authentication → URL Configuration**: *Site URL* `https://app.preb.co`; *Redirect URLs* add `https://app.preb.co/**` (remove `https://preb.co/**` after step 12). Without this, magic links and Google sign-in on app.preb.co fail.
+- [x] 6. Google Cloud Console → the OAuth client → **Authorized JavaScript origins**: make sure `https://app.preb.co` is listed (it was kept from the old app). The redirect URI stays the Supabase callback. In the **OAuth consent screen**, set the homepage to `https://preb.co` and the privacy policy to `https://preb.co/privacy`.
+- [x] 7. Test on `https://app.preb.co`: magic-link sign-in, Google sign-in, open a list, Settings › Billing.
+
+**C · Point the integrations at app.preb.co (agent can do 8 and 9 via MCP on request, right after step 7)**
+- [x] 8. (Done by the agent 2026-10-10.) Stripe (live): update the Preb webhook `we_1UOEiO…` ("Preb app billing") from `https://preb.co/api/webhooks/stripe` to `https://app.preb.co/api/webhooks/stripe` (the signing secret stays the same). Update the Preb portal configuration `bpc_1UOEiN…` default return URL to `https://app.preb.co/lists?settings=billing`; its Terms/Privacy links stay on `https://preb.co`.
+- [x] 9. (Done by the agent 2026-10-10.) Resend: update the Preb webhook `https://preb.co/api/webhooks/resend` to `https://app.preb.co/api/webhooks/resend` (keep the signing secret in `RESEND_WEBHOOK_SECRET`).
+- [x] 10. Featurebase: add `app.preb.co` to the allowed domains of the messenger (and keep `preb.co` if Leon embeds it on the website). Termly: add `app.preb.co` to the website's domains so the consent banner keeps loading; the banner's "Legal Notice" link points to `https://www.preb.co/imprint`, which Framer must serve.
+- [x] 11. Local dev: in `.env.local` change `FULLENRICH_WEBHOOK_BASE_URL=https://preb.co` to `https://app.preb.co` (local test enrichments send their webhooks to production, which then lives on app.preb.co).
+
+**D · Hand preb.co to Framer**
+- [ ] 12. Leon connects `preb.co` (and `www`) in Framer. When changing DNS for the apex: keep the **Resend records** (DKIM, SPF, return-path, MX on `preb.co`, see M7) and the `app` CNAME, otherwise email or the app breaks. Then remove `preb.co` from the Preb Vercel project.
+- [ ] 13. Framer must publish `/terms`, `/privacy` and `/imprint` (the app login, the Stripe portal, the Google consent screen and Termly link there). Recommended Framer redirects for old bookmarks and emails sent before the switch: `/login`, `/lists`, `/enrich`, `/invite/*` → the same path on `https://app.preb.co`.
+- [ ] 14. Enrichments started before step 12 send their provider webhook to `preb.co`; if any are running at the switch, the 15-minute reconciler recovers them, so no action is needed. Best to switch when no list is enriching.
 

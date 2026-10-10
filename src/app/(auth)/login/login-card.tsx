@@ -9,6 +9,7 @@ import { Divider } from "@/components/base/divider/divider";
 import { Input } from "@/components/base/input/input";
 import { SocialButton } from "@/components/base/social-button/social-button";
 import { sendMagicLink, signInWithGoogle, type MagicLinkState } from "@/lib/auth/actions";
+import { LEGAL_URLS } from "@/lib/site-links";
 import { cx } from "@/utils/cx";
 
 /**
@@ -109,11 +110,11 @@ export function LoginCard({ next, error, notice }: { next: string; error?: strin
 
       <p className="mt-6 text-caption-1-regular text-text-secondary">
         By continuing you agree to our{" "}
-        <a href="/terms" className="underline-offset-2 hover:text-text-primary hover:underline">
+        <a href={LEGAL_URLS.terms} target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:text-text-primary hover:underline">
           Terms of Service
         </a>{" "}
         and{" "}
-        <a href="/privacy" className="underline-offset-2 hover:text-text-primary hover:underline">
+        <a href={LEGAL_URLS.privacy} target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:text-text-primary hover:underline">
           Privacy Policy
         </a>
         .

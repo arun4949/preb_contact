@@ -29,9 +29,9 @@ const COLUMNS = [
   { id: "name", label: "Name", className: "min-w-[220px]" },
   { id: "job_title", label: "Job title", className: "min-w-[180px]" },
   { id: "company", label: "Company", className: "min-w-[180px]" },
-  { id: "work_email", label: "Work email", className: "min-w-[240px]" },
   { id: "personal_email", label: "Personal email", className: "min-w-[220px]" },
   { id: "phone", label: "Mobile", className: "min-w-[180px]" },
+  { id: "work_email", label: "Work email", className: "min-w-[240px]" },
   { id: "status", label: "Status", className: "min-w-[140px]" },
   { id: "date", label: "Added", className: "min-w-[90px]" },
 ] as const;
@@ -231,14 +231,14 @@ export function EnrichedContactsTable({ history, runState, q, workspaceId }: Enr
                       <span className="text-text-tertiary">—</span>
                     )}
                   </TableCell>
-                  <TableCell className="min-w-[240px] max-w-[320px]">
-                    <EmailCell email={c.work_email} status={c.work_email_status} isPending={pending} />
-                  </TableCell>
                   <TableCell className="min-w-[220px] max-w-[320px]">
                     <EmailCell email={c.personal_email} status={c.personal_email_status} isPending={pending} />
                   </TableCell>
                   <TableCell className="min-w-[180px] max-w-[320px]">
                     <PhoneCell phone={c.phone} meta={c.phone_meta} isPending={pending} />
+                  </TableCell>
+                  <TableCell className="min-w-[240px] max-w-[320px]">
+                    <EmailCell email={c.work_email} status={c.work_email_status} isPending={pending} />
                   </TableCell>
                   <TableCell className="min-w-[140px]">
                     <StatusCell c={c} running={!runState.paused || runState.running} />

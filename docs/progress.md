@@ -2,6 +2,114 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Website removed, app prepared for app.preb.co — 2026-10-10
+
+### Decisions (CTO)
+- The marketing website is built in Framer by Leon on `preb.co`; the in-app website is removed. The app moves to `app.preb.co`. App changes made during the website work stay.
+
+### Done
+- ✅ Removed: `src/app/(site)` (landing, pricing, legal placeholders, OG image and its font), `src/components/marketing`, `src/lib/site` (copy, routes, stats, benchmark and their tests), `src/styles/site.css` and its import, `src/app/sitemap.ts`.
+- ✅ Restored to the pre-website state: `src/app/page.tsx` (redirect to `/lists`), root `layout.tsx` (no website fonts, metadata or path-aware theme script), `robots.ts` (only `/login` indexable), the proxy allow-list (`/` private again; `/terms` and `/privacy` stay public so an old link 404s), `theme-toggle.tsx`.
+- ✅ Kept (app changes from the website work): Personal email + Mobile preselected in the wizard and the Enrich form; personal data first in the field cards, list table, Enrich table, CSV export and list-card metrics; inactive phones dropped and not charged (`isUsablePhone`); their tests.
+- ✅ Domain: the app's own URL still comes only from `NEXT_PUBLIC_APP_URL`. New `src/lib/site-links` holds `https://preb.co` and the Terms/Privacy URLs; the login card and auth footer link there (new tab) and the auth logo links to the website. Fallbacks that assumed the app on `preb.co` now say `app.preb.co` (email layout, `scripts/stripe-portal.ts` return URL).
+- ✅ `npm run lint` ✓ (2 upstream warnings) · `npx tsc --noEmit` ✓ · `npm test` ✓ (98, the website tests went with the website) · `npm run build` ✓ (route list equals the pre-website app).
+- ✅ Browser walk (own dev server on :3200, stopped afterwards): anonymous `/` → `/login`, legal links open preb.co in a new tab; signed in `/` and `/login` → `/lists`; dark theme applies again; Enrich preselects Personal email + Mobile; table order Personal email · Mobile · Work email.
+- ✅ Live checks (read-only): Preb's Stripe webhook and Resend webhook point at `preb.co`; the old Pre app's Stripe webhooks and Resend webhook point at `app.preb.co`; no open invites, no lists enriching.
+
+### Cutover (same day)
+- ✅ CTO: old Pre app retired and its domain removed; `app.preb.co` on the Preb Vercel project, `NEXT_PUBLIC_APP_URL=https://app.preb.co`, Supabase URLs, Google origins, Featurebase/Termly domains, `.env.local` `FULLENRICH_WEBHOOK_BASE_URL=https://app.preb.co`; sign-in and billing tested on app.preb.co. `FULLENRICH_WEBHOOK_BASE_URL` is not set in Vercel and not needed there (the app falls back to `NEXT_PUBLIC_APP_URL`).
+- ✅ Agent (live, via MCP): Preb Stripe webhook `we_1UOEiO…` → `https://app.preb.co/api/webhooks/stripe` (secret unchanged); Preb portal config `bpc_1UOEiN…` return URL → `https://app.preb.co/lists?settings=billing` (Terms/Privacy stay on preb.co); Preb Resend webhook → `https://app.preb.co/api/webhooks/resend`. Old app endpoints disabled, not deleted: Stripe `we_1ThVrs…` (`/api/webhooks/stripe/billing`) and `we_1Tf1Pn…` (`/api/integrations/stripe/webhook`), Resend `e16f0a18…`.
+- ✅ Checks: app.preb.co serves the app (`/` → `/login`), its Stripe and Resend webhook routes answer unsigned requests with 400 and 401; preb.co already returns 404 from Vercel (domain removed). No Stripe event failed delivery during the gap; the only undelivered event (8 Oct, go-live test subscription) belonged to the old app's endpoint and Preb had processed it.
+
+### Next
+1. Leon: publish the Framer website on preb.co with `/terms`, `/privacy`, `/imprint` and the redirects from M11 step 13; keep the Resend DNS records and the `app` record.
+
+---
+
+## Website redesign, round 2 — 2026-10-09 · Slack direction (new DESIGN.md), mockups floating on pastel meshes (complete, walked in a browser)
+
+### Decisions (CTO)
+- `DESIGN.md` was replaced with a Slack-inspired system and preferred over the Clay pass: white canvas, pastel-mesh gradient bands behind floating product mockups, one aubergine primary for pill CTAs, the featured pricing card, the closing band and the footer, blue inline links, Inter 700 display with negative tracking. Copy, structure, product changes, footer scope and the FAQ without links are unchanged.
+
+### Done
+- ✅ `styles/site.css` rewritten (same `site-*` prefix, new values: aubergine ramp, cream/lavender surfaces, mesh stops, pill radius, the DESIGN.md elevation shadows, the full type ramp, mesh utilities). Clay blob utilities removed.
+- ✅ `components/marketing/ui/`: pill-only `SiteButton`/`SiteLink` + `InlineLink`, new `MeshBand` (drifting blurred blobs over a radial-gradient stack), `ProductFrame` as the floating mockup (no border, level-2 shadow), `FeatureCard` (cream/aubergine/white copy cards), `StatCard`, restyled `StatusPill`, `Eyebrow` pill-cap. `blob.tsx` deleted.
+- ✅ Every section restaged: mockups float on mesh bands and panels instead of sitting inside colour cards; hero frames get dashed connectors; the bento became five mesh panels; Compare sits on a cream band; the final CTA is the aubergine band card; the footer is the aubergine band. Pricing: featured aubergine card + white costs card. OG image on a cream mesh with Inter Bold. Details in `docs/screens.md` § 11.
+- ✅ `npm run lint` ✓ (2 upstream warnings) · `npx tsc --noEmit` ✓ · `npm test` ✓ (102) · `npm run build` ✓.
+
+### Browser walk (Playwright headless against the running dev server; Lighthouse against `next start`)
+- ✅ Full-page shots at 1440 and 375 of `/` and `/pricing`; every mockup mid-loop; reduced motion: final states, no hydration warnings, no console errors.
+- ✅ Keyboard order logo → Product → Pricing → Sign in → Start free; FAQ open/close; mobile menu; legal slugs; `/lists` → `/login?next=/lists`; sitemap, robots, OG image.
+- ✅ Signed in: `/` shows Open app; `/login` → `/lists`; dark app user gets the white site on a full load and the dark app back after client navigation; Enrich form preselects Personal email + Mobile.
+- ✅ Lighthouse (desktop, production build via `next start`): `/` performance 99, accessibility 100, best practices 100, SEO 100 (LCP 0.9 s); `/pricing` 99 / 100 / 100 / 100 (LCP 0.8 s). The only remaining accessibility items are the Featurebase iframes. (The signed-in walk logged two Featurebase messenger fetch errors in the app, not on the website.)
+
+### Next (CTO)
+1. Deploy; confirm `NEXT_PUBLIC_APP_URL=https://preb.co` in Vercel Production.
+2. Legal: approve the texts in `docs/legal`, replace the placeholders and drop `robots: { index: false }` on those pages; enter the privacy URL in the Google OAuth consent screen.
+3. When real numbers exist: fill `lib/site/benchmark.ts` and `lib/site/stats.ts`; both blocks render automatically (the stat as the aubergine `StatCard`).
+
+---
+
+## Website redesign — 2026-10-09 · Clay direction (DESIGN.md), animated product fragments (complete, walked in a browser)
+
+### Decisions (CTO)
+- The first pass (white canvas, blue accent, BoardUI cards) was rejected as flat. Redesign follows `DESIGN.md`: cream canvas, ink CTAs, big 500-weight display type, saturated feature cards with live product fragments, soft 3D-feeling CSS shapes (no stock or AI art), cream footer. BoardUI components are not required on the website; the app and its tokens stay untouched. Copy unchanged.
+- FAQ: policy link row removed. Footer: Product + Legal columns only (Terms, Privacy, DPA, Imprint, Cookie preferences); "Preb is a brand of Indiepal Ventures." and "© 2026 Indiepal Ventures" bottom row.
+
+### Done
+- ✅ `styles/site.css`: scoped `site-*` tokens (colours, radii, shadows, composite type utilities, blob and focus utilities), imported from `globals.css` (Tailwind only generates `@theme`/`@utility` from the main sheet). The first-pass additions to `typography.css`, `cx.ts` and `theme.css` were removed.
+- ✅ `components/marketing/ui/`: SiteButton/SiteLink, FeatureCard, ProductFrame, StatusPill, Blob, Reveal, CountUp, text helpers. Every section and mockup rewritten on them with `motion/react` (springs, AnimatePresence record swaps, drawn SVG checks, travelling dots on SVG paths, count-ups, layout-animated toggles). Details in `docs/screens.md` § 11.
+- ✅ Hydration-safe reduced motion: `useReducedMotionSafe` (useSyncExternalStore) replaces motion's `useReducedMotion` everywhere; reveals and path draws complete immediately when motion is reduced.
+- ✅ Pricing explorer rebuilt as the teal featured card with a React Aria slider styled by site tokens; OG image on cream with two blobs.
+- ✅ `npm run lint` ✓ (2 upstream warnings) · `npx tsc --noEmit` ✓ · `npm test` ✓ (102) · `npm run build` ✓.
+
+### Browser walk (Playwright headless against the running dev server; Lighthouse against `next start`)
+- ✅ Full-page shots at 1440 and 375 of `/` and `/pricing`; every mockup mid-loop; reduced motion: final states, no hydration warnings, no console errors on either page.
+- ✅ Keyboard order logo → Product → Pricing → Sign in → Start free; FAQ open/close by mouse and keyboard; mobile menu panel; legal slugs; `/lists` → `/login?next=/lists`; sitemap, robots, OG image.
+- ✅ Signed in: `/` shows Open app; `/login` → `/lists`; dark app user gets the cream site on a full load and the dark app back after client navigation.
+- ✅ App regression: Enrich form preselects Personal email + Mobile; table header order Personal email · Mobile · Work email.
+- ✅ Lighthouse (desktop, production build via `next start`): `/` performance 99, accessibility 100, best practices 100, SEO 100 (LCP 0.9 s); `/pricing` 99 / 100 / 100 / 100 (LCP 0.8 s). Headlines reveal with a rise only (no fade) so LCP is the server-rendered paint; dimmed mockup rows dim by colour, not opacity, for AA contrast. The only remaining accessibility items are the Featurebase iframes.
+
+### Next (CTO)
+1. Deploy; confirm `NEXT_PUBLIC_APP_URL=https://preb.co` in Vercel Production.
+2. Legal: approve the texts in `docs/legal`, replace the placeholders and drop `robots: { index: false }` on those pages; enter the privacy URL in the Google OAuth consent screen.
+3. When real numbers exist: fill `lib/site/benchmark.ts` and `lib/site/stats.ts`; both blocks render automatically.
+
+---
+
+## Public website — 2026-10-09 · landing page, pricing, legal placeholders, product aligned with the copy (complete, walked in a browser)
+
+### Decisions (CTO, in chat)
+- Trial copy "Start with 50 free credits. No credit card. No sales call." (the brief's "25 candidates" was never true: the trial is 50 credits for 30 days).
+- Product follows the "personal first" promise: wizard step 3 and the Enrich form preselect Personal email + Mobile; Personal email, Phone, Work email order in the list table, Enrich table, CSV export (`Preb:` columns) and list-card metrics; field cards reordered.
+- Phones the provider reports as `line_status = INACTIVE` are dropped (`isUsablePhone` in `lib/fullenrich/mapping.ts`): not shown, not charged, `found` follows. Settlement is unaffected (provider cost stays authoritative, inactive = 0 upstream).
+- The "rejected results are not billable" sentence is omitted (catch-all emails are charged, Terms §6.1). Candidate matching shows input signals only, no score.
+- Look: website brief + app tokens (white canvas, blue accent, thin borders); DESIGN.md gives rhythm and type principles only. Website is light only. Signed-in visitors see the site with an "Open app" button. Full `/pricing` page. Legal slugs get placeholder pages until the texts are approved.
+- "20+ data sources" kept: FullEnrich states 20+ premium vendors on its own homepage.
+
+### Done
+- ✅ `(site)` route group: `/` (Hero, Built for recruiting, Coverage, Data quality bento, Compare, FAQ, Final CTA), `/pricing`, seven legal placeholders, `opengraph-image`, `sitemap.ts`, `robots.ts` rewrite, JSON-LD. `src/app/page.tsx` (redirect) removed. Details in `docs/screens.md` § 11.
+- ✅ `lib/site/routes.ts` drives the proxy allow-list (exact site paths + metadata routes; `isPublic` exported and unit-tested), the path-aware theme script in the root layout and `SiteThemeGuard` (forces light on the site, restores the stored theme on leave, also against cross-tab toggles).
+- ✅ Fonts and type: JetBrains Mono loaded (`--font-mono-source`), website families `hero`, `hero-sm`, `eyebrow`, `mono-body`, `mono-caption` in `typography.css` + `cx.ts`. Root metadata: `metadataBase`, OG/Twitter defaults, new description.
+- ✅ Four animated mockups (hero enrichment run, coverage compare, email verification, mobile validation; plus real-time timeline and candidate matching) on one deterministic rAF clock: paused offscreen, final frame under reduced motion, SSR-safe.
+- ✅ Product changes above, with tests: `mapping.test.ts` (inactive phones), new `export-columns.test.ts`, `site/copy.test.ts` (no dashes, real trial line), `site/routes.test.ts`, `utils/supabase/proxy.test.ts`.
+- ✅ `npm run lint` ✓ (2 upstream warnings) · `npx tsc --noEmit` ✓ · `npm test` ✓ (**102**) · `npm run build` ✓.
+
+### Browser walk (Playwright headless against the running dev server, plus Lighthouse against `next start` of the production build)
+- ✅ Anonymous: `/`, `/pricing`, every legal slug (200, placeholder), `/lists` → `/login?next=/lists`, `/robots.txt`, `/sitemap.xml`, OG image 1200×630 PNG. Unknown paths still redirect to `/login` (pre-existing proxy rule, left as is).
+- ✅ 1440 and 375 px screenshots of every section; hero demo at start, mid-loop and end; reduced motion shows the final states with no hydration warnings; mobile menu; FAQ open/close by mouse and keyboard; Tab order logo → Product → Pricing → Sign in → Start free.
+- ✅ Pricing: Monthly/Annual toggle, slider to the largest tier and the Contact us stop; figures match `PLANS` ($36.50 for 1k, $47,250 per year for 2.4M).
+- ✅ Signed in (magic link minted for the CTO's Gmail test account): `/` shows Open app, `/login` → `/lists`; with the app set to dark, `/` renders light on a full load, "Open app" (client navigation) returns to a dark app, stored theme untouched.
+- ✅ App regression: Enrich form preselects Personal email + Mobile, table header order Personal email · Mobile · Work email; bell, credits and header unchanged.
+- ✅ Lighthouse (desktop, production build via `next start`): `/` performance 99, accessibility 96, best practices 100, SEO 100; `/pricing` 99 / 97 / 100 / 100. Website copy uses the new token `text-text-secondary-strong` (neutral-600, added to `theme.css`) so secondary text keeps AA contrast on the gray surfaces; dimmed mockup rows dim by colour, not opacity. The remaining accessibility items are third-party (Featurebase iframes with ARIA roles) and the BoardUI segmented control's unselected label (4.42:1, shared with the app). The slowest first-paint element is the Termly banner.
+
+### Next (CTO)
+1. Deploy. Confirm `NEXT_PUBLIC_APP_URL=https://preb.co` in Vercel Production (metadata, sitemap and JSON-LD use it).
+2. Legal: approve the texts in `docs/legal`, then replace the placeholders (one component per slug) and remove `robots: { index: false }` from those pages; enter the privacy URL in the Google OAuth consent screen.
+3. When real numbers exist: fill `lib/site/benchmark.ts` (coverage table) and `lib/site/stats.ts` (rejected-results figure); both blocks render automatically.
+4. Optional: the Termly banner is the slowest element on first paint; consider loading it after interaction or trimming the banner copy.
+
+---
 ## Notification center + admin announcements — 2026-10-09 · header bell, workspace events, admin dashboard (complete, walked in a browser)
 
 ### Decisions (CTO)

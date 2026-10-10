@@ -2,11 +2,14 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/supabase/types";
 
-/** Paths that never require a session. Webhooks, cron and auth callbacks pass through untouched. */
-// /terms and /privacy: legal pages planned for the in-app website (post-MVP); public so they 404 instead of bouncing to login.
+/**
+ * Paths that never require a session. Webhooks, cron and auth callbacks pass
+ * through untouched. /terms and /privacy stay public so an old link 404s
+ * instead of bouncing to login; the real pages live on preb.co (Framer).
+ */
 const PUBLIC_PREFIXES = ["/login", "/auth/", "/invite/", "/api/webhooks/", "/api/jobs/", "/samples/", "/terms", "/privacy", "/robots.txt"];
 
-function isPublic(pathname: string) {
+export function isPublic(pathname: string) {
   return PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(p));
 }
 

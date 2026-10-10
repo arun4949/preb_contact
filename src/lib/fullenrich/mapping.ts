@@ -17,6 +17,15 @@ export function isMobile(phone: EnrichedPhone | null | undefined): boolean {
   return phone?.line_type === "MOBILE";
 }
 
+/**
+ * A number the provider reports as inactive is dropped (not shown, not
+ * charged) so the lookup can continue elsewhere. `line_status` is optional:
+ * a missing status keeps the number.
+ */
+export function isUsablePhone(phone: EnrichedPhone | null | undefined): phone is EnrichedPhone {
+  return Boolean(phone && phone.line_status !== "INACTIVE");
+}
+
 /** What the provider charges us per result, in provider credits. */
 export const UPSTREAM_CREDIT_COST = { work_email: 1, personal_email: 3, mobile_phone: 10, reverse: 1 } as const;
 
@@ -57,7 +66,7 @@ export function contactCredits(record: EnrichmentRecord, kind: RecordKind = "enr
   let credits = 0;
   if (info.most_probable_work_email && isBillableEmail(info.most_probable_work_email.status)) credits += CREDIT_COST.work_email;
   if (info.most_probable_personal_email && isBillableEmail(info.most_probable_personal_email.status)) credits += CREDIT_COST.personal_email;
-  if (isMobile(info.most_probable_phone)) credits += CREDIT_COST.mobile_phone;
+  if (isUsablePhone(info.most_probable_phone) && isMobile(info.most_probable_phone)) credits += CREDIT_COST.mobile_phone;
   return credits;
 }
 
@@ -116,7 +125,8 @@ export function mapRecord(record: EnrichmentRecord, kind: RecordKind = "enrich")
 
   const workEmail = info?.most_probable_work_email ?? null;
   const personalEmail = info?.most_probable_personal_email ?? null;
-  const phone = info?.most_probable_phone ?? null;
+  // Inactive numbers never reach the record.
+  const phone = isUsablePhone(info?.most_probable_phone) ? info!.most_probable_phone : null;
 
   // INVALID work emails are not shown as results.
   const showWork = workEmail && isBillableEmail(workEmail.status);

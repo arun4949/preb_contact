@@ -133,11 +133,11 @@ export function ListCard({ list, ownerName, canDelete }: ListCardProps) {
         <ContactGauge total={list.total_rows} valid={list.found_work_email} risky={list.risky_email} sweeping={running} />
 
         <ul className="flex flex-col gap-2">
-          <MetricRow chip={pct(list.found_work_email, base)} color="purple" label="Valid emails" value={list.found_work_email} />
-          <MetricRow chip={pct(list.risky_email, base)} color="yellow" label="Risky emails" value={list.risky_email} />
           {list.enrich_fields.includes("mobile_phone") ? (
             <MetricRow chip={pct(list.found_phone, base)} color="cyan" label="Mobile phones" value={list.found_phone} />
           ) : null}
+          <MetricRow chip={pct(list.found_work_email, base)} color="purple" label="Valid emails" value={list.found_work_email} />
+          <MetricRow chip={pct(list.risky_email, base)} color="yellow" label="Risky emails" value={list.risky_email} />
           <li className="flex items-center gap-3">
             <span className="flex size-7 items-center justify-center text-foreground-icon-secondary">
               <RiUserUnfollowLine className="size-4" aria-hidden />

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { catchAllRecord, fullRecord, invalidRecord, reverseMissRecord, reverseRecord } from "./__fixtures__/records";
-import { CREDIT_COST, CREDIT_MULTIPLIER, UPSTREAM_CREDIT_COST, contactCredits, mapRecord, profileName, toPrebCredits, uiEmailStatus } from "./mapping";
+import { CREDIT_COST, CREDIT_MULTIPLIER, UPSTREAM_CREDIT_COST, contactCredits, isUsablePhone, mapRecord, profileName, toPrebCredits, uiEmailStatus } from "./mapping";
 
 describe("mapping", () => {
   it("charges CREDIT_MULTIPLIER × the upstream cost table and converts batch costs", () => {
@@ -75,5 +75,31 @@ describe("mapping", () => {
     const onlyFull = { ...fullRecord, profile: { ...fullRecord.profile, first_name: undefined, last_name: undefined, full_name: "Ada King Lovelace" } };
     expect(profileName(onlyFull as typeof fullRecord)).toEqual({ first_name: "Ada", last_name: "King Lovelace", full_name: "Ada King Lovelace" });
     expect(profileName({ ...fullRecord, profile: undefined } as typeof fullRecord)).toBeNull();
+  });
+});
+
+describe("inactive phone numbers", () => {
+  const withStatus = (line_status: "ACTIVE" | "INACTIVE" | "UNKNOWN" | undefined) => ({
+    ...fullRecord,
+    contact_info: {
+      ...fullRecord.contact_info!,
+      most_probable_phone: { ...fullRecord.contact_info!.most_probable_phone!, line_status },
+    },
+  });
+
+  it("drops an INACTIVE mobile: not shown, not charged, lookup result without it", () => {
+    const m = mapRecord(withStatus("INACTIVE"));
+    expect(m.phone).toBeNull();
+    expect(m.phone_meta).toBeNull();
+    expect(contactCredits(withStatus("INACTIVE"))).toBe(CREDIT_COST.work_email + CREDIT_COST.personal_email);
+    expect(isUsablePhone(withStatus("INACTIVE").contact_info!.most_probable_phone)).toBe(false);
+  });
+
+  it("keeps ACTIVE, UNKNOWN and missing statuses", () => {
+    for (const s of ["ACTIVE", "UNKNOWN", undefined] as const) {
+      const m = mapRecord(withStatus(s));
+      expect(m.phone, String(s)).toBe(fullRecord.contact_info!.most_probable_phone!.number);
+      expect(contactCredits(withStatus(s)), String(s)).toBe(28);
+    }
   });
 });

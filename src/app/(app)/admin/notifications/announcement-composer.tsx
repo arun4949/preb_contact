@@ -106,7 +106,7 @@ export function AnnouncementComposer({ recipients, onSent }: { recipients: Annou
         <div className="flex flex-col gap-4">
           <Input label="Title" value={title} onChange={setTitle} maxLength={TITLE_MAX} placeholder="New: enrich a single contact from the Enrich tab" hint={`${title.length}/${TITLE_MAX}`} />
           <Textarea label="Message" value={body} onChange={setBody} maxLength={BODY_MAX} showCount rows={4} placeholder="What changed, why it matters, what to do next." />
-          <Input label="Link (optional)" value={href} onChange={setHref} placeholder="/enrich or https://preb.co/..." inputDir="ltr" hint="A path inside the app or an https link." />
+          <Input label="Link (optional)" value={href} onChange={setHref} placeholder="/enrich or https://..." inputDir="ltr" hint="A path inside the app or an https link." />
         </div>
 
         <div className="flex flex-col gap-3">

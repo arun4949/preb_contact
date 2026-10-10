@@ -33,7 +33,7 @@ export function StepConfigure({ listId, defaultName, summary, creditsAvailable, 
   const toast = useToast();
   const { openSettings } = useSettingsUrl();
   const [pending, start] = useTransition();
-  const [fields, setFields] = useState<EnrichmentField[]>(summary.enrichable > 0 ? ["work_email"] : []);
+  const [fields, setFields] = useState<EnrichmentField[]>(summary.enrichable > 0 ? ["personal_email", "mobile_phone"] : []);
   const [name, setName] = useState(defaultName);
   // Reverse lookup is opt-in; a list made only of emails has nothing else to do, so it starts on.
   const [reverse, setReverse] = useState(summary.enrichable === 0 && summary.emailOnly > 0);

@@ -15,6 +15,7 @@ if (!key) {
   process.exit(1);
 }
 const stripe = new Stripe(key);
+/* The marketing website (Framer) hosts the legal pages; the app runs on app.preb.co. */
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://preb.co";
 
 async function main() {
@@ -35,7 +36,7 @@ async function main() {
       },
       subscription_update: { enabled: false },
     },
-    default_return_url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://preb.co"}/lists?settings=billing`,
+    default_return_url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://app.preb.co"}/lists?settings=billing`,
     metadata: { preb_managed: "true" },
   };
 

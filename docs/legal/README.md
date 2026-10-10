@@ -43,7 +43,7 @@ The policy describes the target state. These items must be done before or at pub
 4. ~~`email_sends` retention~~ Done 2026-10-09: deleted with the account and purged after 12 months by the daily job.
 5. ~~Suppression list~~ Done 2026-10-09 (migration 0018): `/admin/suppressions` for founders; suppressed people are skipped at upload, provider results that match are discarded, stored results are cleared, rows show "Suppressed" and export empty.
 6. Termly: maintain the cookie list, enable GPC handling, confirm autoBlock covers the Featurebase widget and any website analytics. Add a "Cookie preferences" link to the website footer.
-7. Link Privacy Policy, Terms and Imprint from every page (website and app) and enter the privacy URL in the Google OAuth consent screen. App side done 2026-10-09 (login line links to /terms and /privacy, auth footer already did); website side and Google console open until the pages exist.
+7. Link Privacy Policy, Terms and Imprint from every page (website and app) and enter the privacy URL in the Google OAuth consent screen. App side done: the login card and the auth footer link to `https://preb.co/terms` and `https://preb.co/privacy` (2026-10-10, the website and legal pages are built in Framer by Leon on preb.co; the app moves to app.preb.co, see `docs/setup_manual.md` M11). Open: publish the pages in Framer, and the Google console entry.
 8. ~~Featurebase data minimisation~~ Done 2026-10-09: the Stripe customer id is no longer sent to Featurebase.
 9. ~~Two-factor authentication~~ Confirmed by the CTO 2026-10-09.
 

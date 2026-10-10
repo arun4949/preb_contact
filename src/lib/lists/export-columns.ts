@@ -4,12 +4,12 @@ import { contactUiStatus, type ContactRow } from "@/lib/lists/segments";
 
 /** The Preb result columns appended to every CSV export (lists and the Enrich tab). */
 export const PREB_COLUMNS = [
-  "Preb: Work email",
-  "Preb: Work email status",
   "Preb: Personal email",
   "Preb: Personal email status",
   "Preb: Phone",
   "Preb: Phone type",
+  "Preb: Work email",
+  "Preb: Work email status",
   "Preb: Job title",
   "Preb: Company",
   "Preb: Company domain",
@@ -54,12 +54,12 @@ export function rowCells(c: ContactRow, headers: string[]): unknown[] {
   const original = headers.map((h) => raw[h] ?? "");
   return [
     ...original,
-    c.work_email ?? "",
-    emailStatusLabel(c.work_email ? c.work_email_status : null),
     c.personal_email ?? "",
     emailStatusLabel(c.personal_email ? c.personal_email_status : null),
     c.phone ?? "",
     phoneType(c.phone_meta),
+    c.work_email ?? "",
+    emailStatusLabel(c.work_email ? c.work_email_status : null),
     c.job_title ?? "",
     c.company ?? c.company_name ?? "",
     c.company_domain ?? c.domain ?? "",

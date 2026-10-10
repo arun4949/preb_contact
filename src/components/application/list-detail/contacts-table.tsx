@@ -222,11 +222,6 @@ export function ContactsTable({ rows, total, totalPages, query, onChange, visibi
       },
       { id: "location", header: "Location", cell: ({ row }) => <span className="block truncate text-text-secondary">{row.original.location ?? <span className="text-text-tertiary">—</span>}</span> },
       {
-        id: "work_email",
-        header: "Work email",
-        cell: ({ row }) => <EmailCell email={row.original.work_email} status={row.original.work_email_status} isPending={running && contactUiStatus(row.original).kind === "pending"} />,
-      },
-      {
         id: "personal_email",
         header: "Personal email",
         cell: ({ row }) => <EmailCell email={row.original.personal_email} status={row.original.personal_email_status} isPending={running && contactUiStatus(row.original).kind === "pending"} />,
@@ -235,6 +230,11 @@ export function ContactsTable({ rows, total, totalPages, query, onChange, visibi
         id: "phone",
         header: "Phone",
         cell: ({ row }) => <PhoneCell phone={row.original.phone} meta={row.original.phone_meta} isPending={running && contactUiStatus(row.original).kind === "pending"} />,
+      },
+      {
+        id: "work_email",
+        header: "Work email",
+        cell: ({ row }) => <EmailCell email={row.original.work_email} status={row.original.work_email_status} isPending={running && contactUiStatus(row.original).kind === "pending"} />,
       },
       { id: "status", header: "Status", cell: ({ row }) => <StatusCell c={row.original} running={running} /> },
     ];

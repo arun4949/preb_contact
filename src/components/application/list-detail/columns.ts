@@ -7,9 +7,9 @@ export const CORE_COLUMNS = [
   { id: "job_title", label: "Job title" },
   { id: "company", label: "Company" },
   { id: "location", label: "Location" },
-  { id: "work_email", label: "Work email" },
   { id: "personal_email", label: "Personal email" },
   { id: "phone", label: "Phone" },
+  { id: "work_email", label: "Work email" },
   { id: "status", label: "Status" },
 ] as const;
 

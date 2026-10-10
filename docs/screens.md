@@ -55,7 +55,7 @@ Common: `stepper` (Upload · Map · Configure) under the header, page header wit
 - CTA `Next step` disabled until ≥1 row is enrichable.
 
 **Step 3 — Configure** (`1015:43`)
-- "Enrichment level — choose what to add": three `checkbox-card`s in a row (stack on mobile): **Work email** (2 credits, "Verified business email") · **Personal email** (6 credits, "For reaching candidates directly; recruiting use only") · **Mobile phone** (20 credits, "Mobile numbers; landlines are free").
+- "Enrichment level — choose what to add": three `checkbox-card`s in a row (stack on mobile), personal first (website promise, 2026-10-09): **Personal email** (6 credits, "Direct reach · recruiting use only", preselected) · **Mobile phone** (20 credits, "Mobile numbers; landlines are free", preselected) · **Work email** (2 credits, "Verified business email, the fallback"). The Enrich tab uses the same order and defaults.
 - Row: `Name this list` `input` (placeholder "e.g. Sales Directors in NYC") · `Rows to enrich` preset chips 500 · 1,000 · 2,500 · 5,000 + number `input` (default all).
 - Estimate card: `Typically ~320 credits · up to 415` with `progress-bar` of balance; "You have 1,240 credits". If short: warning `banner` + `Buy credits` button (opens plan picker).
 - Footer: `Start enrichment` primary right.
@@ -72,7 +72,7 @@ Common: `stepper` (Upload · Map · Configure) under the header, page header wit
 - `stat-cards` ×4 (plain): Contacts · Valid emails (%) · Risky emails (%) · Mobile phones (%).
 - Toolbar: search `input` ("Search 415 contacts…"), `Column settings` `dropdown` (checkbox rows, persisted), Download.
 - Two columns ≥ 1024 px: left filter rail 260 px (`Filters` + `Reset`; **Email status** stacked bar + pills Valid/Risky/Not found with counts; **Phone status** Found/Not found; **Duplicates removed** n); right `DataTable`.
-- Table columns: ☐ · Name (avatar initials + name, LinkedIn icon link) · Job title · Company (logo via provider `logo_url` fallback initial, domain link) · Location · Work email (`status-dot` success/warning/neutral + copy on hover) · Personal email · Phone (`chip` Mobile/Landline, copy) · extra passthrough columns (hidden by default).
+- Table columns: ☐ · Name (avatar initials + name, LinkedIn icon link) · Job title · Company (logo via provider `logo_url` fallback initial, domain link) · Location · Personal email (`status-dot` success/warning/neutral + copy on hover) · Phone (`chip` Mobile/Landline, copy) · Work email (same cell as personal) · extra passthrough columns (hidden by default). Personal data first everywhere (table, Enrich tab, CSV export `Preb:` columns, list-card metric rows); phones the provider reports as `INACTIVE` are dropped before they reach the record (`isUsablePhone`).
 - Footer: `415 contacts in total` · page size `select` 25/50/100 · `pagination`.
 - Mobile: filters in a `sheet` (button "Filters"), table horizontal scroll with sticky Name column.
 
