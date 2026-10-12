@@ -1,0 +1,148 @@
+import { CREDIT_COST } from "@/lib/fullenrich/mapping";
+import type { DocsCollection } from "../types";
+
+const UPDATED = "2026-10-12";
+
+export const data: DocsCollection = {
+  slug: "data",
+  title: "Data and results",
+  summary: "What Preb finds, what the statuses mean and how long we keep your data.",
+  articles: [
+    {
+      slug: "what-preb-finds",
+      title: "What Preb can find",
+      summary: "The three contact fields you can order, the profile details that come with them, and where the data comes from.",
+      keywords: ["fields", "data", "job title", "location", "sources", "linkedin"],
+      updated: UPDATED,
+      related: ["email-statuses", "phone-types", "choose-what-to-find"],
+      blocks: [
+        { type: "heading", text: "Contact fields you can order" },
+        { type: "table", columns: ["Field", "What it is", "Credits per result"], rows: [
+          ["Personal email", "An address the person uses privately, for example a Gmail address. Best for reaching candidates who should not be contacted at work.", String(CREDIT_COST.personal_email)],
+          ["Mobile phone", "An active mobile number, in international format. Landlines are added for free when we find them.", String(CREDIT_COST.mobile_phone)],
+          ["Work email", "A verified business address at the person's current employer, with a Valid or Risky status.", String(CREDIT_COST.work_email)],
+        ] },
+        { type: "heading", text: "Profile details that come along" },
+        { type: "paragraph", text: "When you give a LinkedIn URL, or when Preb identifies a person from an email address, the result also contains the job title, the company, the company website, the location and the LinkedIn profile. These details are free." },
+        { type: "heading", text: "Where the data comes from" },
+        { type: "paragraph", text: "Preb combines several professional data sources and verification services. Every email is verified before you see it, and every phone number is checked for being an active mobile line. Preb never reads your own mailbox, your CRM or your LinkedIn account." },
+        { type: "callout", tone: "note", text: "Find rates vary by country, industry and seniority. Personal emails and mobile numbers are harder to find than work emails. See [I got fewer results than expected](/docs/troubleshooting/fewer-results-than-expected)." },
+      ],
+    },
+    {
+      slug: "email-statuses",
+      title: "Valid, Risky and Not found",
+      summary: "What the email status means, what is charged and how to use risky addresses.",
+      keywords: ["valid", "risky", "catch-all", "catch all", "bounce", "deliverable", "verified", "not found", "status"],
+      updated: UPDATED,
+      related: ["read-your-results", "download-your-list", "how-credits-work"],
+      blocks: [
+        { type: "paragraph", text: "Every email Preb returns is verified and gets one of three statuses. You see them as filters on the list, as chips in the table and in the status columns of the download." },
+        { type: "table", columns: ["Status", "Meaning", "Charged"], rows: [
+          ["Valid", "The mailbox exists and accepts email, or our verification is highly confident that it does. Safe to send.", "Yes"],
+          ["Risky", "The company mail server accepts every address, so the mailbox cannot be confirmed. The address is usually right, but some risky emails bounce.", "Yes"],
+          ["Not found", "No email with enough confidence. Nothing is returned for this field.", "No"],
+        ] },
+        { type: "heading", text: "Should I send to risky addresses?" },
+        { type: "paragraph", text: "Most of them work. If you use a sending tool, send to risky addresses in smaller batches and keep an eye on bounces, so that your sender reputation stays healthy. Downloading only **Valid emails** is the safest choice for large campaigns, **Risky emails** is a separate download for a careful second wave." },
+        { type: "callout", tone: "note", text: "Risky emails are charged because they are verified as far as the receiving server allows. If a risky email bounces, that is the server's catch-all setting, not a wrong address on our side." },
+      ],
+    },
+    {
+      slug: "phone-types",
+      title: "Mobile and landline numbers",
+      summary: "Only active mobile numbers cost credits. Landlines are free, inactive numbers are dropped.",
+      keywords: ["phone", "mobile", "landline", "number", "format", "international"],
+      updated: UPDATED,
+      related: ["what-preb-finds", "how-credits-work"],
+      blocks: [
+        { type: "list", items: [
+          `**Mobile**. An active mobile line. This is what the Mobile phone field orders, at ${CREDIT_COST.mobile_phone} credits per number.`,
+          "**Landline**. An office or desk number. When we find one while looking for a mobile, it is added for free and marked with a Landline chip.",
+          "**Inactive numbers** are dropped before you see them and never charged.",
+        ] },
+        { type: "paragraph", text: "Numbers are returned in international format, starting with a plus sign and the country code, so they work in any dialer and any CRM. The download keeps the plus sign." },
+      ],
+    },
+    {
+      slug: "contact-statuses",
+      title: "Contact statuses and skip reasons",
+      summary: "What the status of a single row means, including every reason a row was skipped.",
+      keywords: ["row status", "skipped", "waiting", "suppressed", "reason", "missing", "over the row limit"],
+      updated: UPDATED,
+      related: ["rows-not-enrichable", "list-statuses", "duplicates-and-already-enriched"],
+      blocks: [
+        { type: "paragraph", text: "The **Status** column in the table and the Preb: Status column in the download tell you what happened to each row." },
+        { type: "table", columns: ["Status", "Meaning"], rows: [
+          ["Waiting", "The row is in the queue or in progress."],
+          ["Enriched", "At least one of the ordered fields was found."],
+          ["Already enriched", "The person was enriched in your workspace within the last 90 days. The result was reused for free."],
+          ["Not found", "The row was processed, but none of the ordered fields could be found. Nothing was charged."],
+          ["Skipped", "The row was not sent for enrichment. The reason is shown next to the status, see below."],
+          ["Suppressed", "The person asked not to be contacted through Preb. No data is shown or exported, and nothing is charged."],
+        ] },
+        { type: "heading", text: "Skip reasons" },
+        { type: "table", columns: ["Reason", "Meaning", "Fix"], rows: [
+          ["Missing name or company", "The row has neither a LinkedIn URL nor a name with a company or domain.", "Add the missing column and upload again."],
+          ["Email only", "The row has just an email and the identify switch was off.", "Upload again with **Identify email-only rows** switched on."],
+          ["Duplicate", "Another row in the file points to the same person.", "Nothing. The other row carries the result."],
+          ["List stopped", "You stopped the list before this row was processed.", "Upload the remaining rows as a new list."],
+          ["Over the row limit", "The row is beyond the number you set under **Rows to enrich**.", "Upload again with a higher number. Enriched rows are free the second time."],
+          ["No result", "Our sources had nothing for this person.", "Try again in a few weeks, or add a LinkedIn URL."],
+          ["Provider lost the request", "A data source did not answer in time.", "Upload the row again. It was not charged."],
+          ["Person asked not to be contacted", "Same as Suppressed.", "Nothing."],
+        ] },
+      ],
+    },
+    {
+      slug: "identify-email-only-rows",
+      title: "Identify people from an email address",
+      summary: `When a row only has an email, Preb can find out who the person is for ${CREDIT_COST.reverse} credits.`,
+      keywords: ["reverse lookup", "email only", "identify", "who is", "email to name"],
+      updated: UPDATED,
+      related: ["choose-what-to-find", "what-preb-finds", "contact-statuses"],
+      blocks: [
+        { type: "paragraph", text: "Some exports contain only email addresses. Preb can identify the person behind an address and then enrich the row like any other." },
+        { type: "heading", text: "How to switch it on" },
+        { type: "steps", items: [
+          "Map the email column to **Email** on the mapping step.",
+          "On the Configure step, switch on **Identify email-only rows**. The switch only appears when the file has such rows.",
+          "Start the list. Identified rows get the name, job title, company, website, location and LinkedIn profile, and then the fields you ordered.",
+        ] },
+        { type: "heading", text: "What it costs" },
+        { type: "paragraph", text: `Identification costs ${CREDIT_COST.reverse} credits per person and is only charged when a person is actually identified. The contact fields you ordered are charged on top, at their usual rates, and again only when found. The estimate on the Configure step includes identification.` },
+        { type: "callout", tone: "tip", text: "Rows that have a name and a company next to the email do not need identification. They are enriched directly." },
+      ],
+    },
+    {
+      slug: "data-privacy-and-retention",
+      title: "Your data and your contacts' data",
+      summary: "How long Preb keeps lists and results, what people can ask for, and where to find the legal documents.",
+      keywords: ["privacy", "gdpr", "retention", "delete", "opt out", "processor", "dpa", "security"],
+      updated: UPDATED,
+      related: ["delete-workspace-or-account", "duplicates-and-already-enriched", "faq"],
+      blocks: [
+        { type: "heading", text: "How long we keep things" },
+        { type: "list", items: [
+          "Lists and their results stay in your workspace until you delete the list.",
+          "Results are reused within your workspace for 90 days, so a person you enrich twice is free the second time. After 90 days, and when you delete the list, the stored result is removed.",
+          "Deleting a workspace or an account removes its lists, files, results and credits. See [Delete your workspace or your account](/docs/workspace/delete-workspace-or-account).",
+        ] },
+        { type: "heading", text: "Who sees what" },
+        { type: "list", items: [
+          "Everyone in your workspace can see every list in it. Members can delete only their own lists.",
+          "Nothing is shared between workspaces. Results you paid for are never reused for another customer.",
+          "Preb acts on your behalf as a processor. You decide who to look up and what to do with the results.",
+        ] },
+        { type: "heading", text: "People who do not want to be contacted" },
+        { type: "paragraph", text: "Anyone can ask Preb not to process their data. Such a person shows up as **Suppressed** in your lists, with no data and no charge, even if another source would have a result. Requests go to hello@preb.co, and the [Privacy Policy](https://preb.co/privacy) explains the details." },
+        { type: "heading", text: "The documents" },
+        { type: "list", items: [
+          "[Privacy Policy](https://preb.co/privacy), what Preb stores about you and your contacts.",
+          "[Terms of Service](https://preb.co/terms), including the rules for credits and refunds.",
+          "A data processing agreement is available on request from support.",
+        ] },
+      ],
+    },
+  ],
+};

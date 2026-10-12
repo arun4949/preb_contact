@@ -45,6 +45,7 @@ Consequence for the MVP: everything that touches the provider must sit behind on
 6. **Enriched list**: a table with name, title, company (logo), location, work email with status, personal email, phone with type, LinkedIn link. Filter rail (Valid / Risky / Not found, phone found), search, column settings, pagination. **Download** all or a segment. The export keeps the original columns and appends ours.
 7. **Credits & billing**: a credits menu in the header shows the balance and expiry. Settings → Billing shows the plan, lets the user pick a plan (monthly or annual, Stripe Checkout) and manage payment/invoices in the Stripe customer portal. We never render card forms.
 8. **Team**: Settings → Workspace lists members, lets admins invite by email (we send the invite), change roles, remove members.
+9. **Help**: a public help center at app.preb.co/docs (plain-language articles for recruiters: lists, results, credits, team), reachable from the account menu, the login footer, emails and in-app hints; every article ends with a helpful vote and a Contact support button that opens the messenger.
 
 ## 6. Credits, plans and money rules
 

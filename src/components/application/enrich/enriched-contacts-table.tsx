@@ -8,7 +8,9 @@ import { Badge } from "@/components/base/badges/badge";
 import { Banner } from "@/components/base/banner/banner";
 import { Button, ButtonLink } from "@/components/base/buttons/button";
 import { useSettingsUrl } from "@/components/application/settings/use-settings-url";
+import { LinkButton } from "@/components/base/buttons/link-button";
 import { EmptyState } from "@/components/base/empty-state/empty-state";
+import { docsPath } from "@/lib/site-links";
 import { Input } from "@/components/base/input/input";
 import { Pagination } from "@/components/base/pagination/pagination";
 import { Skeleton } from "@/components/base/skeleton/skeleton";
@@ -181,6 +183,13 @@ export function EnrichedContactsTable({ history, runState, q, workspaceId }: Enr
                 icon={RiUserSearchLine}
                 title={filtered ? "No contacts match" : "No contacts enriched yet"}
                 description={filtered ? "Try another name, company or email." : "Add a contact above to try it. Results show up here within a minute."}
+                actions={
+                  filtered ? undefined : (
+                    <LinkButton href={docsPath("enrich", "enrich-a-single-contact")} target="_blank" rel="noopener noreferrer" variant="secondary" size="xs">
+                      How Enrich works
+                    </LinkButton>
+                  )
+                }
               />
             )}
           >

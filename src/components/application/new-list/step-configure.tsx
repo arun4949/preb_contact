@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useSettingsUrl } from "@/components/application/settings/use-settings-url";
 import { RiCoinLine, RiUserSearchLine } from "@remixicon/react";
 import { Banner } from "@/components/base/banner/banner";
+import { LinkButton } from "@/components/base/buttons/link-button";
 import { Button } from "@/components/base/buttons/button";
 import { CheckboxCard } from "@/components/base/checkbox/checkbox-card";
 import { Chip } from "@/components/base/badges/chip";
@@ -11,6 +12,7 @@ import { Input } from "@/components/base/input/input";
 import { ProgressBar } from "@/components/base/progress-bar/progress-bar";
 import { useToast } from "@/components/base/toast/toast";
 import { estimateCredits, type EnrichmentField } from "@/lib/credits/estimate";
+import { docsPath } from "@/lib/site-links";
 import { FIELD_CARDS } from "@/lib/credits/fields";
 import { CREDIT_COST } from "@/lib/fullenrich/mapping";
 import { startList, type ParseSummary } from "@/lib/lists/actions";
@@ -190,7 +192,10 @@ export function StepConfigure({ listId, defaultName, summary, creditsAvailable, 
           size="sm"
         />
         <p className="text-body-2-regular text-text-tertiary">
-          The typical estimate reserves credits up front. You only pay for what we find; not-found contacts are free.
+          The typical estimate reserves credits up front. You only pay for what we find; not-found contacts are free.{" "}
+          <LinkButton href={docsPath("billing", "how-credits-work")} target="_blank" rel="noopener noreferrer" variant="secondary" size="xs">
+            How credits work
+          </LinkButton>
         </p>
         {short > 0 ? (
           <Banner

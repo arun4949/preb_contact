@@ -1,6 +1,7 @@
+import Link from "next/link";
 import { LogoName } from "@/components/foundations/brand/logo";
 import { CookiePreferencesLink } from "@/components/foundations/termly/termly-cmp";
-import { LEGAL_URLS, MARKETING_SITE_URL } from "@/lib/site-links";
+import { DOCS_PATH, LEGAL_URLS, MARKETING_SITE_URL } from "@/lib/site-links";
 
 export default function AuthLayout({ children }: LayoutProps<"/">) {
   return (
@@ -10,6 +11,8 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
       </a>
       <main className="flex w-full flex-col items-center animate-page-enter">{children}</main>
       <footer className="flex items-center gap-4 text-caption-1-regular text-text-secondary">
+        <Link href={DOCS_PATH} className="hover:text-text-primary">Help</Link>
+        <span aria-hidden>·</span>
         <a href={LEGAL_URLS.terms} target="_blank" rel="noopener noreferrer" className="hover:text-text-primary">Terms</a>
         <span aria-hidden>·</span>
         <a href={LEGAL_URLS.privacy} target="_blank" rel="noopener noreferrer" className="hover:text-text-primary">Privacy</a>

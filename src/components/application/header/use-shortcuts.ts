@@ -16,6 +16,8 @@ function isTypingTarget(target: EventTarget | null) {
 /**
  * Global keyboard shortcuts: `N` → new list, `/` → focus search.
  * Ignored while typing, with modifiers, or when a dialog/popover is open.
+ * The Featurebase messenger mounts an `iframe[role=dialog]` on every page,
+ * which must not count as an open dialog.
  */
 export function useGlobalShortcuts() {
   const router = useRouter();
@@ -23,7 +25,7 @@ export function useGlobalShortcuts() {
     const onKey = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey || event.defaultPrevented) return;
       if (isTypingTarget(event.target)) return;
-      if (document.querySelector("[role='dialog'], [data-rac][data-entering]")) return;
+      if (document.querySelector("[role='dialog']:not(iframe), [data-rac][data-entering]")) return;
 
       if (event.key === "n" || event.key === "N") {
         event.preventDefault();

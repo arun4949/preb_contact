@@ -12,6 +12,7 @@ const TERMLY_WEBSITE_UUID = "3c682d29-57d4-46b6-b071-9e88af258653";
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://app.preb.co"),
   title: { default: "Preb", template: "%s · Preb" },
   description: "Upload a spreadsheet and we find verified emails and phones.",
   icons: { icon: "/logo.svg" },

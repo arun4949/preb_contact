@@ -5,20 +5,28 @@ import type { Database } from "@/lib/supabase/types";
 /**
  * Paths that never require a session. Webhooks, cron and auth callbacks pass
  * through untouched. /terms and /privacy stay public so an old link 404s
- * instead of bouncing to login; the real pages live on preb.co (Framer).
+ * instead of bouncing to login; the real pages live on preb.co (Framer). The
+ * help center (/docs) is public and static. Exact matches and prefixes are
+ * separate lists so "/docs" never opens "/docsomething".
  */
-const PUBLIC_PREFIXES = ["/login", "/auth/", "/invite/", "/api/webhooks/", "/api/jobs/", "/samples/", "/terms", "/privacy", "/robots.txt"];
+const PUBLIC_EXACT = ["/login", "/terms", "/privacy", "/robots.txt", "/sitemap.xml", "/docs"];
+const PUBLIC_PREFIXES = ["/auth/", "/invite/", "/api/webhooks/", "/api/jobs/", "/samples/", "/docs/"];
 
 export function isPublic(pathname: string) {
-  return PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(p));
+  return PUBLIC_EXACT.includes(pathname) || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
+}
+
+/** Static pages that never read the session, so the proxy skips the token refresh. */
+export function isSessionless(pathname: string) {
+  return pathname.startsWith("/api/webhooks/") || pathname.startsWith("/api/jobs/") || pathname === "/docs" || pathname.startsWith("/docs/") || pathname === "/sitemap.xml" || pathname === "/robots.txt";
 }
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
   const { pathname, search } = request.nextUrl;
 
-  // No session work at all for provider callbacks and cron.
-  if (pathname.startsWith("/api/webhooks/") || pathname.startsWith("/api/jobs/")) {
+  // No session work at all for provider callbacks, cron and the public help center.
+  if (isSessionless(pathname)) {
     return response;
   }
 

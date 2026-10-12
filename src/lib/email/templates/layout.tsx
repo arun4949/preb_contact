@@ -88,6 +88,10 @@ export function EmailLayout({
           </Section>
           <Text style={{ fontSize: 12, lineHeight: "18px", color: EMAIL_COLORS.tertiary, margin: "16px 0 0" }}>
             Preb · Recruiting data enrichment
+            {" · "}
+            <Link href={appUrl("/docs")} style={{ color: EMAIL_COLORS.tertiary, textDecoration: "underline" }}>
+              Help center
+            </Link>
             {preferencesUrl ? (
               <>
                 {" · "}

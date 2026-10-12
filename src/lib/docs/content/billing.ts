@@ -1,0 +1,157 @@
+import { CREDIT_COST } from "@/lib/fullenrich/mapping";
+import type { DocsCollection } from "../types";
+
+const UPDATED = "2026-10-12";
+
+export const billing: DocsCollection = {
+  slug: "billing",
+  title: "Credits and billing",
+  summary: "How credits work, what plans exist, when credits expire and how to manage your subscription.",
+  articles: [
+    {
+      slug: "how-credits-work",
+      title: "How credits work",
+      summary: "Credits pay for results. One pool per workspace, nothing found costs nothing.",
+      keywords: ["credits", "balance", "cost", "price per result", "hold", "reserved", "credit history"],
+      updated: UPDATED,
+      related: ["plans-and-pricing", "credit-expiry", "running-out-of-credits"],
+      blocks: [
+        { type: "paragraph", text: "Credits are the currency inside Preb. Your workspace has one balance that every teammate uses. Credits come from your plan, or from the free trial, and are spent on results." },
+        { type: "heading", text: "What a result costs" },
+        { type: "table", columns: ["Result", "Credits"], rows: [
+          ["Work email, valid or risky", String(CREDIT_COST.work_email)],
+          ["Personal email", String(CREDIT_COST.personal_email)],
+          ["Mobile phone, active", String(CREDIT_COST.mobile_phone)],
+          ["Identifying a person from an email", String(CREDIT_COST.reverse)],
+          ["Nothing found, landline, inactive number, duplicate, person enriched in the last 90 days", "0"],
+        ] },
+        { type: "heading", text: "Before, during and after a list" },
+        { type: "list", items: [
+          "**Before**: the Configure step shows a typical estimate and a maximum. A list can start when your balance covers the typical estimate.",
+          "**During**: the typical amount is reserved so that two lists cannot spend the same credits twice. Rows are charged as results arrive.",
+          "**After**: the reservation is released and the list shows exactly what it used, in the pill next to its status and under Settings, Billing, **Credit history**.",
+        ] },
+        { type: "heading", text: "Where to see your balance" },
+        { type: "list", items: [
+          "The credits menu in the top bar shows **Available** credits and the next expiry date.",
+          "Settings, Billing, **Credit balance** lists every batch of credits with its expiry date.",
+          "**Credit history** lists every grant and every charge per list.",
+        ] },
+        { type: "callout", tone: "note", text: "Credits with the earliest expiry date are always used first, so nothing expires while newer credits are still in the balance." },
+      ],
+    },
+    {
+      slug: "plans-and-pricing",
+      title: "Plans and prices",
+      summary: "Monthly and annual plans with a sliding credit amount, in US dollars, and where to see today's prices.",
+      keywords: ["pricing", "plans", "subscription", "monthly", "annual", "yearly", "price", "usd", "enterprise", "volume"],
+      updated: UPDATED,
+      related: ["how-credits-work", "change-your-plan", "credit-expiry"],
+      blocks: [
+        { type: "paragraph", text: "Preb has one kind of plan with a slider for the amount of credits. Every plan includes every feature. Prices are in US dollars and are shown live in the app, so this article explains the structure rather than listing numbers." },
+        { type: "heading", text: "Monthly plans" },
+        { type: "paragraph", text: "From 1,000 to 200,000 credits a month. Credits are added at the start of every billing month and stay valid for 3 months, so a quiet month is not lost." },
+        { type: "heading", text: "Annual plans" },
+        { type: "paragraph", text: "From 12,000 to 2.4 million credits a year, all added up front and valid for 12 months. Annual plans save about 10 percent compared to paying monthly." },
+        { type: "heading", text: "Where to see the prices" },
+        { type: "steps", items: [
+          "Open the credits menu in the top bar and click **Choose a plan**, or go to Settings, Billing.",
+          "Switch between **Monthly** and **Annual** and move the slider. The card shows the credits, the price per month and the price per credit, plus what one work email, one personal email and one mobile number cost at that plan.",
+          "Click the button to pay. New plans go through a secure checkout page where you can add a promo code.",
+        ] },
+        { type: "heading", text: "More than the largest plan?" },
+        { type: "paragraph", text: "Volume pricing, invoicing and single sign-on are available on request. Click **Talk to sales** at the end of the slider or email sales@preb.co." },
+        { type: "callout", tone: "note", text: "Only workspace owners and admins can choose or change a plan. Members see the plan but cannot change it." },
+      ],
+    },
+    {
+      slug: "credit-expiry",
+      title: "When credits expire",
+      summary: "Monthly credits last 3 months, annual credits 12 months, trial credits 30 days.",
+      keywords: ["expire", "expiry", "rollover", "roll over", "unused credits", "validity"],
+      updated: UPDATED,
+      related: ["how-credits-work", "plans-and-pricing", "free-trial"],
+      blocks: [
+        { type: "table", columns: ["Credits from", "Valid for"], rows: [
+          ["A monthly plan", "3 months from the day they are added"],
+          ["An annual plan", "12 months from the day they are added"],
+          ["The free trial", "30 days from sign-up"],
+          ["An upgrade", "Same as the plan they belong to"],
+        ] },
+        { type: "paragraph", text: "Credits do not disappear at the end of a billing month. Unused monthly credits roll over for up to 3 months, unused annual credits for up to 12 months. Preb always spends the credits that expire first." },
+        { type: "heading", text: "Seeing what expires when" },
+        { type: "list", items: [
+          "The credits menu in the top bar shows the next expiry, for example \"500 credits expire on Jan 12\".",
+          "Settings, Billing, **Credit balance** lists every batch with its expiry date.",
+        ] },
+        { type: "callout", tone: "note", text: "If you cancel your plan, the credits you already have keep their expiry date and stay usable until then." },
+      ],
+    },
+    {
+      slug: "change-your-plan",
+      title: "Upgrade, downgrade or switch billing interval",
+      summary: "Change the plan from Billing. Upgrades add credits right away, downgrades apply at the next renewal.",
+      keywords: ["upgrade", "downgrade", "switch plan", "change plan", "annual", "monthly", "proration", "review change"],
+      updated: UPDATED,
+      related: ["plans-and-pricing", "invoices-and-payment", "credit-expiry"],
+      blocks: [
+        { type: "steps", items: [
+          "Go to Settings, Billing and click **Change plan**.",
+          "Pick the new amount with the slider, and the interval with **Monthly** or **Annual**.",
+          "Click **Review change**. A summary shows **Charged today**, any unused time that is credited to your next invoices, and **Credits added now**.",
+          "Confirm with **Pay and switch**. The plan changes immediately.",
+        ] },
+        { type: "heading", text: "Upgrades" },
+        { type: "paragraph", text: "When you move to a larger plan, you pay the difference for the rest of the current period and the difference in credits is added to your balance at once." },
+        { type: "heading", text: "Downgrades" },
+        { type: "paragraph", text: "When you move to a smaller plan, nothing is charged today and no credits are added. The unused part of what you paid is credited to your next invoices. Your current credits keep their expiry date." },
+        { type: "callout", tone: "note", text: "Some banks ask you to confirm a payment. In that case the app tells you to complete it on the invoice page, and the plan switches as soon as the payment is confirmed." },
+      ],
+    },
+    {
+      slug: "running-out-of-credits",
+      title: "What happens when you run out of credits",
+      summary: "Lists pause instead of failing, and continue by themselves after you add credits.",
+      keywords: ["out of credits", "paused needs credits", "buy credits", "low credits", "empty balance"],
+      updated: UPDATED,
+      related: ["list-statuses", "plans-and-pricing", "how-credits-work"],
+      blocks: [
+        { type: "list", items: [
+          "A new list cannot start when the balance is below its typical estimate. The Configure step shows how many credits you are short and a **Buy credits** button.",
+          "A running list that uses the last credits changes to **Paused, needs credits**. Rows that were already found keep their results.",
+          "As soon as credits arrive, from a new plan, a renewal or an upgrade, the paused list continues on its own. You do not need to restart it.",
+        ] },
+        { type: "heading", text: "Warnings before it happens" },
+        { type: "paragraph", text: "When your balance drops under 10 percent of your plan, the workspace owner gets an email and everyone sees a notification in the bell. The credits menu in the top bar shows the balance at any time." },
+        { type: "heading", text: "Adding credits" },
+        { type: "paragraph", text: "Open the credits menu and click **Buy credits**, or **Choose a plan** during the trial. Both lead to Settings, Billing, where you pick a plan or a larger plan. See [Plans and prices](/docs/billing/plans-and-pricing)." },
+      ],
+    },
+    {
+      slug: "invoices-and-payment",
+      title: "Invoices, payment methods and cancelling",
+      summary: "The billing portal is where you download invoices, change the card and cancel.",
+      keywords: ["invoice", "receipt", "payment method", "card", "cancel", "cancellation", "billing portal", "vat"],
+      updated: UPDATED,
+      related: ["change-your-plan", "credit-expiry", "delete-workspace-or-account"],
+      blocks: [
+        { type: "paragraph", text: "Payments are handled by Stripe, a payment provider used by millions of businesses. Preb never sees or stores your card details." },
+        { type: "heading", text: "Open the billing portal" },
+        { type: "steps", items: [
+          "Go to Settings, Billing.",
+          "Click **Manage billing**. The portal opens in a new tab, signed in with your workspace.",
+        ] },
+        { type: "heading", text: "In the portal you can" },
+        { type: "list", items: [
+          "Download every invoice and receipt as a PDF.",
+          "Change the card or the billing address, and add a tax ID for your invoices.",
+          "Cancel the plan. The plan then runs until the end of the period you already paid, and no further charge is made.",
+          "Undo a cancellation before the period ends.",
+        ] },
+        { type: "heading", text: "After cancelling" },
+        { type: "paragraph", text: "Your workspace, lists and results stay. Credits you already have remain usable until their own expiry date. You can choose a plan again at any time from Settings, Billing." },
+        { type: "callout", tone: "important", text: "Credits that were spent are not refunded, and an unused balance is not paid out. Please check the [Terms of Service](https://preb.co/terms) for the details." },
+      ],
+    },
+  ],
+};

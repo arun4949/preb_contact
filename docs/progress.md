@@ -2,6 +2,50 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Dark-mode logo — 2026-10-12 · new white-wordmark lockup (complete, walked in a browser)
+
+### Done
+- ✅ `components/foundations/brand/logo.tsx`: dark mode now shows `public/logoName_light.svg` (new lockup with a white wordmark, added by the CTO) instead of the outdated `logoName-dark.svg`, which was deleted (no other references).
+- ✅ Review round (CTO, same day): a first pass "corrected" the lockup width to the 3067×1300 artwork ratio, which shrank the header logo from 79×33 to 57×24. Tailwind's preflight sets `img { height: auto }`, so the rendered size always followed the width, and the tuned look was 79×33 (headers) and 92×39 (auth, invite, 404). Restored: the width keeps the old per-height factor, the height attribute now matches the artwork ratio, so the logo renders exactly as before and nothing is letterboxed.
+- ✅ Walked light and dark on the app header, the help center header and `/login` (Playwright, 2× screenshots): same artwork in both themes, only the wordmark colour changes. Emails keep `logoName.png` (light backgrounds only).
+- ✅ `npm run typecheck` ✓ · `npm run lint` ✓ · `npm run build` ✓.
+
+---
+
+## Public help center at /docs — 2026-10-12 · 41 articles in 7 collections, search, feedback votes, account-menu rewire (complete, walked in a browser)
+
+### Decisions (CTO)
+- Docs live at **app.preb.co/docs** as a public, indexable route group inside the app (not a help subdomain, not Featurebase's knowledge base). Leon links to it from preb.co.
+- **No screenshots** at launch: articles name buttons and fields in bold exactly as the app renders them, so UI changes do not orphan images.
+- **"Was this helpful?"** Yes/No vote on every article, anonymous counts only, in Supabase (`docs_feedback`, migration 0020), with a tile and a table on `/admin/ops`.
+- Account menu: **Help center** → `/docs`; new **Contact support** opens the messenger. Review round (CTO, same day): **Share feedback** removed, because two items opened the same messenger; feature ideas go through Contact support. The auth footer gained a **Help** link.
+- BoardUI has no docs shell or template (checked via the MCP); the shell is composed from installed base components. Sidebar uses plain links with `aria-current` rather than `tree-view` (file-tree selection semantics do not fit page navigation).
+- Content is **typed data, not MDX**: `DocsBlock[]` per article under `src/lib/docs/content/*.ts`, one renderer. Search text, the table of contents and the copy lint derive from the same data; no new npm dependency. Prices are never hardcoded; costs and limits import `CREDIT_COST`, `MAX_ROWS`.
+- Rule for the future (saved in memory): every feature or refactoring updates the affected articles in the same task.
+
+### Done
+- ✅ `lib/docs`: `types.ts`, `inline.ts` (`**UI label**`, `` `key` ``, `[text](href)`), `slug.ts` (anchor ids, per-article dedupe), `registry.ts` (collections, hrefs, prev/next, TOC, `DOCS_NAV`, `SEARCH_INDEX`), `search.ts` (AND over tokens, title > keyword > summary > body), `feedback.ts` (server action, slug validated against the registry, 20 votes / 10 min per sha256(ip + UA) in memory, service-role insert).
+- ✅ Content: Getting started (6), Lists and enrichment (10), Enrich single contacts (2), Data and results (6), Credits and billing (6), Workspace and account (5), Troubleshooting and FAQ (6), plus `/docs/contact`. Facts checked against the code (statuses, skip reasons, limits, costs, roles, invite expiry, deletion order, cancel behaviour).
+- ✅ `registry.test.ts` (14 cases): unique slugs, related/internal links resolve, dates, **no "—", "–" or " - " in any string**, provider name never appears, balanced inline markup, unique anchors, nav/href parity, prev/next bounds, inline parser, search ranking.
+- ✅ `components/application/docs/*`: shell (sticky header with logo, search, theme toggle, Open app; sticky sidebar with `ScrollFade`; start-side `Sheet` with search + nav on phones), primitives (H2 with anchors, steps with number bubbles, lists, callouts Note/Tip/Important on the Banner recipe, static `.bui-table`), inline renderer, article renderer, search (combobox + listbox, `/` shortcut, arrows/Enter/Escape, outside press), TOC rail with IntersectionObserver, feedback widget (`useSyncExternalStore` over localStorage, no set-state-in-effect), prev/next, related, collection cards, support card, footer.
+- ✅ Routes `app/(docs)/docs`: layout (metadata template "%s · Preb help"), home, collection, article (`generateStaticParams`, `generateMetadata`, canonical + OpenGraph), contact, docs-styled `not-found`. `dynamicParams = true` so unknown slugs render `notFound()` inside the docs layout (with `false` the routing-level 404 used the root page). New `app/sitemap.ts` (login + docs); `robots.ts` allows `/docs` and points at the sitemap; root layout gained `metadataBase`.
+- ✅ Proxy: `PUBLIC_EXACT` + `PUBLIC_PREFIXES` (exact `/docs`, prefix `/docs/`, `/sitemap.xml`), `isSessionless()` skips the token refresh on docs, sitemap and robots; tests extended (`/docsx`, `/documents` stay private).
+- ✅ Migration `0020_docs_feedback.sql` applied via MCP (RLS on, no policies, service role only); `types.ts` regenerated.
+- ✅ `/admin/ops`: "Docs votes (30 d)" tile (warns under 60 % helpful with ≥ 10 votes) and "Help center feedback" table (article, collection, helpful, not helpful, share chip).
+- ✅ Entry points: `lib/site-links` `DOCS_PATH`, `docsPath()`, `docsUrl()`; account menu; auth footer; wizard Configure estimate → "How credits work"; Enrich empty state → "How Enrich works"; email footer → Help center.
+- ✅ Fixed on the way (pre-existing): `useGlobalShortcuts` treated the Featurebase messenger `iframe[role=dialog]` as an open dialog, so `N` and `/` never fired while the messenger was mounted; both shortcut hooks now ignore iframes.
+- ✅ `npm run typecheck` ✓ · `npx eslint` ✓ on touched files · `npm test` ✓ (131). `npm run build` not run while the CTO's dev server owns `.next`.
+- Docs: implementation plan (repo layout, data model, changes), screens § 4, § 7 and new § 11, product MVP § 5, memory rule.
+
+### Browser walk (Playwright headless against the CTO's dev server on :3000, Termly hidden by CSS, fresh test user `walk-docs@docswalk-preb.io` created with the service key and deleted afterwards with its workspace, the two test votes deleted from `docs_feedback`)
+- Signed out: `/docs`, `/docs/billing`, `/docs/billing/how-credits-work`, `/docs/contact` 200; `/docs/nope` and `/docs/billing/upload-and-map-columns` (wrong collection) HTTP 404 with "Article not found" inside the docs shell; `/docsx` → `/login?next=%2Fdocsx`; `robots.txt` allows `/docs`; `sitemap.xml` lists 51 URLs.
+- 1440 px: no app header; search via `/` focuses the field, "csv" lists 8 hits with collection chips (first "Download your enriched list"), ArrowDown + Enter navigates; article shows breadcrumb, "Updated Oct 12, 2026", table, callout, 3 TOC items, sidebar `aria-current`; clicking a TOC item scrolls and highlights it (`#where-to-see-your-balance`); Yes vote → "Thanks for your feedback.", persists after reload, row in `docs_feedback`; No vote on another article shows "Tell us what was missing"; prev/next and related render; collection page lists its 10 articles; Contact support on `/docs/contact` opens the messenger anonymously.
+- Dark: `html.dark` applied before paint, header, article, table and callouts on tokens. 390 px: no horizontal scroll, hamburger opens the sheet with search + nav, choosing an article closes it, the search icon opens the sheet focused on search, "invite" gives 6 hits and navigates.
+- Signed in (test user through onboarding): `/docs` shows the docs header only, **Open app** → `/lists`; account menu reads Settings · Members · Billing · Help center · Contact support · Cookie preferences · Theme · Log out (after the review round); Help center → `/docs`; Contact support opens the messenger; Enrich empty state links to `/docs/enrich/enrich-a-single-contact`; `/login` footer **Help** → `/docs`. `/admin/ops` as the CTO's account (magic link, read-only, state file deleted): tile "2 · 50% helpful", table with both test votes.
+- Noticed, not changed: the Featurebase SDK logs "Error with action: 'identify'" on every anonymous page (also `/login` before this work); it is the Free-plan identify refusal documented on 2026-10-09 and the dev overlay's "1 Issue".
+
+---
+
 ## Phone number in onboarding and onboarding-call consent — 2026-10-12 · optional phone with country selector, own-row-only storage, Calls switch, admin signups table (complete, walked in a browser)
 
 ### Decisions (CTO)

@@ -9,6 +9,8 @@ import { isAdminEmail } from "@/lib/auth/work-email";
 import { getAccountCredits } from "@/lib/fullenrich/client";
 import { getPlan } from "@/lib/credits/plans";
 import { formatPhone } from "@/lib/phone/phone";
+import { findArticle } from "@/lib/docs/registry";
+import { docsPath } from "@/lib/site-links";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSessionContext } from "@/lib/supabase/queries";
 import { minutesAgo } from "@/lib/jobs/shared";
@@ -20,6 +22,7 @@ export const dynamic = "force-dynamic";
 const STUCK_BATCH_MINUTES = 30;
 const STALE_WEBHOOK_MINUTES = 10;
 const SIGNUP_DAYS = 30;
+const DOCS_FEEDBACK_DAYS = 30;
 
 const when = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
@@ -34,7 +37,7 @@ export default async function OpsPage() {
   if (!isAdminEmail(session.email)) notFound();
 
   const admin = createAdminClient();
-  const [balance, stuck, webhooks, paused, lastTick, emails, running, signups] = await Promise.all([
+  const [balance, stuck, webhooks, paused, lastTick, emails, running, signups, docsVotes] = await Promise.all([
     getAccountCredits().then((r) => r.balance).catch((e: unknown) => (e instanceof Error ? e.message : "unavailable")),
     admin
       .from("enrichment_batches")
@@ -65,7 +68,21 @@ export default async function OpsPage() {
       .gte("created_at", minutesAgo(SIGNUP_DAYS * 24 * 60))
       .order("created_at", { ascending: false })
       .limit(50),
+    // Help center votes: anonymous counts only (migration 0020).
+    admin.from("docs_feedback").select("article_slug, helpful").gte("created_at", minutesAgo(DOCS_FEEDBACK_DAYS * 24 * 60)).limit(5000),
   ]);
+
+  const docsByArticle = new Map<string, { yes: number; no: number }>();
+  for (const v of docsVotes.data ?? []) {
+    const row = docsByArticle.get(v.article_slug) ?? { yes: 0, no: 0 };
+    if (v.helpful) row.yes += 1;
+    else row.no += 1;
+    docsByArticle.set(v.article_slug, row);
+  }
+  const docsRows = [...docsByArticle.entries()].map(([slug, r]) => ({ slug, ...r, total: r.yes + r.no, share: Math.round((r.yes / (r.yes + r.no)) * 100) })).sort((a, b) => b.total - a.total).slice(0, 30);
+  const docsTotal = docsRows.reduce((n, r) => n + r.total, 0);
+  const docsYes = docsRows.reduce((n, r) => n + r.yes, 0);
+  const docsShare = docsTotal ? Math.round((docsYes / docsTotal) * 100) : null;
 
   const emailCounts = (emails.data ?? []).reduce<Record<string, number>>((acc, e) => ({ ...acc, [e.kind]: (acc[e.kind] ?? 0) + 1 }), {});
   const stats: { label: string; value: string; tone?: "warn" | "bad" }[] = [
@@ -76,6 +93,7 @@ export default async function OpsPage() {
     { label: "Paused / failed lists", value: String(paused.data?.length ?? 0), tone: paused.data?.length ? "warn" : undefined },
     { label: "Last provider call", value: lastTick.data?.window_start ? when(lastTick.data.window_start) : "never" },
     { label: `Signups (${SIGNUP_DAYS} d)`, value: String(signups.data?.length ?? 0) },
+    { label: `Docs votes (${DOCS_FEEDBACK_DAYS} d)`, value: docsShare === null ? "0" : `${docsTotal} · ${docsShare}% helpful`, tone: docsShare !== null && docsTotal >= 10 && docsShare < 60 ? "warn" : undefined },
   ];
 
   return (
@@ -85,7 +103,7 @@ export default async function OpsPage() {
         <p className="text-body-regular text-text-secondary">Cross-workspace health. Visible to allow-listed admins only.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
         {stats.map((s) => (
           <div key={s.label} className="flex flex-col gap-1 rounded-3xl border border-border-button-default bg-background-primary-default p-4">
             <span className="text-body-2-regular text-text-secondary">{s.label}</span>
@@ -242,6 +260,44 @@ export default async function OpsPage() {
           </Table>
         ) : (
           <Empty text="Nothing paused or failed." />
+        )}
+      </Section>
+
+      <Section title={`Help center feedback (last ${DOCS_FEEDBACK_DAYS} days)`}>
+        {docsRows.length ? (
+          <Table aria-label="Help center feedback" size="sm" containerClassName="rounded-2xl">
+            <TableHeader>
+              <TableColumn isRowHeader>Article</TableColumn>
+              <TableColumn>Collection</TableColumn>
+              <TableColumn className="text-end">Helpful</TableColumn>
+              <TableColumn className="text-end">Not helpful</TableColumn>
+              <TableColumn>Share</TableColumn>
+            </TableHeader>
+            <TableBody>
+              {docsRows.map((r) => {
+                const a = findArticle(r.slug);
+                return (
+                  <TableRow key={r.slug}>
+                    <TableCell>
+                      <a href={a?.href ?? docsPath()} target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">
+                        {a?.title ?? r.slug}
+                      </a>
+                    </TableCell>
+                    <TableCell>{a?.collectionTitle ?? "—"}</TableCell>
+                    <TableCell className="text-end tabular-nums">{r.yes}</TableCell>
+                    <TableCell className="text-end tabular-nums">{r.no}</TableCell>
+                    <TableCell>
+                      <Chip variant="caption" color={r.share >= 70 ? "lime" : r.share >= 40 ? "yellow" : "rose"}>
+                        {r.share}%
+                      </Chip>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        ) : (
+          <Empty text="No votes yet." />
         )}
       </Section>
 

@@ -1,5 +1,5 @@
 // Generated from the Supabase project via MCP `generate_typescript_types`
-// after migration 0019 (profile_phones). Regenerate after every migration.
+// after migration 0020 (docs_feedback). Regenerate after every migration.
 export type Json =
   | string
   | number
@@ -264,6 +264,27 @@ export type Database = {
           deleted_at?: string
           email_hash?: string
           google_provider_id?: string | null
+        }
+        Relationships: []
+      }
+      docs_feedback: {
+        Row: {
+          article_slug: string
+          created_at: string
+          helpful: boolean
+          id: string
+        }
+        Insert: {
+          article_slug: string
+          created_at?: string
+          helpful: boolean
+          id?: string
+        }
+        Update: {
+          article_slug?: string
+          created_at?: string
+          helpful?: boolean
+          id?: string
         }
         Relationships: []
       }

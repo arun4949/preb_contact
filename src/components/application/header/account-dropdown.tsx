@@ -4,13 +4,13 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   RiBankCardLine,
-  RiFeedbackLine,
+  RiBookOpenLine,
+  RiCustomerService2Line,
   RiShieldCheckLine,
   RiLogoutBoxRLine,
   RiMegaphoneLine,
   RiPulseLine,
   RiUserForbidLine,
-  RiQuestionLine,
   RiSettings3Line, RiTeamLine } from "@remixicon/react";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Dropdown, DropdownDivider, DropdownGroup, DropdownItem, DropdownPopover, DropdownTrigger } from "@/components/base/dropdown/dropdown";
@@ -18,6 +18,7 @@ import { openCookiePreferences } from "@/components/foundations/termly/termly-cm
 import { ThemeToggle } from "@/components/application/theme/theme-toggle";
 import { useSupportChat } from "@/components/foundations/featurebase/featurebase";
 import { signOut } from "@/lib/auth/actions";
+import { DOCS_PATH } from "@/lib/site-links";
 import { useSettingsUrl } from "@/components/application/settings/use-settings-url";
 import { initialsOf } from "@/utils/initials";
 
@@ -31,7 +32,7 @@ export interface AccountDropdownProps {
   isAdmin?: boolean;
 }
 
-/** Avatar trigger + account menu (Figma 1015:33). Settings/Billing open the settings modal; Help and feedback open the Featurebase messenger. */
+/** Avatar trigger + account menu (Figma 1015:33). Settings/Billing open the settings modal; Help center goes to /docs; Contact support opens the Featurebase messenger (support and feature ideas share one inbox). */
 export function AccountDropdown({ name, email, avatarUrl, workspaceName, isAdmin = false }: AccountDropdownProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -78,20 +79,20 @@ export function AccountDropdown({ name, email, avatarUrl, workspaceName, isAdmin
           <DropdownItem
             onSelect={() => {
               setOpen(false);
-              chat.show();
+              router.push(DOCS_PATH);
             }}
           >
-            <RiQuestionLine className="size-5 text-foreground-icon-secondary" aria-hidden />
+            <RiBookOpenLine className="size-5 text-foreground-icon-secondary" aria-hidden />
             <span className="text-body-medium">Help center</span>
           </DropdownItem>
           <DropdownItem
             onSelect={() => {
               setOpen(false);
-              chat.showNewMessage();
+              chat.show();
             }}
           >
-            <RiFeedbackLine className="size-5 text-foreground-icon-secondary" aria-hidden />
-            <span className="text-body-medium">Share feedback</span>
+            <RiCustomerService2Line className="size-5 text-foreground-icon-secondary" aria-hidden />
+            <span className="text-body-medium">Contact support</span>
           </DropdownItem>
           <DropdownItem
             onSelect={() => {
