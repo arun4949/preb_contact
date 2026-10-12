@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
   RiAlertLine,
@@ -11,6 +11,7 @@ import {
   RiGroupLine,
   RiMoreFill,
   RiPencilLine,
+  RiSmartphoneLine,
   RiStopCircleLine,
   RiUserUnfollowLine,
 } from "@remixicon/react";
@@ -19,7 +20,7 @@ import { Button, ButtonLink } from "@/components/base/buttons/button";
 import { Dropdown, DropdownDivider, DropdownGroup, DropdownItem, DropdownPopover, DropdownTrigger } from "@/components/base/dropdown/dropdown";
 import { AgentThinking } from "@/components/application/agent-thinking/agent-thinking";
 import { ComposerLoader } from "@/components/application/composer-loader/composer-loader";
-import { ContactGauge } from "@/components/application/contact-gauge/contact-gauge";
+import { ContactGauge, type GaugeKey } from "@/components/application/contact-gauge/contact-gauge";
 import type { ListRow } from "@/lib/supabase/queries";
 import { cx } from "@/utils/cx";
 import { ListDialogs, type ListDialogKind } from "./list-dialogs";
@@ -47,6 +48,8 @@ export function ListCard({ list, ownerName, canDelete }: ListCardProps) {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [dialog, setDialog] = useState<ListDialogKind>(null);
+  /** Outcome focused on the gauge or its row: the gauge names it, the other rows dim. */
+  const [active, setActive] = useState<GaugeKey | null>(null);
 
   const strip = (
     <div className="flex h-11 items-center justify-between gap-2 ps-4 pe-2">
@@ -130,21 +133,37 @@ export function ListCard({ list, ownerName, canDelete }: ListCardProps) {
           <RiArrowRightSLine className="size-5 shrink-0 text-foreground-icon-tertiary transition-transform group-hover/card:translate-x-0.5 rtl:rotate-180" aria-hidden />
         </Link>
 
-        <ContactGauge total={list.total_rows} valid={list.found_work_email} risky={list.risky_email} sweeping={running} />
+        <ContactGauge
+          total={list.total_rows}
+          base={base}
+          valid={list.found_work_email}
+          risky={list.risky_email}
+          active={active}
+          onActiveChange={setActive}
+          sweeping={running}
+        />
 
         <ul className="flex flex-col gap-2">
           {list.enrich_fields.includes("mobile_phone") ? (
-            <MetricRow chip={pct(list.found_phone, base)} color="cyan" label="Mobile phones" value={list.found_phone} />
+            <MetricRow lead={<RiSmartphoneLine className="size-4 text-foreground-icon-secondary" aria-hidden />} chip={pct(list.found_phone, base)} label="Mobile phones" value={list.found_phone} />
           ) : null}
-          <MetricRow chip={pct(list.found_work_email, base)} color="purple" label="Valid emails" value={list.found_work_email} />
-          <MetricRow chip={pct(list.risky_email, base)} color="yellow" label="Risky emails" value={list.risky_email} />
-          <li className="flex items-center gap-3">
-            <span className="flex size-7 items-center justify-center text-foreground-icon-secondary">
-              <RiUserUnfollowLine className="size-4" aria-hidden />
-            </span>
-            <span className="flex-1 text-body-regular text-text-secondary">Duplicates removed</span>
-            <span className="text-body-medium text-text-primary tabular-nums">{fmt(list.duplicates_removed)}</span>
-          </li>
+          <MetricRow
+            lead={<Swatch className="bg-chart-1" />}
+            chip={pct(list.found_work_email, base)}
+            label="Valid emails"
+            value={list.found_work_email}
+            dimmed={active !== null && active !== "valid"}
+            onHover={list.found_work_email > 0 ? (on) => setActive(on ? "valid" : null) : undefined}
+          />
+          <MetricRow
+            lead={<Swatch className="bg-chart-3" />}
+            chip={pct(list.risky_email, base)}
+            label="Risky emails"
+            value={list.risky_email}
+            dimmed={active !== null && active !== "risky"}
+            onHover={list.risky_email > 0 ? (on) => setActive(on ? "risky" : null) : undefined}
+          />
+          <MetricRow lead={<RiUserUnfollowLine className="size-4 text-foreground-icon-secondary" aria-hidden />} label="Duplicates removed" value={list.duplicates_removed} />
         </ul>
 
         <div className="mt-auto flex flex-col gap-2 pt-1">
@@ -166,14 +185,45 @@ export function ListCard({ list, ownerName, canDelete }: ListCardProps) {
   );
 }
 
-function MetricRow({ chip, color, label, value }: { chip: string; color: "purple" | "yellow" | "cyan"; label: string; value: number }) {
+/** Legend swatch in the exact gauge colour (the BoardUI chart-legend recipe). */
+function Swatch({ className }: { className: string }) {
+  return <span className={cx("size-3 rounded-[4px]", className)} aria-hidden />;
+}
+
+/**
+ * Metric row: lead (swatch or icon) · label · percent chip · count. Rows
+ * that are on the gauge pass `onHover` and dim while another outcome is
+ * focused, like a chart legend; the others are plain.
+ */
+function MetricRow({
+  lead,
+  chip,
+  label,
+  value,
+  dimmed = false,
+  onHover,
+}: {
+  lead: ReactNode;
+  chip?: string;
+  label: string;
+  value: number;
+  dimmed?: boolean;
+  onHover?: (on: boolean) => void;
+}) {
   return (
-    <li className="flex items-center gap-3">
-      <Chip variant="caption" color={color} className="w-14 justify-center tabular-nums">
-        {chip}
-      </Chip>
+    <li
+      className={cx("flex items-center gap-3 transition-opacity duration-200 ease-out", dimmed && "opacity-50")}
+      onMouseEnter={onHover ? () => onHover(true) : undefined}
+      onMouseLeave={onHover ? () => onHover(false) : undefined}
+    >
+      <span className="flex size-7 shrink-0 items-center justify-center">{lead}</span>
       <span className="flex-1 text-body-regular text-text-secondary">{label}</span>
-      <span className="text-body-medium text-text-primary tabular-nums">{fmt(value)}</span>
+      {chip !== undefined ? (
+        <Chip variant="caption" color="soft" className="w-14 justify-center tabular-nums">
+          {chip}
+        </Chip>
+      ) : null}
+      <span className="min-w-10 text-end text-body-medium text-text-primary tabular-nums">{fmt(value)}</span>
     </li>
   );
 }

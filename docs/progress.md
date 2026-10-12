@@ -2,6 +2,30 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Lists dashboard gauge fix — 2026-10-12 · segmented email-outcome ring, matching rows, no clipping (complete, walked in a browser)
+
+### Decisions (CTO)
+- One ring that answers one question: the work-email outcome per enrichable contact (Valid teal `chart-1` · Risky pink `chart-3` · grey remainder "No email found"). Mobile phones overlap with emails and stay off the ring; a two-ring design (phones as an inner ring) was considered and rejected as too busy.
+- The ring explains itself on hover (centre readout swaps to the outcome's count and share, BoardUI stacked-gauge recipe) instead of a floating tooltip. The rows below are a second information source: legend swatch in the exact ring colour on Valid/Risky, phone icon on Mobile phones, neutral `soft` percent chips everywhere (the old cyan/purple/yellow chips looked like a legend but were not one).
+- Shares use the same base as the percent chips (`enrichable_rows || total_rows`); the centre number stays `total_rows`. Segmented look with round ends and a 3° gap.
+
+### Done
+- ✅ `contact-gauge/geometry.ts` (+ 8 vitest cases): `layoutSegments` (gap only between non-empty neighbours, clamped to the arc), `dashFor` (shrinks a dash by one round cap per side; a share narrower than two caps collapses to a centred dot), `capFraction`.
+- ✅ `contact-gauge.tsx` rewritten: viewBox `0 0 200 106` with `CY = 96` so the 16 px round caps end inside the box (the old `0 0 200 112` / `CY = 106` / 18 px stroke cut 3 px off every cap); track on `chart-track`; segments as `motion.path` animating `pathLength`/`pathOffset` (no plain `pathLength` attribute on a motion path, it fights motion's own value); invisible 28 px hit strokes per visual range; `active`/`onActiveChange` focus; `aria-label` with all three outcomes; reduced motion keeps duration 0 and disables the caption fade.
+- ✅ `list-card.tsx`: passes `base`, owns the focus state, `MetricRow` = lead · label · `Chip soft` · count with `dimmed`/`onHover`; Mobile phones uses `RiSmartphoneLine`.
+- ✅ Docs: `screens.md` § 1 gauge + rows, `implementation_plan.md` gauge row.
+- ✅ `npm run typecheck` ✓ · `npm run lint` ✓ · `npm test` ✓.
+
+### Browser walk (Playwright headless against the CTO's dev server on :3000, signed in via magic link, cookie banner hidden by CSS in the test profile)
+- Light, dark, 1500 px 3-up and 390 px: round ends fully visible (zoomed crop of the cap region), visible gap, track shows between teal and pink. Dash values equal the chips: valid 0.75 share → dash 0.689 at offset 0.030 (one cap each side), risky visual 0.767–0.889 → dash 0.062 at offset 0.797.
+- Hover valid / risky / remainder: centre reads "Valid emails · 75%" 27 · "Risky emails · 14%" 5 · "No email found · 11%" 4; the focused segment switches to its `-active` token, the others and the track drop to 0.3; the other ring rows drop to 0.5. Hovering the Risky row focuses the ring the same way; hovering Mobile phones changes nothing.
+- `prefers-reduced-motion: reduce`: final dash values present 150 ms after load.
+- Not walked: the enriching sweep (no list was running); its code is unchanged apart from the stroke constant.
+- Review round (CTO): the track's round cap reached one half-stroke past the arc start while the segments were cap-compensated, so grey peeked out under the first segment; the track is now drawn as the same cap-compensated dash (`1 - 2·cap` at offset `cap`), ends coincide (walked again: start cap solid teal, 100 % list solid end to end). Counts in the rows get `min-w-10 text-end` so chips and counts form two straight columns.
+- Review round 2 (CTO): on TEEEST (3 contacts, 2 enrichable) the hover readout changed the centre from 3 to 2, and "No email found · 100%" ran into the ring. The focused readout now shows the outcome's share as the number ("75%") with the outcome name as a short caption (BoardUI stacked-gauge readout), so it never contradicts the total; caption capped at 128 px with truncation. Rows at 0 no longer take focus (hovering them dimmed the whole ring with nothing to highlight), and a list with no enrichable rows has no hover. Walked again: TEEEST reads "No email found" over "100%" inside the ring, the fixture reads "Valid emails" over "75%", Risky row on TEEEST leaves the ring at rest.
+
+---
+
 ## Website removed, app prepared for app.preb.co — 2026-10-10
 
 ### Decisions (CTO)
