@@ -2,6 +2,34 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Phone number in onboarding and onboarding-call consent — 2026-10-12 · optional phone with country selector, own-row-only storage, Calls switch, admin signups table (complete, walked in a browser)
+
+### Decisions (CTO)
+- Phone is **optional** in onboarding (data minimisation; invited members never see onboarding and add a number in Settings).
+- Stored in a **separate own-only table** `profile_phones`, not on `profiles` (co-members can read each other's whole `profiles` row) and not in `auth.users` metadata (no RLS, `auth.users.phone` is the phone-login field).
+- **Opt-out** consent for one onboarding call: notice under the form, switch in Settings › Profile › Calls defaults to on. Basis: Art. 6 (1) (f) GDPR and § 7 (2) no. 1 UWG (presumed consent of a business). Calls dialled by hand by a founder, no autodialer, no prerecorded messages, no SMS, which keeps the US TCPA out of scope. The privacy policy says so (§ 3.1, § 4, § 8, § 13.1, § 15).
+- Founders look up who to call in a **"Recent signups" table on `/admin/ops`** (phone as `tel:` link, consent chip).
+
+### Done
+- ✅ Migration `0019_profile_phones.sql` applied via MCP: `user_id` PK → `profiles` cascade, `phone` E.164 check (`^\+[1-9][0-9]{4,14}$`, short territories allowed), `country` ISO check, `calls_allowed` default true, `calls_allowed_changed_at`, `updated_at` trigger, RLS own row for select/insert/update/delete. `types.ts` regenerated.
+- ✅ `lib/phone/phone.ts` (+ 9 vitest cases): `normalizePhone` (same `libphonenumber-js/min` rules on client and server), `formatPhone`, `formatPhoneNational`, `formatAsYouType` (feeds digits only so user-typed spaces never break formatting; detects the country of a pasted `+…` number), `PHONE_COUNTRIES` (every country with a flag, names from the static `country-names.ts` table), `toPhoneCountry`, `countryFromAcceptLanguage`.
+- ✅ `components/application/phone-field/phone-field.tsx`: BoardUI phone recipe, country `Select` (flag + dial code, type-ahead by name, 280 px list) inside the `Input` leading addon, `type="tel"`, `validationBehavior="aria"` so the BoardUI hint shows instead of the browser bubble; onboarding mode submits raw text + `phone_country`, settings mode commits on Enter, on blur (unless focus went to the country trigger) and on country change.
+- ✅ Onboarding: `page.tsx` reads `x-vercel-ip-country` (fallback `accept-language`, then US) and the stored row; form guards submit while the number is invalid; `completeOnboarding` normalises, returns an inline field error, and upserts without a representation in both branches.
+- ✅ Settings › Profile: Phone row (empty removes the row), Calls section with the Onboarding call switch (disabled until a number exists), subtitle updated; `updatePhone` / `updateCallsAllowed` in `lib/account/actions.ts`; `getProfilePhone()` in `queries.ts`; `PhoneField` loaded with `next/dynamic` so the ~250 flag SVGs stay out of the app-shell chunk.
+- ✅ `/admin/ops`: "Signups (30 d)" tile and "Recent signups" table (name, email, workspace, plan chip from `plan_key` / `trial_granted_at`, signed up, phone, consent chip).
+- ✅ Fixed on the way: `settings-modal.tsx` refocused its panel whenever its callback props changed (after every server-action refresh), which pulled the caret out of a field mid-typing (reproduced with Full name too); it now focuses on open only.
+- ✅ Docs: privacy policy, legal README (decision + process item 10), implementation plan (data model, screens, changes), screens § 6 and § 7, product MVP.
+- ✅ `npx tsc --noEmit` ✓ · `npx eslint` ✓ on touched files · `npm test` ✓ (115). `npm run build` not run while the CTO's dev server owns `.next`.
+
+### Browser walk (Playwright headless against the CTO's dev server on :3000, fresh test user `walk-phone@phonewalk-preb.io` created with the service key and deleted afterwards, cookie banner hidden by CSS)
+- `/onboarding` (locale de-DE, no geo header): selector defaults to +49; typing `015112345678` renders `01511 2345678`; typing `+14155552671` switches the selector to +1 and renders `+1 415 555 2671`; `123` shows "Enter a valid phone number for United States." on blur and Create workspace keeps the page and refocuses the field; the country list opens with flags and dial codes, type-ahead "Germ" + Enter selects Germany; mobile 375 px fits. Valid DE number + submit → `/lists`, row `+4915112345678 / DE / calls_allowed true`.
+- Settings › Profile: stored number shown in national format; Onboarding call off → `calls_allowed false` with timestamp, on again → true; edit to a GB number → stored `+447400123456 / GB`; clear + Enter → row deleted and the Calls switch disabled with its hint; `12` + Enter → inline "Enter a valid phone number for Germany.", nothing stored; re-add → row back with consent true. Light, dark (country list open), 375 px. Escape on the open country list closes only the list; Escape afterwards closes the modal. Full name keeps focus and its typed value after a Product news toggle.
+- Copy round (CTO, 2026-10-12): the phone field got a persuasive hint ("Get a direct line to our team for setup help and faster support. Never shown to your teammates."), the footer now says the call only happens if a number is added, the Settings Phone row says "Your direct line to our team for setup help and support. Never shown to teammates.". A security benefit was deliberately not claimed: the number is not used for sign-in, recovery or identity checks. Privacy policy § 3.1 and § 4 gained the support purpose (contract basis). The walk then surfaced a hydration error: country names came from `Intl.DisplayNames`, and Node's ICU names some regions differently from Chromium's ("Falkland Islands (Islas Malvinas)"). Names now come from a static table `lib/phone/country-names.ts` (generated once, shorter common names for a few regions), with a test.
+- `/admin/ops` as the CTO's own account (magic link, read-only, state file deleted): 4 signups, test user with `tel:+4915112345678` link and "Call ok" chip, existing accounts "No phone".
+- RLS: as another authenticated user `select count(*) from profile_phones` returns 0 (service role sees the row). Account deletion of the test user removed the `profile_phones` row by cascade.
+
+---
+
 ## Lists dashboard gauge fix — 2026-10-12 · segmented email-outcome ring, matching rows, no clipping (complete, walked in a browser)
 
 ### Decisions (CTO)

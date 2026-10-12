@@ -1,6 +1,8 @@
 import { Suspense } from "react";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { getCreditSummary, getSessionContext, getUser } from "@/lib/supabase/queries";
+import { getCreditSummary, getProfilePhone, getSessionContext, getUser } from "@/lib/supabase/queries";
+import { countryFromAcceptLanguage, toPhoneCountry } from "@/lib/phone/phone";
 import { AppHeader } from "@/components/application/header/app-header";
 import { SettingsHost } from "@/components/application/settings/settings-host";
 import { FeaturebaseIdentity } from "@/components/foundations/featurebase/featurebase";
@@ -20,12 +22,15 @@ import { getNotifications, getUnreadCount } from "@/lib/notifications/queries";
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const session = await getSessionContext();
   if (!session) redirect((await getUser()) ? "/onboarding" : "/auth/signout");
-  const [credits, featurebaseJwt, notifications, unreadCount] = await Promise.all([
+  const [credits, featurebaseJwt, notifications, unreadCount, phone, h] = await Promise.all([
     getCreditSummary(session.workspace, session.creditsAvailable),
     signFeaturebaseJwt(session),
     getNotifications(),
     getUnreadCount(),
+    getProfilePhone(),
+    headers(),
   ]);
+  const defaultCountry = toPhoneCountry(h.get("x-vercel-ip-country") ?? countryFromAcceptLanguage(h.get("accept-language")));
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -48,6 +53,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             email: session.email,
             avatarUrl: session.profile.avatar_url,
             productNews: session.profile.product_news,
+            phone: phone ? { e164: phone.phone, country: phone.country, callsAllowed: phone.calls_allowed } : null,
+            defaultCountry,
             ownsWorkspace: session.role === "owner",
           }}
         />

@@ -35,7 +35,7 @@ Consequence for the MVP: everything that touches the provider must sit behind on
 ## 5. The user journey
 
 1. **Sign in** with Google or a magic link. No passwords.
-2. **Onboarding** (first time only): full name, workspace name. Invited users skip this and land in the inviter's workspace.
+2. **Onboarding** (first time only): full name, workspace name, optional phone number with country code (we may call new trial users once; switch off in Settings › Profile › Calls). Invited users skip this and land in the inviter's workspace.
 3. **Lists dashboard**: cards for each list with a gauge of contacts, valid/risky email percentages, phones found, duplicates removed, and a Download button. Empty state offers a sample CSV.
 4. **New list** (three steps):
    1. *Upload* a CSV or XLSX (drag & drop). Up to 10,000 rows.

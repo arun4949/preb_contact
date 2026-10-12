@@ -20,6 +20,7 @@ Copy rules: no em dashes, en dashes or " - " as punctuation (AGENTS.md). The enr
 
 - Preb acts as **processor only** for Contact data. No cross-customer reuse of enrichment results, no own contact database, so no US data broker registration.
 - Product news to existing customers on an **opt-out** basis (Art. 6 (1) (f) GDPR, § 7 (3) UWG) with an unsubscribe link in every email.
+- One onboarding call to new trial customers (2026-10-12): phone number optional at onboarding, **opt-out** notice at signup and a switch in Settings › Profile › Calls that defaults to on. Basis: legitimate interest (Art. 6 (1) (f) GDPR) and presumed consent of a business (§ 7 (2) no. 1 UWG). Calls are dialled by hand by a founder; no autodialer, no prerecorded messages, no SMS (keeps the US TCPA out of scope). Number stored in `profile_phones` (own row only, never visible to teammates), never sent to Resend, Featurebase or Stripe.
 - Infrastructure in the **USA** (Supabase us-east-1, Vercel US East), controller in Germany. Transfers via DPF where certified, otherwise SCCs.
 - English only. No data protection officer.
 - Supervisory authority: LDI NRW (Düsseldorf).
@@ -46,6 +47,7 @@ The policy describes the target state. These items must be done before or at pub
 7. Link Privacy Policy, Terms and Imprint from every page (website and app) and enter the privacy URL in the Google OAuth consent screen. App side done: the login card and the auth footer link to `https://preb.co/terms` and `https://preb.co/privacy` (2026-10-10, the website and legal pages are built in Framer by Leon on preb.co; the app moves to app.preb.co, see `docs/setup_manual.md` M11). Open: publish the pages in Framer, and the Google console entry.
 8. ~~Featurebase data minimisation~~ Done 2026-10-09: the Stripe customer id is no longer sent to Featurebase.
 9. ~~Two-factor authentication~~ Confirmed by the CTO 2026-10-09.
+10. ~~Phone number and onboarding call~~ Done 2026-10-12 (migration 0019): optional phone with country selector on `/onboarding`, Phone row and Calls › Onboarding call switch in Settings › Profile, "Recent signups" table with phone and consent on `/admin/ops`. Privacy policy § 3.1, § 4, § 8, § 13.1 and § 15 updated.
 
 ## Reference material reviewed
 

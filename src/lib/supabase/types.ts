@@ -1,5 +1,5 @@
 // Generated from the Supabase project via MCP `generate_typescript_types`
-// after migration 0014 (notifications). Regenerate after every migration.
+// after migration 0019 (profile_phones). Regenerate after every migration.
 export type Json =
   | string
   | number
@@ -727,6 +727,44 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_phones: {
+        Row: {
+          calls_allowed: boolean
+          calls_allowed_changed_at: string | null
+          country: string
+          created_at: string
+          phone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calls_allowed?: boolean
+          calls_allowed_changed_at?: string | null
+          country: string
+          created_at?: string
+          phone: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calls_allowed?: boolean
+          calls_allowed_changed_at?: string | null
+          country?: string
+          created_at?: string
+          phone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_phones_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

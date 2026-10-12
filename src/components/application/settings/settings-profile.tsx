@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState, useTransition } from "react";
 import { RiMailLine } from "@remixicon/react";
 import { Avatar } from "@/components/base/avatar/avatar";
@@ -7,11 +8,18 @@ import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { Switch } from "@/components/base/switch/switch";
 import { useToast } from "@/components/base/toast/toast";
-import { updateProductNews, updateProfileName } from "@/lib/account/actions";
+import { updateCallsAllowed, updatePhone, updateProductNews, updateProfileName, type SavedPhone } from "@/lib/account/actions";
 import { cx } from "@/utils/cx";
 import { initialsOf } from "@/utils/initials";
 import { DeleteAccountDialog } from "./delete-dialogs";
 import { SettingsCard, SettingsRow, SettingsSectionLabel, SettingsValueField } from "./settings-rows";
+
+// The country selector ships ~250 flag SVGs; split them out of the app shell
+// chunk and load them when the modal opens. The placeholder matches the field.
+const PhoneField = dynamic(() => import("@/components/application/phone-field/phone-field").then((m) => m.PhoneField), {
+  ssr: false,
+  loading: () => <div className="h-8 w-full shrink-0 rounded-2lg bg-background-tertiary-default sm:w-[260px]" aria-hidden />,
+});
 
 export interface SettingsProfileProps {
   name: string;
@@ -19,6 +27,10 @@ export interface SettingsProfileProps {
   avatarUrl: string | null;
   /** Opt-out flag for product news (mirrored to the Resend contact). */
   productNews: boolean;
+  /** Stored phone (own row only) with the call consent, or null when none was given. */
+  phone: SavedPhone | null;
+  /** Country selector default when no phone is stored (geo header). */
+  defaultCountry: string;
   /** Owners delete their workspace along with the account; the dialog says so. */
   ownsWorkspace: boolean;
   onSaved?: () => void;
@@ -26,15 +38,21 @@ export interface SettingsProfileProps {
 
 /**
  * Settings › Profile (plan § 6): avatar, full name (commits on Enter / blur),
- * read-only email, the product-news switch and account deletion
+ * read-only email, the phone number (commits like the name, clearing removes
+ * it), the product-news switch, the trial-call switch and account deletion
  * (privacy policy § 11 and § 15).
  */
-export function SettingsProfile({ name, email, avatarUrl, productNews, ownsWorkspace, onSaved }: SettingsProfileProps) {
+export function SettingsProfile({ name, email, avatarUrl, productNews, phone: initialPhone, defaultCountry, ownsWorkspace, onSaved }: SettingsProfileProps) {
   const [value, setValue] = useState(name);
   const [committed, setCommitted] = useState(name);
   const [pending, start] = useTransition();
   const [news, setNews] = useState(productNews);
   const [newsPending, startNews] = useTransition();
+  const [phone, setPhone] = useState<SavedPhone | null>(initialPhone);
+  const [phonePending, startPhone] = useTransition();
+  // Remount key: a failed save resets the field to the stored number.
+  const [phoneReset, setPhoneReset] = useState(0);
+  const [callsPending, startCalls] = useTransition();
   const [deleting, setDeleting] = useState(false);
   const toast = useToast();
 
@@ -63,6 +81,34 @@ export function SettingsProfile({ name, email, avatarUrl, productNews, ownsWorks
       } else {
         toast.error(res.error);
         setNews(!enabled);
+      }
+    });
+  };
+
+  const commitPhone = (raw: string, country: string) => {
+    startPhone(async () => {
+      const res = await updatePhone(raw, country);
+      if (res.ok) {
+        setPhone(res.data);
+        onSaved?.();
+      } else {
+        toast.error(res.error);
+        setPhoneReset((k) => k + 1);
+      }
+    });
+  };
+
+  const toggleCalls = (enabled: boolean) => {
+    if (!phone) return;
+    const before = phone;
+    setPhone({ ...phone, callsAllowed: enabled });
+    startCalls(async () => {
+      const res = await updateCallsAllowed(enabled);
+      if (res.ok) {
+        onSaved?.();
+      } else {
+        toast.error(res.error);
+        setPhone(before);
       }
     });
   };
@@ -98,6 +144,19 @@ export function SettingsProfile({ name, email, avatarUrl, productNews, ownsWorks
             <span dir="ltr">{email}</span>
           </SettingsValueField>
         </SettingsRow>
+        <SettingsRow label="Phone" description="Your direct line to our team for setup help and support. Never shown to teammates.">
+          <PhoneField
+            key={`${phone?.e164 ?? ""}:${phoneReset}`}
+            aria-label="Phone number"
+            size="small"
+            placeholder="Optional"
+            defaultValue={phone?.e164 ?? null}
+            defaultCountry={phone?.country ?? defaultCountry}
+            onCommit={commitPhone}
+            isDisabled={phonePending}
+            className={cx("w-full shrink-0 sm:w-[260px] transition-opacity", phonePending && "opacity-60")}
+          />
+        </SettingsRow>
       </SettingsCard>
 
       <div className="flex w-full flex-col gap-2">
@@ -105,6 +164,25 @@ export function SettingsProfile({ name, email, avatarUrl, productNews, ownsWorks
         <SettingsCard>
           <SettingsRow label="Product news" description="Occasional updates about new features and tips. Sign-in links and enrichment notices are always sent.">
             <Switch aria-label="Product news" size="sm" isSelected={news} onChange={toggleNews} isDisabled={newsPending} className={cx("shrink-0 transition-opacity", newsPending && "opacity-60")} />
+          </SettingsRow>
+        </SettingsCard>
+      </div>
+
+      <div className="flex w-full flex-col gap-2">
+        <SettingsSectionLabel>Calls</SettingsSectionLabel>
+        <SettingsCard>
+          <SettingsRow
+            label="Onboarding call"
+            description={phone ? "We may call you once to help you get started with your trial. Never for marketing or SMS." : "Add a phone number above to allow a call."}
+          >
+            <Switch
+              aria-label="Onboarding call"
+              size="sm"
+              isSelected={phone?.callsAllowed ?? false}
+              onChange={toggleCalls}
+              isDisabled={!phone || callsPending}
+              className={cx("shrink-0 transition-opacity", callsPending && "opacity-60")}
+            />
           </SettingsRow>
         </SettingsCard>
       </div>

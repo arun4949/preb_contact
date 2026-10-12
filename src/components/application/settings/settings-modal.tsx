@@ -78,7 +78,7 @@ const NAV_GROUPS: { label: string; items: NavEntry[] }[] = [
 ];
 
 const PAGE_TITLES: Record<SettingsPage, { title: string; subtitle: string }> = {
-  profile: { title: "Profile", subtitle: "Your name and sign-in address." },
+  profile: { title: "Profile", subtitle: "Your name, sign-in address and phone number." },
   workspace: { title: "Members", subtitle: "Invite teammates and manage roles." },
   billing: { title: "Billing", subtitle: "Plan, credits, invoices and payment method." },
 };
@@ -147,7 +147,14 @@ export function SettingsModal({
 
   const inPlans = page === "billing" && billingView === "plans";
 
-  // Escape leaves the plan picker first, then closes; focus moves into the dialog on open.
+  // Focus moves into the dialog once it is in the DOM. Only on open: the
+  // callbacks below change identity after every server-action refresh, and
+  // focusing there would pull the caret out of a field mid-typing.
+  useEffect(() => {
+    if (mounted) panelRef.current?.focus();
+  }, [mounted]);
+
+  // Escape leaves the plan picker first, then closes.
   useEffect(() => {
     if (!isOpen) return;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -156,7 +163,6 @@ export function SettingsModal({
       else onClose();
     };
     document.addEventListener("keydown", onKeyDown);
-    panelRef.current?.focus();
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [isOpen, onClose, inPlans, onBillingViewChange]);
 

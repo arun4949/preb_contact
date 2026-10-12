@@ -48,7 +48,7 @@ We collect only what we need to run the service. The data falls into the followi
 
 ### 3.1 Account and profile data
 
-When you sign up we collect your email address, your full name, the name of your workspace and the role you hold in it (owner, admin or member). If you sign in with Google, we also receive your Google profile picture and your Google account identifier. We record when you created your account, when you completed onboarding and when you were invited to a workspace.
+When you sign up we collect your email address, your full name, the name of your workspace and the role you hold in it (owner, admin or member). You can also give us a phone number during onboarding or later in your profile settings. It is optional, it is never shown to your teammates, and you can change or remove it at any time. We use it to help you set up your trial and to reach you about support requests you raise or urgent issues with your account. If you sign in with Google, we also receive your Google profile picture and your Google account identifier. We record when you created your account, when you completed onboarding and when you were invited to a workspace.
 
 Preb is a business tool. During sign-up we check the domain of your email address and do not accept addresses from free webmail providers or disposable email services, unless you were invited by an existing workspace. Invitations contain the invitee's email address and the role assigned by the inviter.
 
@@ -101,6 +101,8 @@ The GDPR requires us to name a legal basis for every purpose. The table below ap
 | Billing, invoicing, credit accounting, preventing double charges | Billing data, usage data | Performance of our contract (Art. 6 (1) (b) GDPR) and our legal obligations under German tax and commercial law (Art. 6 (1) (c) GDPR, § 147 AO, § 14b UStG, § 257 HGB) |
 | Sending transactional emails: magic links, invitations, welcome message, enrichment finished, paused or stopped, low credits, trial ending | Account and communication data | Performance of our contract (Art. 6 (1) (b) GDPR) |
 | Sending product news and tips about Preb to existing Customers | Email address, name | Our legitimate interest in keeping Customers informed about the product they use (Art. 6 (1) (f) GDPR, § 7 (3) UWG). You can opt out at any time, see Section 15 |
+| Reaching you by phone about a support request you raised or an urgent issue with your account (for example a failed payment or an enrichment run that needs your decision) | Phone number, name, workspace | Performance of our contract with you (Art. 6 (1) (b) GDPR) |
+| Calling a new Customer once to help them get started with their trial | Phone number, name, workspace | Our legitimate interest in helping business customers succeed with the product they signed up for (Art. 6 (1) (f) GDPR) and the presumed consent of a business that gave us its number for this purpose (§ 7 (2) no. 1 UWG). You can opt out at any time in your profile settings, see Section 15 |
 | Keeping the service secure: preventing fraud, account takeover, trial abuse and automated attacks, rate limiting, blocking free webmail domains | Sign-in, session, usage and log data | Our legitimate interest in protecting the service and our Customers (Art. 6 (1) (f) GDPR) |
 | Finding and fixing errors, monitoring availability and performance | Usage and log data | Our legitimate interest in running a reliable service (Art. 6 (1) (f) GDPR) |
 | Answering support requests and collecting product feedback | Support and feedback data | Performance of our contract (Art. 6 (1) (b) GDPR) and our legitimate interest in improving Preb (Art. 6 (1) (f) GDPR) |
@@ -183,6 +185,7 @@ We keep personal data only as long as we need it for the purposes above or as th
 | Data | Retention |
 |---|---|
 | Account and profile data | For as long as your account exists. Deleted within 30 days after you ask us to delete your account or workspace |
+| Phone number and your choice about calls | Until you remove the number in your profile settings or delete your account. The time of your last change to the call setting is kept with the number as a record of your choice |
 | Workspace invitations | 7 days, then the invitation expires and is removed |
 | Session and sign-in tokens | Magic links expire after a short time. Sessions end when you sign out or after the session lifetime |
 | Draft lists and uploaded files not yet enriched | Deleted after 24 hours |
@@ -281,7 +284,7 @@ In the past 12 months we have collected the following categories of personal inf
 
 | Category | Examples | Collected |
 |---|---|---|
-| Identifiers | Name, email address, account ID, IP address, Google account ID | Yes |
+| Identifiers | Name, email address, phone number (optional), account ID, IP address, Google account ID | Yes |
 | Customer records | Billing address, payment information (held by Stripe), tax ID | Yes |
 | Commercial information | Plan purchased, credits bought and used, invoices | Yes |
 | Internet or network activity | Pages visited, actions in the app, device and browser information, log data | Yes |
@@ -334,11 +337,13 @@ Preb is a business service for adults. We do not knowingly collect personal data
 
 ---
 
-## 15. Emails we send and how to opt out
+## 15. Emails we send, calls we make, and how to opt out
 
 **Transactional emails** are part of the service and cannot be switched off while you have an account: sign-in links, invitations, your welcome message, notices that an enrichment run has finished, paused or been stopped, low credit warnings, trial expiry notices and billing information.
 
 **Product news** are occasional emails to existing Customers about new features, changes to the service and tips for getting better results. We send them under our legitimate interest and under the German rule for existing customers (§ 7 (3) UWG). Every such email contains an unsubscribe link. You can also write to hello@preb.co to opt out. Opting out does not affect transactional emails.
+
+**Onboarding call.** If you gave us a phone number, one of our founders may call you once, personally, to help you get started with your trial and to answer questions about Preb. We dial by hand, we do not use automated dialling systems, prerecorded messages or text messages, and we do not call for any other marketing purpose. You can switch calls off at any time in your profile settings (Profile, Calls, "Onboarding call"), remove your number there, or write to hello@preb.co. We stop calling immediately once the switch is off.
 
 We do not send cold marketing emails to people who are not our Customers, and we do not use Contact data for marketing.
 

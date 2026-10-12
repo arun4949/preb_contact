@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSessionContext } from "@/lib/supabase/queries";
 import { setContactSubscribed } from "@/lib/email/contacts";
+import { normalizePhone } from "@/lib/phone/phone";
 import { deleteUserCompletely, deleteWorkspaceData, DeletionBlockedError } from "@/lib/account/deletion";
 
 type Result<T = undefined> = { ok: true; data: T } | { ok: false; error: string };
@@ -33,6 +34,56 @@ export async function updateProductNews(enabled: boolean): Promise<Result> {
   const { error } = await supabase.from("profiles").update({ product_news: enabled }).eq("id", session.userId);
   if (error) return { ok: false, error: "Could not save your email preference." };
   await setContactSubscribed({ email: session.email, fullName: session.profile.full_name, subscribed: enabled });
+  revalidatePath("/", "layout");
+  return { ok: true, data: undefined };
+}
+
+export interface SavedPhone {
+  e164: string;
+  country: string;
+  callsAllowed: boolean;
+}
+
+/**
+ * Settings › Profile › Phone. Empty input removes the row (and with it the
+ * call consent); otherwise the number is normalised to E.164 and upserted.
+ * The consent flag is not part of the body, so editing the number keeps it.
+ */
+export async function updatePhone(raw: string, country: string): Promise<Result<SavedPhone | null>> {
+  const session = await getSessionContext();
+  if (!session) return { ok: false, error: "Not signed in" };
+  const supabase = await createClient();
+  if (raw.trim() === "") {
+    const { error } = await supabase.from("profile_phones").delete().eq("user_id", session.userId);
+    if (error) return { ok: false, error: "Could not remove your phone number." };
+    revalidatePath("/", "layout");
+    return { ok: true, data: null };
+  }
+  const normalized = normalizePhone(raw, country);
+  if (!normalized) return { ok: false, error: "Enter a valid phone number." };
+  const { data, error } = await supabase
+    .from("profile_phones")
+    .upsert({ user_id: session.userId, phone: normalized.e164, country: normalized.country }, { onConflict: "user_id" })
+    .select("calls_allowed")
+    .single();
+  if (error || !data) return { ok: false, error: "Could not save your phone number." };
+  revalidatePath("/", "layout");
+  return { ok: true, data: { e164: normalized.e164, country: normalized.country, callsAllowed: data.calls_allowed } };
+}
+
+/** Settings › Profile › Calls. Consent to the one trial call; the timestamp is the consent record. */
+export async function updateCallsAllowed(enabled: boolean): Promise<Result> {
+  const session = await getSessionContext();
+  if (!session) return { ok: false, error: "Not signed in" };
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profile_phones")
+    .update({ calls_allowed: enabled, calls_allowed_changed_at: new Date().toISOString() })
+    .eq("user_id", session.userId)
+    .select("user_id")
+    .maybeSingle();
+  if (error) return { ok: false, error: "Could not save your call preference." };
+  if (!data) return { ok: false, error: "Add a phone number first." };
   revalidatePath("/", "layout");
   return { ok: true, data: undefined };
 }

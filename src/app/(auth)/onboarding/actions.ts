@@ -7,12 +7,15 @@ import { createOwnWorkspace } from "@/lib/workspace/create";
 import { sendEmail } from "@/lib/email/resend";
 import { subscribeContact } from "@/lib/email/contacts";
 import { firstNameFor } from "@/lib/email/name";
+import { normalizePhone } from "@/lib/phone/phone";
 import { WelcomeEmail } from "@/lib/email/templates/welcome";
 
 export interface OnboardingState {
   /** `done` → the form performs a full navigation to /lists (see onboarding-form.tsx). */
   status: "idle" | "error" | "done";
   message?: string;
+  /** Set when the error belongs to one field (shown inline instead of the banner). */
+  field?: "phone";
 }
 
 const DONE: OnboardingState = { status: "done" };
@@ -28,8 +31,21 @@ export async function completeOnboarding(_prev: OnboardingState, formData: FormD
   if (fullName.length < 2 || fullName.length > 80) return { status: "error", message: "Enter your full name." };
   if (workspaceName.length < 1 || workspaceName.length > 80) return { status: "error", message: "Enter a workspace name." };
 
+  // Optional phone: the raw text plus the selected country, normalised here
+  // (same library as the field) so an invalid number is never silently dropped.
+  const phoneRaw = String(formData.get("phone") ?? "").trim();
+  const phoneCountry = String(formData.get("phone_country") ?? "");
+  const phone = phoneRaw ? normalizePhone(phoneRaw, phoneCountry) : null;
+  if (phoneRaw && !phone) return { status: "error", field: "phone", message: "Enter a valid phone number, or leave it empty." };
+
   const supabase = await createClient();
   const session = await getSessionContext();
+  // Upsert without a representation: only the insert and update policies apply,
+  // and `calls_allowed` is not in the body, so a re-run keeps the stored consent.
+  const savePhone = () =>
+    phone
+      ? supabase.from("profile_phones").upsert({ user_id: profile.id, phone: phone.e164, country: phone.country }, { onConflict: "user_id" })
+      : Promise.resolve({ error: null });
 
   let workspaceId: string;
   let finalWorkspaceName: string;
@@ -37,13 +53,14 @@ export async function completeOnboarding(_prev: OnboardingState, formData: FormD
 
   if (session) {
     // First login: the signup trigger already created (or joined) the workspace; owners name it.
-    const [profileResult, workspaceResult] = await Promise.all([
+    const [profileResult, workspaceResult, phoneResult] = await Promise.all([
       supabase.from("profiles").update({ full_name: fullName, onboarded_at: new Date().toISOString() }).eq("id", profile.id),
       session.role === "owner"
         ? supabase.from("workspaces").update({ name: workspaceName }).eq("id", session.workspace.id)
         : Promise.resolve({ error: null }),
+      savePhone(),
     ]);
-    if (profileResult.error || workspaceResult.error) return { status: "error", message: SAVE_FAILED };
+    if (profileResult.error || workspaceResult.error || phoneResult.error) return { status: "error", message: SAVE_FAILED };
     workspaceId = session.workspace.id;
     finalWorkspaceName = session.role === "owner" ? workspaceName : session.workspace.name;
     trialCredits = session.creditsAvailable;
@@ -58,11 +75,14 @@ export async function completeOnboarding(_prev: OnboardingState, formData: FormD
     }
     // Null = a membership appeared meanwhile (double submit or a new invite); just continue to the app.
     if (!created) return DONE;
-    const { error } = await supabase
-      .from("profiles")
-      .update({ full_name: fullName, onboarded_at: profile.onboarded_at ?? new Date().toISOString() })
-      .eq("id", profile.id);
-    if (error) return { status: "error", message: SAVE_FAILED };
+    const [{ error }, phoneResult] = await Promise.all([
+      supabase
+        .from("profiles")
+        .update({ full_name: fullName, onboarded_at: profile.onboarded_at ?? new Date().toISOString() })
+        .eq("id", profile.id),
+      savePhone(),
+    ]);
+    if (error || phoneResult.error) return { status: "error", message: SAVE_FAILED };
     workspaceId = created;
     finalWorkspaceName = workspaceName;
     trialCredits = 0;

@@ -6,6 +6,7 @@ import type { Tables } from "@/lib/supabase/types";
 import { getPlan } from "@/lib/credits/plans";
 
 export type Profile = Tables<"profiles">;
+export type ProfilePhone = Tables<"profile_phones">;
 export type Workspace = Tables<"workspaces">;
 export type WorkspaceRole = Tables<"workspace_members">["role"];
 
@@ -31,6 +32,15 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
   if (!user) return null;
   const supabase = await createClient();
   const { data } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+  return data;
+});
+
+/** The signed-in user's phone row (own row only by RLS), or null when none was given. */
+export const getProfilePhone = cache(async (): Promise<ProfilePhone | null> => {
+  const user = await getUser();
+  if (!user) return null;
+  const supabase = await createClient();
+  const { data } = await supabase.from("profile_phones").select("*").eq("user_id", user.id).maybeSingle();
   return data;
 });
 
