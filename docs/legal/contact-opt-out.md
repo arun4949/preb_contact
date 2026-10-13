@@ -20,7 +20,7 @@ If you know which company contacted you, you can send your request directly to t
 - **Tell me who processed my data.** We will tell you which of our customers processed your details, where we can, or forward your request to them.
 - **Show me what you hold.** You can ask for a copy of the data about you that is stored in Preb.
 - **Correct or delete it.** You can ask for your data to be corrected or deleted.
-- **Stop processing me through Preb.** You can ask us to put your email addresses, phone numbers and LinkedIn profile URL on our suppression list. Preb will then delete the results we hold about you in every customer's workspace, will not show or export them again, and will not look you up again for any customer in the future. Your details stay on the list as a one-way hash, so we can recognise them without storing the values themselves.
+- **Stop processing me through Preb.** You can ask us to put your email addresses, phone numbers and LinkedIn profile URL on our suppression list. Preb will then delete the results we hold about you in every customer's workspace, will not show or export them again, and will not look you up again for any customer in the future. Your details stay on the list only as a one-way hash, so we can recognise them without storing the values themselves, together with a masked form such as a***@example.com that lets us see what was suppressed.
 
 These rights follow from the General Data Protection Regulation for everyone, wherever you live. Residents of California and other US states with privacy laws have comparable rights, which we honour in the same way.
 
@@ -42,7 +42,7 @@ If you asked to be suppressed, your results are removed from the Preb applicatio
 
 ## What we keep after a suppression
 
-The hashed identifiers on the suppression list and a record of your request, which we keep for three years as proof that we handled it. If a customer typed your name or employer into their own list, that row stays visible to that customer only, marked as suppressed and without any contact details, because it is the customer's own record. Ask the customer to delete it, or ask us to forward your request.
+The hashed and masked identifiers on the suppression list and a record of your request, which we keep for three years as proof that we handled it. If a customer typed your name or employer into their own list, that row stays visible to that customer only, marked as suppressed and without any contact details, because it is the customer's own record. Ask the customer to delete it, or ask us to forward your request.
 
 ## Questions and complaints
 

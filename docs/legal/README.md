@@ -14,7 +14,9 @@ Copy rules: no em dashes, en dashes or " - " as punctuation (AGENTS.md). The enr
 | Sub-processor List (names the enrichment provider and its sub-processors) | `sub-processors.md` | Draft v1.0, awaiting founder review |
 | Cookie Policy | Termly | Covered by Termly (CTO decision 2026-10-09), no markdown file |
 | Contact opt-out / suppression page text ("Your data and Preb") | `contact-opt-out.md` | Draft v1.0, awaiting founder review |
-| Imprint | handled by Leon | Texts exist |
+| Imprint | `imprint.html` | Rebuilt from the old site 2026-10-13 (ODR section dropped, platform closed 20 July 2025) |
+
+Paste-ready HTML for the Framer Embeds (2026-10-13): `privacy-policy.html` (/privacy), `terms-of-service.html` (/terms), `dpa.html` (/dpa), `sub-processors.html` (/sub-processor), `imprint.html` (/imprint), `contact-opt-out.html` (/your-data, linked from Privacy Policy § 12). Each file is a snippet with fonts (Stack Sans Headline, Geist), styles and content, no page chrome. Tables are written as lists because Framer text cannot hold tables. Edit the markdown and the HTML together.
 
 ## Decisions the texts are built on (2026-10-09)
 

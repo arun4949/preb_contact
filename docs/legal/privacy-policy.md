@@ -270,6 +270,8 @@ If a recruiting team has used Preb to find your contact details, this section is
 - help the Customer respond to your request within the legal deadlines;
 - on your request, add your email address, phone number or LinkedIn URL to our suppression list so that Preb will not return or display those details to any Customer in the future. We keep this list under our legitimate interest in honouring your objection (Art. 6 (1) (f) GDPR). It contains only the data needed to recognise and suppress your details.
 
+A short summary of these options, written for Contacts, is on our page Your data and Preb (preb.co/your-data).
+
 If you live in the United States, Section 13 also applies to you.
 
 ---

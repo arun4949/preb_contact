@@ -1,0 +1,102 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Stack+Sans+Headline:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  .preb-legal { color: #000; font-family: "Geist", system-ui, sans-serif; font-size: 16px; line-height: 1.6; }
+  .preb-legal h1, .preb-legal h2, .preb-legal h3 { font-family: "Stack Sans Headline", "Geist", system-ui, sans-serif; color: #000; font-weight: 500; line-height: 1.2; }
+  .preb-legal h1 { font-size: 40px; margin: 0 0 16px; }
+  .preb-legal h2 { font-size: 26px; margin: 48px 0 12px; }
+  .preb-legal h3 { font-size: 19px; margin: 28px 0 8px; }
+  .preb-legal p { margin: 0 0 14px; }
+  .preb-legal ul { margin: 0 0 14px; padding-left: 22px; }
+  .preb-legal li { margin-bottom: 8px; }
+  .preb-legal a { color: #000; }
+  @media (max-width: 640px) {
+    .preb-legal h1 { font-size: 32px; }
+    .preb-legal h2 { font-size: 22px; margin-top: 36px; }
+  }
+</style>
+<div class="preb-legal">
+<h1>Sub-processor List</h1>
+
+<p><strong>Last updated:</strong> October 13, 2026<br><strong>Version:</strong> 1.0</p>
+
+<p>This list forms Annex 3 of the Preb <a href="https://preb.co/dpa">Data Processing Agreement</a> (DPA). It names every company that processes Customer Data and Results (the contact data our Customers upload and enrich) on behalf of Kranz &amp; Gupta, Indiepal GbR ("Preb"). Providers that process only account, billing, support or website data, such as Stripe, Resend, Google sign-in, Featurebase and Termly, are not sub-processors for Customer Data and are described in our <a href="https://preb.co/privacy">Privacy Policy</a> instead.</p>
+
+<p>Each sub-processor is bound by a written data processing agreement that imposes obligations equivalent to those Preb accepts in the DPA.</p>
+
+<h2>How we tell you about changes</h2>
+
+<p>We give Owners and Admins at least 30 days notice by email before we add or replace a sub-processor, unless a provider gives us less notice, in which case we pass on the notice we receive without delay. You may object within 14 days under Section 6 of the DPA. To receive these notices at an additional address, email <a href="mailto:hello@preb.co">hello@preb.co</a>.</p>
+
+<h2>Tier 1: sub-processors engaged directly by Preb</h2>
+
+<h3>Supabase</h3>
+<ul>
+  <li><strong>Entity and location:</strong> Supabase, Inc., USA</li>
+  <li><strong>Activity:</strong> database, authentication, file storage, live updates</li>
+  <li><strong>Data processed:</strong> all Customer Data and Results, uploaded files</li>
+  <li><strong>Where the data is stored:</strong> USA (AWS region us-east-1)</li>
+  <li><strong>Transfer mechanism:</strong> EU Standard Contractual Clauses (2021/914) in the Supabase data processing addendum</li>
+</ul>
+
+<h3>Vercel</h3>
+<ul>
+  <li><strong>Entity and location:</strong> Vercel Inc., USA</li>
+  <li><strong>Activity:</strong> application hosting, serverless functions, scheduled jobs, request logs</li>
+  <li><strong>Data processed:</strong> all data passing through the application while it is processed</li>
+  <li><strong>Where the data is stored:</strong> USA</li>
+  <li><strong>Transfer mechanism:</strong> EU-US Data Privacy Framework, supplemented by Standard Contractual Clauses</li>
+</ul>
+
+<h3>FullEnrich</h3>
+<ul>
+  <li><strong>Entity and location:</strong> FullEnrich Corp, San Francisco, USA</li>
+  <li><strong>Activity:</strong> finding and verifying work emails, personal emails, phone numbers and public professional profile data; identifying people from an email address</li>
+  <li><strong>Data processed:</strong> contact names, company names and domains, LinkedIn profile URLs, email addresses, and the Results returned; technical reference IDs</li>
+  <li><strong>Where the data is stored:</strong> European Union (DigitalOcean)</li>
+  <li><strong>Transfer mechanism:</strong> EU Standard Contractual Clauses (2021/914) incorporated in the FullEnrich data processing agreement, Preb as data exporter. FullEnrich keeps results for 3 months, then deletes them</li>
+</ul>
+
+<h2>Tier 2: sub-processors engaged by our sub-processors</h2>
+
+<p>Our sub-processors use their own providers. We list the ones that can come into contact with Customer Data, as published by each sub-processor on the date above. The live lists are maintained by the sub-processors at the links given.</p>
+
+<h3>Engaged by FullEnrich</h3>
+
+<p>List published at <a href="https://fullenrich.com/sub-processor">fullenrich.com/sub-processor</a></p>
+<ul>
+  <li><strong>DigitalOcean</strong> (DigitalOcean, LLC, USA): cloud hosting for FullEnrich. Data processed: data processed through FullEnrich. Stored in: European Union.</li>
+  <li><strong>Enrow</strong> (Enrow, EU): finding email addresses. Data processed: names, company names, LinkedIn URLs, email addresses. Stored in: European Union.</li>
+  <li><strong>Icypeas</strong> (Icypeas, EU): finding email addresses. Data processed: names, company names, LinkedIn URLs, email addresses. Stored in: European Union.</li>
+  <li><strong>Datagma</strong> (Datagma, EU): finding phone numbers and enriching profiles. Data processed: names, company names, LinkedIn URLs, phone numbers. Stored in: European Union.</li>
+  <li><strong>BounceBan</strong> (BounceBan, USA): checking email deliverability. Data processed: email addresses. Stored in: USA.</li>
+  <li><strong>EmailListVerify</strong> (CyberPanda, EU): checking email deliverability. Data processed: email addresses. Stored in: European Union.</li>
+  <li><strong>ListMint</strong> (ListMint, USA): checking email deliverability. Data processed: email addresses. Stored in: USA.</li>
+</ul>
+
+<h3>Engaged by Supabase</h3>
+
+<p>List published at <a href="https://supabase.com/legal/subprocessors">supabase.com/legal/subprocessors</a></p>
+<ul>
+  <li><strong>Amazon Web Services</strong> (Amazon Web Services, Inc., USA): cloud infrastructure for the database, storage and authentication. Stored in: USA (us-east-1).</li>
+  <li><strong>Cloudflare</strong> (Cloudflare, Inc., USA): network edge, traffic routing and protection. Stored in: USA and global edge.</li>
+</ul>
+
+<h3>Engaged by Vercel</h3>
+
+<p>List published at <a href="https://vercel.com/legal/subprocessors">vercel.com/legal/subprocessors</a></p>
+<ul>
+  <li><strong>Amazon Web Services</strong> (Amazon Web Services, Inc., USA): cloud infrastructure for hosting and functions. Stored in: USA.</li>
+</ul>
+
+<h2>Change log</h2>
+
+<ul>
+  <li><strong>October 13, 2026:</strong> first version</li>
+</ul>
+
+<h2>Contact</h2>
+
+<p>Questions about this list: <a href="mailto:hello@preb.co">hello@preb.co</a>. Kranz &amp; Gupta, Indiepal GbR, Brunnenstr. 11, 53123 Bonn, Germany.</p>
+</div>
