@@ -32,9 +32,10 @@ Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠�
 - Wizard as the test user: CSV with `delivered@resend.dev` and one other row → Configure reads "1 enrichable rows · 1 skipped because the person asked not to be contacted"; the suppressed row is stored `skipped / suppressed` with the email scrubbed from `raw`.
 - `settle_batch` (DO block, rolled back): batch charge 28 with one suppressed row at 0 and one enriched at 28 → charged 28, consumed 28, suppressed row stays 0; all-suppressed batch at 0 → charged 0. Credits unchanged afterwards.
 
-### Open (CTO)
-1. Create a Turnstile widget for `app.preb.co` in the Cloudflare dashboard and put the site key and secret into `.env.local` and Vercel (`NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`). With the test pair the check passes for everyone.
-2. Re-paste in Framer: `docs/legal/contact-opt-out.html` on `/contact-opt-out` and `docs/legal/privacy-policy.html` on `/privacy`.
+### Production check (2026-10-13, after deploy)
+- ✅ CTO: Turnstile widget "Preb opt-out form" (Managed, hostname `app.preb.co`) created, keys in Vercel; `.env.local` keeps Cloudflare's test pair for local development. Framer `/contact-opt-out` (v1.1) and `/privacy` re-pasted.
+- ✅ Agent: `/opt-out` and `/opt-out/<token>` 200 signed out, robots and sitemap live, bundle carries the real site key; Cloudflare challenges headless Playwright with the checkbox (expected in Managed mode, not bypassed).
+- ✅ CTO submitted and confirmed from a real browser with a phone number: request `confirmed`, email nulled, email suppression `source opt_out`, phone waiting for review; verify mail, confirmation mail ("phone … being checked") and the "[Preb ops] Opt-out request needs review" mail all delivered (Resend). Test request, suppression, pending phone and mail log rows deleted afterwards, as was the welcome mail log row of the walk test user.
 
 ---
 
