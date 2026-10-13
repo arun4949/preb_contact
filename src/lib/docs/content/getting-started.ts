@@ -1,6 +1,6 @@
 import type { DocsCollection } from "../types";
 
-const UPDATED = "2026-10-12";
+const UPDATED = "2026-10-13";
 
 export const gettingStarted: DocsCollection = {
   slug: "getting-started",
@@ -52,7 +52,7 @@ export const gettingStarted: DocsCollection = {
         { type: "heading", text: "Sign in with an email link" },
         { type: "steps", items: [
           "Open [app.preb.co/login](https://app.preb.co/login).",
-          "Type your work email address under **Work email** and click **Continue with email**.",
+          "Type your work email address under **Work email** and click **Continue with email**. If you entered it on [preb.co](https://preb.co) just before, it is already filled in.",
           "Open the email from Preb and click the sign-in link. The link works for one hour and on one device.",
         ] },
         { type: "callout", tone: "note", title: "Why personal mailboxes are not accepted", text: "Preb is a tool for teams, and a work address is how we tell workspaces apart. Addresses from Gmail, Outlook.com, Yahoo and similar providers, and disposable mailboxes, cannot sign in." },

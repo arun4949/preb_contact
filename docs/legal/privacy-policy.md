@@ -124,6 +124,7 @@ We use a small number of cookies and browser storage entries.
 
 - Session cookies set by our authentication provider (names beginning with `sb-`) that keep you signed in and refresh your session.
 - The consent cookie set by our consent manager, Termly, which remembers your cookie choices.
+- A short-lived cookie (`preb_prefill_email`) that carries the email address you enter in the sign-up form on our website to the sign-in page, so you do not have to type it again. It expires after 10 minutes and is deleted as soon as the sign-in page has read it.
 - Browser storage used by the support widget to keep your conversation open.
 - Local storage entries that remember your light or dark mode choice and the columns you show in a table. These never leave your browser.
 

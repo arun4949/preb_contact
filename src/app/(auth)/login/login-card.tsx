@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { RiMailCheckLine } from "@remixicon/react";
 import { Banner } from "@/components/base/banner/banner";
 import { Button } from "@/components/base/buttons/button";
@@ -9,6 +9,7 @@ import { Divider } from "@/components/base/divider/divider";
 import { Input } from "@/components/base/input/input";
 import { SocialButton } from "@/components/base/social-button/social-button";
 import { sendMagicLink, signInWithGoogle, type MagicLinkState } from "@/lib/auth/actions";
+import { clearPrefillEmailCookie } from "@/lib/auth/prefill-email";
 import { LEGAL_URLS } from "@/lib/site-links";
 import { cx } from "@/utils/cx";
 
@@ -29,8 +30,13 @@ const NOTICES: Record<string, string> = {
   account_deleted: "Your account has been deleted. Thank you for trying Preb.",
 };
 
-export function LoginCard({ next, error, notice }: { next: string; error?: string; notice?: string }) {
+export function LoginCard({ next, error, notice, prefillEmail }: { next: string; error?: string; notice?: string; prefillEmail?: string }) {
   const [state, action, pending] = useActionState<MagicLinkState, FormData>(sendMagicLink, { status: "idle" });
+
+  // The handoff from preb.co is single-use, so a later visit starts empty.
+  useEffect(() => {
+    if (prefillEmail) clearPrefillEmailCookie();
+  }, [prefillEmail]);
 
   const card = "flex w-full max-w-[400px] flex-col rounded-3xl border border-border-button-default bg-background-primary-default p-6 shadow-xs sm:p-8";
 
@@ -95,7 +101,7 @@ export function LoginCard({ next, error, notice }: { next: string; error?: strin
           name="email"
           type="email"
           label="Work email"
-          defaultValue={state.status === "error" ? state.email : undefined}
+          defaultValue={state.status === "error" ? state.email : prefillEmail}
           placeholder="you@company.com"
           autoComplete="email"
           inputDir="ltr"
