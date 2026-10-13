@@ -29,7 +29,7 @@ export function resend() {
 }
 
 /** Per-address cap per kind in the last hour. */
-const HOURLY_LIMIT: Partial<Record<EmailKind, number>> = { magic_link: 5, invite: 10 };
+const HOURLY_LIMIT: Partial<Record<EmailKind, number>> = { magic_link: 5, invite: 10, opt_out_verify: 3 };
 
 export async function isRateLimited(email: string, kind: EmailKind): Promise<boolean> {
   const limit = HOURLY_LIMIT[kind];

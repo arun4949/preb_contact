@@ -2,6 +2,42 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Self-service contact opt-out — 2026-10-13 · public form at app.preb.co/opt-out, email confirmed by link, founder review queue, no charge for suppressed results (complete, walked in a browser)
+
+### Decisions (CTO)
+- **Verification:** the requester's email is confirmed with a one-time link (24 h, single use, confirmation is a POST from a button so mail scanners cannot burn it). On confirmation the email is suppressed at once. Phone numbers and LinkedIn URLs from the same request go to a review queue on `/admin/suppressions` (no SMS provider, LinkedIn cannot be verified); a founder approves or rejects them.
+- **Credits:** a provider result discarded because the person is suppressed is not charged to the customer (row `credits_cost 0`, batch charge reduced by the record's cost). Preb absorbs the provider cost. Terms 6.4 / 9.5 and DPA 9.3 ("no refund") keep covering results removed *after* delivery.
+- **Location:** form in the app, reached from the Framer page `preb.co/contact-opt-out` ("Your data and Preb"). The privacy policy no longer references `preb.co/your-data`.
+- **Anti-abuse:** Cloudflare Turnstile (invisible, own ~70-line wrapper, no dependency) plus a honeypot field, 3 verification mails per address per hour (`email_sends`), an in-memory per-IP throttle (5 per 10 min) and the single-use token. Turnstile fails closed without a secret.
+- **Retention:** the raw email lives in `opt_out_requests` only while pending; confirmation nulls it and keeps hash, hint, note, outcome and timestamps for 3 years ("record of your request"). Phone/LinkedIn raw values stay only until reviewed. Opt-out rows in `email_sends` are purged after 7 days.
+
+### Done
+- ✅ Migration 0021 (applied via MCP, types regenerated): `opt_out_requests`, `opt_out_identifiers`, `contact_suppressions.source` (`admin` | `opt_out`) + `request_id`, `email_kind` values `opt_out_verify` / `opt_out_done`, `settle_batch` never parks leftover credits on a suppressed row.
+- ✅ `lib/suppression/apply.ts` `suppressIdentifier()` is the single code path for the founder form, the confirmation and the review queue. `admin-actions.ts` gained `fetchOptOutQueue`, `approveOptOutIdentifier`, `rejectOptOutIdentifier`.
+- ✅ `lib/opt-out/*`: `parseOptOutForm` (email, optional phone in E.164 via the shared phone helpers, optional canonical LinkedIn URL, note ≤ 1000, honeypot `fax`), `verifyTurnstile`, throttle, token helpers, `requestOptOut` / `confirmOptOut` server actions, `getOptOutRequestByToken`. Emails `opt-out-verify.tsx`, `opt-out-done.tsx`; ops email to the founders on every confirmation ("needs review" when identifiers wait).
+- ✅ Pages in the `(auth)` shell: `/opt-out` (form, sent state) and `/opt-out/[token]` (valid → Confirm button, done, already confirmed, expired, not valid). Proxy, robots (`/opt-out` allowed, `/opt-out/` disallowed) and sitemap updated, with tests.
+- ✅ `/admin/suppressions`: "awaiting review" table (identifier, type, requester hint, note, confirmed, Reject / Approve), Source chip (Admin / Self-service) in the list, intro mentions the form.
+- ✅ Pipeline fixes found during the review: `results.ts` suppressed rows cost 0 and `batchCreditsAfterSuppression()` reduces the batch charge (`raw.suppressed_credits`); `dispatch.ts` `serveFromCache` no longer overwrites rows the suppression check just skipped with `cached`; `insertContacts` also checks a cache hit's output emails and phones (`recordIdentifiers`) and purges a matching cache row.
+- ✅ Daily job step `cleanup_opt_out` (expire, 7-day grace delete, 3-year record delete, 7-day opt-out email log).
+- ✅ Copy: help center article "Your data and your contacts' data" points to the form; `docs/legal/contact-opt-out.{md,html}` v1.1 ("How to ask us to stop", retention paragraph) and privacy policy § 12 (form sentence, link to `/contact-opt-out`) updated in md and html; legal README row and item 11.
+- ✅ `.env.local`: `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` with Cloudflare's always-pass test pair for now.
+- ✅ Tests: `validate`, `token`, `turnstile` (mocked fetch), `throttle`, `batchCreditsAfterSuppression`, proxy routes. `npm run typecheck` ✓ · `npm run lint` ✓ (2 pre-existing warnings) · `npm test` ✓ (145).
+
+### Browser walk (Playwright headless against an own dev server on :3200 (stopped afterwards), Termly and Featurebase requests aborted, Turnstile test keys, requester `delivered@resend.dev`, fresh test user `walk-optout@optoutwalk-preb.io` created with the service key and deleted afterwards with its workspace; all test rows deleted)
+- `/opt-out` 200 signed out, `/opt-outx` → `/login?next=`, robots and sitemap carry the form. Light, dark, 390 px (no horizontal scroll). Turnstile token present after load; invalid email blocked by the field; `12` as phone shows the inline error and submit refocuses the field.
+- Full submit (email, DE phone, LinkedIn with capitals and trailing slash, note) → "Check your inbox"; DB: request pending with raw email, phone stored as digits `4915112345678`, LinkedIn canonical lower-case, `email_sends` `opt_out_verify`; the mail (fetched via the Resend MCP) carries the `/opt-out/<token>` link. Honeypot filled → fake success, no row, no mail.
+- Confirm page: GET and reload keep the token valid; Confirm → `?done=1` success; the same link again → "already confirmed … on October 13, 2026"; tampered and short tokens → "not valid"; a request with `expires_at` in the past → "expired" without a button. DB after confirm: `status confirmed`, `email null`, `cleared_rows 0`, `contact_suppressions` row kind email `source opt_out` with `request_id`; `opt_out_done` to the requester and `ops_alert` to the founder inbox.
+- Abuse paths: with Cloudflare's always-fail secret the form shows "We could not confirm that you are a person." and keeps the email; the widget renews its token. Hourly cap: the 4th and 5th submit for the same address inside an hour show the cap message (3 mails sent).
+- `/admin/suppressions` as the CTO's account (magic link minted with the service key, used once): "2 identifiers awaiting review" with phone, LinkedIn, requester hint and note; Approve phone → toast "4*** 5678 is suppressed", row appears in the list with the Self-service chip and the review note; Reject LinkedIn → toast "Entry rejected"; both identifier rows `value null` with reviewer and time. Dark mode on tokens. Review round: the "Add a person" button no longer flips to "Suppressing…" while a queue action runs.
+- Wizard as the test user: CSV with `delivered@resend.dev` and one other row → Configure reads "1 enrichable rows · 1 skipped because the person asked not to be contacted"; the suppressed row is stored `skipped / suppressed` with the email scrubbed from `raw`.
+- `settle_batch` (DO block, rolled back): batch charge 28 with one suppressed row at 0 and one enriched at 28 → charged 28, consumed 28, suppressed row stays 0; all-suppressed batch at 0 → charged 0. Credits unchanged afterwards.
+
+### Open (CTO)
+1. Create a Turnstile widget for `app.preb.co` in the Cloudflare dashboard and put the site key and secret into `.env.local` and Vercel (`NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`). With the test pair the check passes for everyone.
+2. Re-paste in Framer: `docs/legal/contact-opt-out.html` on `/contact-opt-out` and `docs/legal/privacy-policy.html` on `/privacy`.
+
+---
+
 ## Dark-mode logo — 2026-10-12 · new white-wordmark lockup (complete, walked in a browser)
 
 ### Done

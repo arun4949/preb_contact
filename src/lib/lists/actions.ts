@@ -16,7 +16,7 @@ import { MANUAL_HEADERS, MANUAL_MAPPING, MANUAL_MAX_CONTACTS, manualListName, ty
 import { cachedContactPatch } from "@/lib/jobs/results";
 import { profileName } from "@/lib/fullenrich/mapping";
 import { CACHE_TTL_DAYS } from "@/lib/jobs/shared";
-import { hashesOf, inputIdentifiers } from "@/lib/suppression/identifiers";
+import { hashesOf, inputIdentifiers, recordIdentifiers, type Identifier } from "@/lib/suppression/identifiers";
 import { scrubRaw, SUPPRESSED_PATCH, suppressedHashes } from "@/lib/suppression/check";
 import { runTick } from "@/lib/jobs/tick";
 import type { EnrichmentRecord } from "@/lib/fullenrich/types";
@@ -152,13 +152,21 @@ async function insertContacts(
     }
   }
 
-  // Suppression list (privacy policy § 12): people who objected are never enriched again.
-  const idsByRow = new Map<number, ReturnType<typeof inputIdentifiers>>();
+  // Suppression list (privacy policy § 12): people who objected are never
+  // enriched again. A cache hit is checked on its output too (the emails and
+  // phones the stored record would reveal), not only on what the row gave us.
+  const idsByRow = new Map<number, Identifier[]>();
+  const idsByHit = new Map<string, Identifier[]>();
   for (const r of rows) {
     const ids = inputIdentifiers(r);
-    if (ids.length) idsByRow.set(r.rowIndex, ids);
+    const hash = r.dedupKey ? hashes.get(r.dedupKey) : undefined;
+    const hit = hash ? cacheHits.get(hash) : undefined;
+    if (hit && hash && !idsByHit.has(hash)) idsByHit.set(hash, recordIdentifiers(hit.record));
+    const all = hit && hash ? [...ids, ...(idsByHit.get(hash) ?? [])] : ids;
+    if (all.length) idsByRow.set(r.rowIndex, all);
   }
   const suppressed = idsByRow.size ? await suppressedHashes(admin, [...idsByRow.values()].flatMap(hashesOf)) : new Set<string>();
+  const purgeHashes: string[] = [];
 
   let cached = 0;
   let cachedReverse = 0;
@@ -171,6 +179,9 @@ async function insertContacts(
     if (hits.length) {
       if (r.enrichable) suppressedEnrich += 1;
       else if (r.skipReason === "email_only") suppressedEmailOnly += 1;
+      // A cached record that names a suppressed person must not be served again.
+      const hitHash = r.dedupKey ? hashes.get(r.dedupKey) : undefined;
+      if (hitHash && cacheHits.has(hitHash)) purgeHashes.push(hitHash);
       return {
         list_id: listId,
         workspace_id: workspaceId,
@@ -222,6 +233,8 @@ async function insertContacts(
     }
     return base;
   });
+
+  if (purgeHashes.length) await purgeCacheRows(admin, workspaceId, purgeHashes);
 
   // Re-parse is idempotent: replace previous contacts for this draft.
   await admin.from("list_contacts").delete().eq("list_id", listId);

@@ -309,6 +309,7 @@ async function serveFromCache(admin: Admin, list: ListRow, limit: number, kind: 
   }));
   await applyRecords(admin, batch, records, list.enrich_fields, { writeCache: false });
   // Cache hits are free and shown as "Already enriched" (like parse-time hits).
+  // Rows the suppression check in applyRecords just skipped stay skipped.
   await admin
     .from("list_contacts")
     .update({ status: "cached", credits_cost: 0 })
@@ -317,7 +318,7 @@ async function serveFromCache(admin: Admin, list: ListRow, limit: number, kind: 
       "id",
       claimed.map((c) => c.id),
     )
-    .not("status", "eq", "submitted");
+    .not("status", "in", "(submitted,skipped)");
   await admin
     .from("list_contacts")
     .update({ status: "failed", skip_reason: "no_result" })

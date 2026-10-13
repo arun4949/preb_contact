@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { catchAllRecord, fullRecord, invalidRecord, reverseMissRecord, reverseRecord } from "@/lib/fullenrich/__fixtures__/records";
-import { batchStatusFromProvider, cachedContactPatch, contactPatchFromRecord } from "./results";
+import { batchCreditsAfterSuppression, batchStatusFromProvider, cachedContactPatch, contactPatchFromRecord } from "./results";
 
 describe("results", () => {
   it("maps provider batch statuses", () => {
@@ -9,6 +9,15 @@ describe("results", () => {
     expect(batchStatusFromProvider("CANCELED")).toBe("canceled");
     expect(batchStatusFromProvider("UNKNOWN")).toBe("failed");
     expect(batchStatusFromProvider("RATE_LIMIT")).toBe("failed");
+  });
+
+  it("takes suppressed records off the batch charge, never below zero", () => {
+    // Provider credits are doubled into Preb credits (CREDIT_MULTIPLIER).
+    expect(batchCreditsAfterSuppression(14, 28)).toBe(0);
+    expect(batchCreditsAfterSuppression(50, 28)).toBe(72);
+    expect(batchCreditsAfterSuppression(3, 28)).toBe(0);
+    expect(batchCreditsAfterSuppression(undefined, 28)).toBeNull();
+    expect(batchCreditsAfterSuppression(null, 0)).toBeNull();
   });
 
   it("produces an enriched row patch with derived cost and the raw record", () => {

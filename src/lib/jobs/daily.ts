@@ -19,6 +19,12 @@ const NOTIFICATION_RETENTION_DAYS = 90;
 const DELETED_ACCOUNT_RETENTION_MONTHS = 12;
 /** The email send log (rate limits, delivery proof) is kept this long (privacy policy § 8). */
 const EMAIL_LOG_RETENTION_MONTHS = 12;
+/** Unconfirmed opt-out requests are kept this long after the link expired, so the link can still say "expired". */
+const OPT_OUT_PENDING_GRACE_DAYS = 7;
+/** Confirmed opt-out requests are the record of the request (page "Your data and Preb"). */
+const OPT_OUT_RECORD_RETENTION_YEARS = 3;
+/** Opt-out emails in the send log carry the requester's raw address; the hourly cap only needs the last hour. */
+const OPT_OUT_EMAIL_LOG_DAYS = 7;
 /** Alert when the upstream balance is below this many credits… */
 const LOW_BALANCE_FLOOR = Number(process.env.UPSTREAM_LOW_BALANCE ?? "200");
 
@@ -32,15 +38,16 @@ export interface DailySummary {
   cacheRowsDeleted: number;
   tombstonesDeleted: number;
   emailLogDeleted: number;
+  optOutPurged: number;
   upstreamBalance: number | null;
   alerted: boolean;
   errors: string[];
 }
 
-/** Housekeeping: expire grants, provider balance alert, cleanup of drafts, cache rows, tombstones and old webhook payloads. */
+/** Housekeeping: expire grants, provider balance alert, cleanup of drafts, cache rows, tombstones, opt-out requests and old webhook payloads. */
 export async function runDaily(): Promise<DailySummary> {
   const admin = createAdminClient();
-  const summary: DailySummary = { expiredGrants: 0, holdsReleased: 0, draftsDeleted: 0, webhookEventsDeleted: 0, expiryWarnings: 0, notificationsDeleted: 0, cacheRowsDeleted: 0, tombstonesDeleted: 0, emailLogDeleted: 0, upstreamBalance: null, alerted: false, errors: [] };
+  const summary: DailySummary = { expiredGrants: 0, holdsReleased: 0, draftsDeleted: 0, webhookEventsDeleted: 0, expiryWarnings: 0, notificationsDeleted: 0, cacheRowsDeleted: 0, tombstonesDeleted: 0, emailLogDeleted: 0, optOutPurged: 0, upstreamBalance: null, alerted: false, errors: [] };
   const step = async (name: string, fn: () => Promise<void>) => {
     try {
       await fn();
@@ -148,6 +155,25 @@ export async function runDaily(): Promise<DailySummary> {
     const { count, error } = await admin.from("email_sends").delete({ count: "exact" }).lt("sent_at", cutoff.toISOString());
     if (error) throw new Error(error.message);
     summary.emailLogDeleted = count ?? 0;
+  });
+
+  await step("cleanup_opt_out", async () => {
+    const now = new Date();
+    const iso = now.toISOString();
+    // Links past their 24 hours: drop the raw address at once, keep the row a week so the link reads "expired".
+    const { error: expireErr } = await admin.from("opt_out_requests").update({ status: "expired", email: null }).eq("status", "pending").lt("expires_at", iso);
+    if (expireErr) throw new Error(expireErr.message);
+    const graceCutoff = new Date(now.getTime() - OPT_OUT_PENDING_GRACE_DAYS * 86_400_000).toISOString();
+    const { count: expired, error: expiredErr } = await admin.from("opt_out_requests").delete({ count: "exact" }).eq("status", "expired").lt("expires_at", graceCutoff);
+    if (expiredErr) throw new Error(expiredErr.message);
+    const recordCutoff = new Date(now);
+    recordCutoff.setFullYear(recordCutoff.getFullYear() - OPT_OUT_RECORD_RETENTION_YEARS);
+    const { count: old, error: oldErr } = await admin.from("opt_out_requests").delete({ count: "exact" }).eq("status", "confirmed").lt("created_at", recordCutoff.toISOString());
+    if (oldErr) throw new Error(oldErr.message);
+    const logCutoff = new Date(now.getTime() - OPT_OUT_EMAIL_LOG_DAYS * 86_400_000).toISOString();
+    const { error: logErr } = await admin.from("email_sends").delete().in("kind", ["opt_out_verify", "opt_out_done"]).lt("sent_at", logCutoff);
+    if (logErr) throw new Error(logErr.message);
+    summary.optOutPurged = (expired ?? 0) + (old ?? 0);
   });
 
   await step("cleanup_webhook_events", async () => {

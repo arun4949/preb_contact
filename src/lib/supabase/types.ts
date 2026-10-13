@@ -1,5 +1,5 @@
 // Generated from the Supabase project via MCP `generate_typescript_types`
-// after migration 0020 (docs_feedback). Regenerate after every migration.
+// after migration 0021 (opt_out_requests). Regenerate after every migration.
 export type Json =
   | string
   | number
@@ -218,6 +218,8 @@ export type Database = {
           id: string
           kind: string
           note: string | null
+          request_id: string | null
+          source: string
           value_hash: string
           value_hint: string
         }
@@ -227,6 +229,8 @@ export type Database = {
           id?: string
           kind: string
           note?: string | null
+          request_id?: string | null
+          source?: string
           value_hash: string
           value_hint: string
         }
@@ -236,6 +240,8 @@ export type Database = {
           id?: string
           kind?: string
           note?: string | null
+          request_id?: string | null
+          source?: string
           value_hash?: string
           value_hint?: string
         }
@@ -245,6 +251,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_suppressions_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "opt_out_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -752,6 +765,102 @@ export type Database = {
           },
         ]
       }
+      opt_out_identifiers: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          request_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          value: string | null
+          value_hash: string
+          value_hint: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          request_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          value?: string | null
+          value_hash: string
+          value_hint: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          request_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          value?: string | null
+          value_hash?: string
+          value_hint?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opt_out_identifiers_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "opt_out_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opt_out_identifiers_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opt_out_requests: {
+        Row: {
+          cleared_rows: number | null
+          confirmed_at: string | null
+          created_at: string
+          email: string | null
+          email_hash: string
+          email_hint: string
+          expires_at: string
+          id: string
+          note: string | null
+          status: string
+          token_hash: string
+        }
+        Insert: {
+          cleared_rows?: number | null
+          confirmed_at?: string | null
+          created_at?: string
+          email?: string | null
+          email_hash: string
+          email_hint: string
+          expires_at: string
+          id?: string
+          note?: string | null
+          status?: string
+          token_hash: string
+        }
+        Update: {
+          cleared_rows?: number | null
+          confirmed_at?: string | null
+          created_at?: string
+          email?: string | null
+          email_hash?: string
+          email_hint?: string
+          expires_at?: string
+          id?: string
+          note?: string | null
+          status?: string
+          token_hash?: string
+        }
+        Relationships: []
+      }
       profile_phones: {
         Row: {
           calls_allowed: boolean
@@ -1104,6 +1213,8 @@ export type Database = {
         | "list_paused"
         | "credits_low"
         | "ops_alert"
+        | "opt_out_verify"
+        | "opt_out_done"
       grant_source: "trial" | "subscription" | "manual"
       ledger_kind: "grant" | "consume" | "expire" | "adjust"
       list_mode: "enrich" | "reverse"
@@ -1269,6 +1380,8 @@ export const Constants = {
         "list_paused",
         "credits_low",
         "ops_alert",
+        "opt_out_verify",
+        "opt_out_done",
       ],
       grant_source: ["trial", "subscription", "manual"],
       ledger_kind: ["grant", "consume", "expire", "adjust"],

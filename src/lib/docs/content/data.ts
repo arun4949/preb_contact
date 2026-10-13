@@ -118,8 +118,8 @@ export const data: DocsCollection = {
       slug: "data-privacy-and-retention",
       title: "Your data and your contacts' data",
       summary: "How long Preb keeps lists and results, what people can ask for, and where to find the legal documents.",
-      keywords: ["privacy", "gdpr", "retention", "delete", "opt out", "processor", "dpa", "security"],
-      updated: UPDATED,
+      keywords: ["privacy", "gdpr", "retention", "delete", "opt out", "suppressed", "processor", "dpa", "security"],
+      updated: "2026-10-13",
       related: ["delete-workspace-or-account", "duplicates-and-already-enriched", "faq"],
       blocks: [
         { type: "heading", text: "How long we keep things" },
@@ -135,7 +135,8 @@ export const data: DocsCollection = {
           "Preb acts on your behalf as a processor. You decide who to look up and what to do with the results.",
         ] },
         { type: "heading", text: "People who do not want to be contacted" },
-        { type: "paragraph", text: "Anyone can ask Preb not to process their data. Such a person shows up as **Suppressed** in your lists, with no data and no charge, even if another source would have a result. Requests go to hello@preb.co, and the [Privacy Policy](https://preb.co/privacy) explains the details." },
+        { type: "paragraph", text: "Anyone can ask Preb not to process their data through the form at [preb.co/contact-opt-out](https://preb.co/contact-opt-out), without an account. Such a person shows up as **Suppressed** in your lists, with no data and no charge, even if another source would have a result. The [Privacy Policy](https://preb.co/privacy) explains the details." },
+        { type: "callout", tone: "note", text: "If a contact writes to you instead, you can point them to that page. Preb handles the request and the row in your list changes to Suppressed." },
         { type: "heading", text: "The documents" },
         { type: "list", items: [
           "[Privacy Policy](https://preb.co/privacy), what Preb stores about you and your contacts.",

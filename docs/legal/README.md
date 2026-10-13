@@ -13,10 +13,10 @@ Copy rules: no em dashes, en dashes or " - " as punctuation (AGENTS.md). The enr
 | Data Processing Agreement (Art. 28 GDPR, SCCs by reference, CCPA service provider terms) | `dpa.md` | Draft v1.0, awaiting founder review |
 | Sub-processor List (names the enrichment provider and its sub-processors) | `sub-processors.md` | Draft v1.0, awaiting founder review |
 | Cookie Policy | Termly | Covered by Termly (CTO decision 2026-10-09), no markdown file |
-| Contact opt-out / suppression page text ("Your data and Preb") | `contact-opt-out.md` | Draft v1.0, awaiting founder review |
+| Contact opt-out / suppression page text ("Your data and Preb") | `contact-opt-out.md` | v1.1 (2026-10-13): points to the self-service form at app.preb.co/opt-out |
 | Imprint | `imprint.html` | Rebuilt from the old site 2026-10-13 (ODR section dropped, platform closed 20 July 2025) |
 
-Paste-ready HTML for the Framer Embeds (2026-10-13): `privacy-policy.html` (/privacy), `terms-of-service.html` (/terms), `dpa.html` (/dpa), `sub-processors.html` (/sub-processor), `imprint.html` (/imprint), `contact-opt-out.html` (/your-data, linked from Privacy Policy § 12). Each file is a snippet with fonts (Stack Sans Headline, Geist), styles and content, no page chrome. Tables are written as lists because Framer text cannot hold tables. Edit the markdown and the HTML together.
+Paste-ready HTML for the Framer Embeds (2026-10-13): `privacy-policy.html` (/privacy), `terms-of-service.html` (/terms), `dpa.html` (/dpa), `sub-processors.html` (/sub-processor), `imprint.html` (/imprint), `contact-opt-out.html` (/contact-opt-out, linked from Privacy Policy § 12). Each file is a snippet with fonts (Stack Sans Headline, Geist), styles and content, no page chrome. Tables are written as lists because Framer text cannot hold tables. Edit the markdown and the HTML together.
 
 ## Decisions the texts are built on (2026-10-09)
 
@@ -49,6 +49,7 @@ The policy describes the target state. These items must be done before or at pub
 7. Link Privacy Policy, Terms and Imprint from every page (website and app) and enter the privacy URL in the Google OAuth consent screen. App side done: the login card and the auth footer link to `https://preb.co/terms` and `https://preb.co/privacy` (2026-10-10, the website and legal pages are built in Framer by Leon on preb.co; the app moves to app.preb.co, see `docs/setup_manual.md` M11). Open: publish the pages in Framer, and the Google console entry.
 8. ~~Featurebase data minimisation~~ Done 2026-10-09: the Stripe customer id is no longer sent to Featurebase.
 9. ~~Two-factor authentication~~ Confirmed by the CTO 2026-10-09.
+11. ~~Self-service opt-out form~~ Done 2026-10-13 (migration 0021): `app.preb.co/opt-out` (public, Turnstile, email confirmed by a one-time link, phone and LinkedIn reviewed by a founder on `/admin/suppressions`); suppressed provider results are no longer charged to the customer. Privacy policy § 12 and "Your data and Preb" v1.1 updated; re-paste both in Framer (`/privacy`, `/contact-opt-out`).
 10. ~~Phone number and onboarding call~~ Done 2026-10-12 (migration 0019): optional phone with country selector on `/onboarding`, Phone row and Calls › Onboarding call switch in Settings › Profile, "Recent signups" table with phone and consent on `/admin/ops`. Privacy policy § 3.1, § 4, § 8, § 13.1 and § 15 updated.
 
 ## Reference material reviewed

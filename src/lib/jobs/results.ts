@@ -69,18 +69,21 @@ export async function applyRecords(
   records: readonly EnrichmentRecord[],
   fields: readonly string[],
   options: { writeCache?: boolean } = {},
-): Promise<{ applied: number; cached: number }> {
+): Promise<{ applied: number; cached: number; suppressedCredits: number }> {
   // Rows served from the cache must not refresh `fetched_at`: the 90-day
   // retention counts from the enrichment, not from the last reuse.
   const writeCache = options.writeCache ?? true;
   let applied = 0;
   let cached = 0;
+  let suppressedCredits = 0;
   const now = new Date().toISOString();
   const kind: RecordKind = batch.kind;
   // Reverse results are cached under their own field tag so enrich lists never reuse them.
   const cacheFields = kind === "reverse" ? ["reverse"] : [...fields];
   // Suppression list (privacy policy § 12): results of people who objected are
-  // discarded before they are stored. The provider still charged for them.
+  // discarded before they are stored. The provider still charged us, the
+  // customer is not charged: the row costs 0 and the batch charge is reduced
+  // by the same amount in `applyTerminalResult`.
   const idsByRecord = records.map(recordIdentifiers);
   const suppressed = await suppressedHashes(admin, idsByRecord.flatMap(hashesOf));
   for (const [index, record] of records.entries()) {
@@ -92,9 +95,10 @@ export async function applyRecords(
       const raw = scrubRaw((existing?.raw ?? {}) as Record<string, string>, hits.map((h) => h.value));
       await admin
         .from("list_contacts")
-        .update({ ...SUPPRESSED_PATCH, raw: raw as Json, credits_cost: contactPatchFromRecord(record, now, kind).credits_cost ?? 0, enriched_at: now })
+        .update({ ...SUPPRESSED_PATCH, raw: raw as Json, credits_cost: 0, enriched_at: now })
         .eq("id", contactId)
         .eq("batch_id", batch.id);
+      suppressedCredits += contactPatchFromRecord(record, now, kind).credits_cost ?? 0;
       applied += 1;
       log("results.suppressed", { batchId: batch.id, contactId });
       continue;
@@ -133,7 +137,17 @@ export async function applyRecords(
       if (!cacheErr) cached += 1;
     }
   }
-  return { applied, cached };
+  return { applied, cached, suppressedCredits };
+}
+
+/**
+ * Batch charge after suppression: the provider's total (in Preb credits) minus
+ * what the discarded records would have cost. Null when the provider sent no
+ * total, so `settle_batch` falls back to the per-contact sum.
+ */
+export function batchCreditsAfterSuppression(providerCredits: number | null | undefined, suppressedPrebCredits: number): number | null {
+  if (typeof providerCredits !== "number") return null;
+  return Math.max(0, toPrebCredits(providerCredits) - suppressedPrebCredits);
 }
 
 /**
@@ -148,7 +162,7 @@ export async function applyTerminalResult(
   fields: readonly string[],
 ): Promise<{ status: BatchStatus; applied: number }> {
   const status = batchStatusFromProvider(result.status);
-  const { applied } = await applyRecords(admin, batch, result.data ?? [], fields);
+  const { applied, suppressedCredits } = await applyRecords(admin, batch, result.data ?? [], fields);
 
   // Contacts still `submitted` got no result.
   if (status === "credits_insufficient") {
@@ -162,19 +176,20 @@ export async function applyTerminalResult(
       .eq("status", "submitted");
   }
 
-  // `credits_cost` is in Preb credits (provider charge × CREDIT_MULTIPLIER); `raw.cost` keeps the provider's own number.
-  const credits = typeof result.cost?.credits === "number" ? toPrebCredits(result.cost.credits) : null;
+  // `credits_cost` is in Preb credits (provider charge × CREDIT_MULTIPLIER) minus
+  // the suppressed records nobody is charged for; `raw.cost` keeps the provider's own number.
+  const credits = batchCreditsAfterSuppression(result.cost?.credits, suppressedCredits);
   await admin
     .from("enrichment_batches")
     .update({
       status,
       credits_cost: credits,
       finished_at: new Date().toISOString(),
-      raw: { status: result.status, cost: result.cost ?? null, records: result.data?.length ?? 0 } as Json,
+      raw: { status: result.status, cost: result.cost ?? null, records: result.data?.length ?? 0, suppressed_credits: suppressedCredits } as Json,
     })
     .eq("id", batch.id)
     .eq("status", "submitted");
 
-  log("results.batch_terminal", { batchId: batch.id, listId: batch.list_id, status, applied, credits });
+  log("results.batch_terminal", { batchId: batch.id, listId: batch.list_id, status, applied, credits, suppressedCredits });
   return { status, applied };
 }

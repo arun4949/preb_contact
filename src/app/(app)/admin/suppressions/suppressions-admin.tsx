@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { RiUserForbidLine } from "@remixicon/react";
+import { RiCheckLine, RiCloseLine, RiShieldCheckLine, RiUserForbidLine } from "@remixicon/react";
 import { Chip } from "@/components/base/badges/chip";
 import { Button } from "@/components/base/buttons/button";
 import { ConfirmDialog } from "@/components/base/dialog/dialog";
@@ -10,24 +10,60 @@ import { Input } from "@/components/base/input/input";
 import { Select, SelectItem } from "@/components/base/select/select";
 import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@/components/base/table/table";
 import { useToast } from "@/components/base/toast/toast";
-import { addSuppression, fetchSuppressions, removeSuppression, type SuppressionRecord } from "@/lib/suppression/admin-actions";
+import {
+  addSuppression,
+  approveOptOutIdentifier,
+  fetchOptOutQueue,
+  fetchSuppressions,
+  rejectOptOutIdentifier,
+  removeSuppression,
+  type PendingIdentifier,
+  type SuppressionRecord,
+} from "@/lib/suppression/admin-actions";
+import type { SuppressionSource } from "@/lib/suppression/apply";
 import type { SuppressionKind } from "@/lib/suppression/identifiers";
 
 const KIND_LABEL: Record<SuppressionKind, string> = { email: "Email", linkedin: "LinkedIn", phone: "Phone" };
 const PLACEHOLDER: Record<SuppressionKind, string> = { email: "person@company.com", linkedin: "https://www.linkedin.com/in/handle", phone: "+1 555 123 4567" };
+const SOURCE_LABEL: Record<SuppressionSource, string> = { admin: "Admin", opt_out: "Self-service" };
 const when = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
-/** Page shell: add form on top, the list of suppressed identifiers below. */
-export function SuppressionsAdmin({ entries: initial }: { entries: SuppressionRecord[] }) {
+const clearedCopy = (cleared: number) =>
+  cleared === 0 ? "No stored data matched. Future enrichments are blocked." : `${cleared.toLocaleString("en-US")} stored ${cleared === 1 ? "row was" : "rows were"} cleared. Future enrichments are blocked.`;
+
+/** Page shell: add form on top, the self-service review queue, the list of suppressed identifiers below. */
+export function SuppressionsAdmin({ entries: initial, queue: initialQueue }: { entries: SuppressionRecord[]; queue: PendingIdentifier[] }) {
   const [entries, setEntries] = useState(initial);
+  const [queue, setQueue] = useState(initialQueue);
   const [kind, setKind] = useState<SuppressionKind>("email");
   const [value, setValue] = useState("");
   const [note, setNote] = useState("");
   const [removing, setRemoving] = useState<SuppressionRecord | null>(null);
+  const [reviewing, setReviewing] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const toast = useToast();
 
-  const reload = () => void fetchSuppressions().then(setEntries);
+  const reload = () => {
+    void fetchSuppressions().then(setEntries);
+    void fetchOptOutQueue().then(setQueue);
+  };
+
+  const review = (item: PendingIdentifier, decision: "approve" | "reject") => {
+    if (pending) return;
+    setReviewing(item.id);
+    start(async () => {
+      const res = decision === "approve" ? await approveOptOutIdentifier(item.id) : await rejectOptOutIdentifier(item.id);
+      setReviewing(null);
+      if (!res.ok) {
+        toast.error(res.error);
+        reload();
+        return;
+      }
+      if (decision === "approve" && res.data) toast.success(`${res.data.hint} is suppressed`, { description: clearedCopy(res.data.cleared) });
+      else toast.success("Entry rejected", { description: `${item.hint} was not added. The value has been discarded.` });
+      reload();
+    });
+  };
 
   const submit = () => {
     if (!value.trim() || pending) return;
@@ -37,9 +73,7 @@ export function SuppressionsAdmin({ entries: initial }: { entries: SuppressionRe
         toast.error(res.error);
         return;
       }
-      toast.success(`${res.data.hint} is suppressed`, {
-        description: res.data.cleared === 0 ? "No stored data matched. Future enrichments are blocked." : `${res.data.cleared.toLocaleString("en-US")} stored ${res.data.cleared === 1 ? "row was" : "rows were"} cleared. Future enrichments are blocked.`,
-      });
+      toast.success(`${res.data.hint} is suppressed`, { description: clearedCopy(res.data.cleared) });
       setValue("");
       setNote("");
       reload();
@@ -51,7 +85,7 @@ export function SuppressionsAdmin({ entries: initial }: { entries: SuppressionRe
       <div className="flex flex-col gap-1">
         <h1 className="text-title-2-medium text-text-primary">Suppressions</h1>
         <p className="text-body-regular text-text-secondary">
-          People who asked not to be processed through Preb. Adding an identifier clears their stored results in every workspace and blocks future enrichment. Only a hash and a masked hint are kept. Visible to Preb admins only.
+          People who asked not to be processed through Preb. Adding an identifier clears their stored results in every workspace and blocks future enrichment. Only a hash and a masked hint are kept. Requests from the public form at app.preb.co/opt-out land here too: the email is suppressed as soon as the person confirms it, phone numbers and LinkedIn profiles wait for your approval. Visible to Preb admins only.
         </p>
       </div>
 
@@ -77,11 +111,74 @@ export function SuppressionsAdmin({ entries: initial }: { entries: SuppressionRe
           </div>
           <Input label="Note (optional)" value={note} onChange={setNote} placeholder="Request received by email on Oct 9" isDisabled={pending} />
           <div className="flex justify-end">
-            <Button type="submit" leadingIcon={RiUserForbidLine} disabled={!value.trim() || pending} aria-busy={pending}>
-              {pending ? "Suppressing…" : "Suppress and clear data"}
+            <Button type="submit" leadingIcon={RiUserForbidLine} disabled={!value.trim() || pending} aria-busy={pending && !reviewing}>
+              {pending && !reviewing ? "Suppressing…" : "Suppress and clear data"}
             </Button>
           </div>
         </form>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-headline-medium text-text-primary">
+            {queue.length === 0 ? "Awaiting review" : `${queue.length} ${queue.length === 1 ? "identifier" : "identifiers"} awaiting review`}
+          </h2>
+          <p className="text-body-2-regular text-text-secondary">
+            Phone numbers and LinkedIn profiles from confirmed self-service requests. They cannot be verified by email, so a founder decides. Approving clears stored data
+            like any other entry, rejecting discards the value.
+          </p>
+        </div>
+        {queue.length === 0 ? (
+          <div className="rounded-2xl bg-background-secondary-default">
+            <EmptyState size="inline" icon={RiShieldCheckLine} title="Nothing to review." description="New phone numbers and LinkedIn profiles from the public form appear here." />
+          </div>
+        ) : (
+          <Table aria-label="Identifiers awaiting review" size="sm" containerClassName="rounded-2xl">
+            <TableHeader>
+              <TableColumn isRowHeader>Identifier</TableColumn>
+              <TableColumn>Type</TableColumn>
+              <TableColumn>Requested by</TableColumn>
+              <TableColumn>Note</TableColumn>
+              <TableColumn>Confirmed</TableColumn>
+              <TableColumn className="text-end">Decision</TableColumn>
+            </TableHeader>
+            <TableBody>
+              {queue.map((q) => (
+                <TableRow key={q.id}>
+                  <TableCell>
+                    <span className="text-body-medium text-text-primary" dir="ltr">
+                      {q.hint}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Chip variant="caption" color="neutral">
+                      {KIND_LABEL[q.kind]}
+                    </Chip>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-body-2-regular text-text-secondary" dir="ltr">
+                      {q.requesterHint}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="line-clamp-2 max-w-[320px] text-caption-1-regular text-text-tertiary">{q.note ?? ""}</span>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">{when(q.receivedAt)}</TableCell>
+                  <TableCell className="text-end">
+                    <span className="inline-flex gap-2">
+                      <Button variant="secondary" size="small" leadingIcon={RiCloseLine} disabled={pending} onClick={() => review(q, "reject")}>
+                        Reject
+                      </Button>
+                      <Button size="small" leadingIcon={RiCheckLine} disabled={pending} aria-busy={pending && reviewing === q.id} onClick={() => review(q, "approve")}>
+                        {pending && reviewing === q.id ? "Working…" : "Approve"}
+                      </Button>
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </section>
 
       <section className="flex flex-col gap-3">
@@ -97,6 +194,7 @@ export function SuppressionsAdmin({ entries: initial }: { entries: SuppressionRe
             <TableHeader>
               <TableColumn isRowHeader>Identifier</TableColumn>
               <TableColumn>Type</TableColumn>
+              <TableColumn>Source</TableColumn>
               <TableColumn>Note</TableColumn>
               <TableColumn>Added</TableColumn>
               <TableColumn>By</TableColumn>
@@ -113,6 +211,11 @@ export function SuppressionsAdmin({ entries: initial }: { entries: SuppressionRe
                   <TableCell>
                     <Chip variant="caption" color="neutral">
                       {KIND_LABEL[s.kind]}
+                    </Chip>
+                  </TableCell>
+                  <TableCell>
+                    <Chip variant="caption" color={s.source === "opt_out" ? "blue" : "neutral"}>
+                      {SOURCE_LABEL[s.source]}
                     </Chip>
                   </TableCell>
                   <TableCell>
