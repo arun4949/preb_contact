@@ -1,7 +1,7 @@
 import { MAX_ROWS } from "@/lib/csv/parse";
 import type { DocsCollection } from "../types";
 
-const UPDATED = "2026-10-12";
+const UPDATED = "2026-10-14";
 const MAX_ROWS_TEXT = MAX_ROWS.toLocaleString("en-US");
 
 export const troubleshooting: DocsCollection = {
@@ -118,6 +118,8 @@ export const troubleshooting: DocsCollection = {
       updated: UPDATED,
       related: ["what-is-preb", "how-credits-work", "data-privacy-and-retention"],
       blocks: [
+        { type: "subheading", text: "The code for a shared list does not work" },
+        { type: "paragraph", text: "Codes have four digits and belong to one link. After five wrong codes the link locks for 15 minutes. If it still does not open, the person who sent it may have renewed the code or closed the link; ask them for the current one. See [Someone shared an enriched list with you](/docs/getting-started/shared-list)." },
         { type: "subheading", text: "Is there a browser extension?" },
         { type: "paragraph", text: "Not yet. It is on the roadmap, together with the CRM connection and prospecting inside Preb. The upload step shows these as **Soon**." },
         { type: "subheading", text: "Can I connect my ATS or CRM?" },

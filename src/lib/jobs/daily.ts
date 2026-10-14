@@ -6,6 +6,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { creditsExpiringCopy } from "@/lib/notifications/copy";
 import { notifyWorkspace } from "@/lib/notifications/emit";
 import { notifyOps } from "./notify";
+import { LEAD_SHARE_RETENTION_MONTHS } from "@/lib/leads/constants";
+import { purgeCacheRows } from "@/lib/lists/insert-contacts";
 import { CACHE_TTL_DAYS, log, logError, releaseHolds } from "./shared";
 
 const BUCKET = "list-uploads";
@@ -39,6 +41,7 @@ export interface DailySummary {
   tombstonesDeleted: number;
   emailLogDeleted: number;
   optOutPurged: number;
+  leadSharesDeleted: number;
   upstreamBalance: number | null;
   alerted: boolean;
   errors: string[];
@@ -47,7 +50,7 @@ export interface DailySummary {
 /** Housekeeping: expire grants, provider balance alert, cleanup of drafts, cache rows, tombstones, opt-out requests and old webhook payloads. */
 export async function runDaily(): Promise<DailySummary> {
   const admin = createAdminClient();
-  const summary: DailySummary = { expiredGrants: 0, holdsReleased: 0, draftsDeleted: 0, webhookEventsDeleted: 0, expiryWarnings: 0, notificationsDeleted: 0, cacheRowsDeleted: 0, tombstonesDeleted: 0, emailLogDeleted: 0, optOutPurged: 0, upstreamBalance: null, alerted: false, errors: [] };
+  const summary: DailySummary = { expiredGrants: 0, holdsReleased: 0, draftsDeleted: 0, webhookEventsDeleted: 0, expiryWarnings: 0, notificationsDeleted: 0, cacheRowsDeleted: 0, tombstonesDeleted: 0, emailLogDeleted: 0, optOutPurged: 0, leadSharesDeleted: 0, upstreamBalance: null, alerted: false, errors: [] };
   const step = async (name: string, fn: () => Promise<void>) => {
     try {
       await fn();
@@ -174,6 +177,26 @@ export async function runDaily(): Promise<DailySummary> {
     const { error: logErr } = await admin.from("email_sends").delete().in("kind", ["opt_out_verify", "opt_out_done"]).lt("sent_at", logCutoff);
     if (logErr) throw new Error(logErr.message);
     summary.optOutPurged = (expired ?? 0) + (old ?? 0);
+  });
+
+  await step("cleanup_lead_shares", async () => {
+    // Lead magnet samples: gone 12 months after the last activity (privacy policy, "Sample enrichments and prospects").
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - LEAD_SHARE_RETENTION_MONTHS);
+    const iso = cutoff.toISOString();
+    const { data: stale } = await admin
+      .from("lead_shares")
+      .select("id, list_id, workspace_id")
+      .lt("created_at", iso)
+      .or(`last_seen_at.is.null,last_seen_at.lt.${iso}`)
+      .limit(100);
+    for (const s of stale ?? []) {
+      const { data: hashRows } = await admin.from("list_contacts").select("input_hash").eq("list_id", s.list_id).not("input_hash", "is", null);
+      await admin.from("lists").delete().eq("id", s.list_id);
+      await purgeCacheRows(admin, s.workspace_id, (hashRows ?? []).map((r) => r.input_hash!));
+      await admin.from("lead_shares").delete().eq("id", s.id);
+      summary.leadSharesDeleted += 1;
+    }
   });
 
   await step("cleanup_webhook_events", async () => {

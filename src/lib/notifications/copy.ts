@@ -26,9 +26,12 @@ export interface ListCopyInput {
   found_phone: number;
   identified_rows: number;
   credits_used: number;
+  /** `internal` for lists of the Preb outreach workspace (lead magnet): admins open them on /admin/leads. */
+  workspace_kind?: string;
 }
 
-const listHref = (list: Pick<ListCopyInput, "id" | "source">) => (list.source === "manual" ? "/enrich" : `/lists/${list.id}`);
+const listHref = (list: Pick<ListCopyInput, "id" | "source" | "workspace_kind">) =>
+  list.workspace_kind === "internal" ? `/admin/leads?list=${list.id}` : list.source === "manual" ? "/enrich" : `/lists/${list.id}`;
 const listLabel = (list: Pick<ListCopyInput, "name" | "source">) => (list.source === "manual" ? `Enrichment of ${list.name}` : list.name);
 
 export function listFinishedCopy(list: ListCopyInput, stopped: boolean): NotificationCopy {
@@ -47,17 +50,17 @@ export function listFinishedCopy(list: ListCopyInput, stopped: boolean): Notific
   };
 }
 
-export function listPausedCreditsCopy(list: Pick<ListCopyInput, "id" | "name" | "source">, remaining: number): NotificationCopy {
+export function listPausedCreditsCopy(list: Pick<ListCopyInput, "id" | "name" | "source" | "workspace_kind">, remaining: number): NotificationCopy {
   return {
     kind: "list_paused_credits",
     title: `${listLabel(list)} is paused`,
     body: `${plural(remaining, "contact is", "contacts are")} waiting for credits. Add credits and it continues on its own.`,
-    href: `${listHref(list)}?settings=billing&plan=1`,
+    href: `${listHref(list)}${listHref(list).includes("?") ? "&" : "?"}settings=billing&plan=1`,
     status: "error",
   };
 }
 
-export function listPausedUpstreamCopy(list: Pick<ListCopyInput, "id" | "name" | "source">): NotificationCopy {
+export function listPausedUpstreamCopy(list: Pick<ListCopyInput, "id" | "name" | "source" | "workspace_kind">): NotificationCopy {
   return {
     kind: "list_paused_upstream",
     title: `${listLabel(list)} is paused on our side`,
@@ -67,7 +70,7 @@ export function listPausedUpstreamCopy(list: Pick<ListCopyInput, "id" | "name" |
   };
 }
 
-export function listFailedCopy(list: Pick<ListCopyInput, "id" | "name" | "source">): NotificationCopy {
+export function listFailedCopy(list: Pick<ListCopyInput, "id" | "name" | "source" | "workspace_kind">): NotificationCopy {
   return {
     kind: "list_failed",
     title: `${listLabel(list)} could not be enriched`,

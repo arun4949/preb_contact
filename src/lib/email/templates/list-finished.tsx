@@ -12,9 +12,11 @@ export interface ListFinishedProps {
   mobiles: number;
   creditsUsed: number;
   stopped?: boolean;
+  /** Where "View list" goes; defaults to the list page. Lead magnet lists point at /admin/leads. */
+  href?: string;
 }
 
-export function ListFinishedEmail({ firstName, listId, listName, processed, validEmails, riskyEmails, mobiles, creditsUsed, stopped }: ListFinishedProps) {
+export function ListFinishedEmail({ firstName, listId, listName, processed, validEmails, riskyEmails, mobiles, creditsUsed, stopped, href }: ListFinishedProps) {
   const n = (v: number) => v.toLocaleString("en-US");
   return (
     <EmailLayout preview={stopped ? `${listName} was stopped` : `${listName} is ready`}>
@@ -24,7 +26,7 @@ export function ListFinishedEmail({ firstName, listId, listName, processed, vali
         <strong>{listName}</strong> {stopped ? "was stopped as requested." : "is done."} We processed {n(processed)} contacts and found{" "}
         {n(validEmails)} valid emails, {n(riskyEmails)} risky emails and {n(mobiles)} mobile numbers, using {n(creditsUsed)} credits.
       </Text>
-      <Button href={appUrl(`/lists/${listId}`)} style={emailStyles.button}>
+      <Button href={appUrl(href ?? `/lists/${listId}`)} style={emailStyles.button}>
         View list
       </Button>
       <Text style={emailStyles.footnote}>

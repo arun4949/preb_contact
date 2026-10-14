@@ -127,6 +127,9 @@ export async function deleteUserCompletely(admin: Admin, userId: string): Promis
   }
 
   const { data: owned } = await admin.from("workspaces").select("*").eq("owner_id", userId);
+  if ((owned ?? []).some((ws) => ws.kind === "internal")) {
+    throw new DeletionBlockedError("This account owns the Preb outreach workspace and must be removed by another founder. Email hello@preb.co.");
+  }
   for (const ws of owned ?? []) await deleteWorkspaceData(admin, ws, userId);
 
   const { data: memberships } = await admin.from("workspace_members").select("workspace_id, workspaces!inner(owner_id)").eq("user_id", userId);

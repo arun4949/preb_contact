@@ -18,8 +18,10 @@ export const LOW_CREDIT_RATIO = 0.1;
  */
 export async function maybeNotifyLowCredits(admin: Admin, workspaceId: string): Promise<boolean> {
   try {
-    const { data: ws } = await admin.from("workspaces").select("id, name, owner_id, plan_key, low_credits_notified_at").eq("id", workspaceId).maybeSingle();
+    const { data: ws } = await admin.from("workspaces").select("id, name, owner_id, plan_key, kind, low_credits_notified_at").eq("id", workspaceId).maybeSingle();
     if (!ws || ws.low_credits_notified_at) return false;
+    // The internal (Preb outreach) workspace is never charged, so it is never low.
+    if (ws.kind === "internal") return false;
     const plan = getPlan(ws.plan_key);
     if (!plan) return false;
     const { data: available } = await admin.rpc("credits_available", { ws: ws.id });

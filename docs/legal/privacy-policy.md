@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Last updated:** [date of publication]
-**Version:** 1.0 (draft for review)
+**Version:** 1.1 (2026-10-14: sample lists for prospects)
 
 Preb is a contact data enrichment service for recruiting teams. This Privacy Policy explains how Kranz & Gupta, Indiepal GbR ("Preb", "we", "us") collects, uses, shares and protects personal data when you visit preb.co, create an account, use the Preb application, receive our emails or contact our support.
 
@@ -37,6 +37,8 @@ Preb handles personal data in two different roles, and your rights depend on whi
 **Preb as controller.** We decide how and why to process the data of our Customers, Users, website visitors and support contacts. This covers your account, sign-in, billing, support conversations, product emails, security logs and cookies. Sections 3 to 11 describe this processing.
 
 **Preb as processor.** When a Customer uploads a spreadsheet of Contacts and asks us to find work emails, personal emails or phone numbers, we act only on that Customer's documented instructions. The Customer is the controller of the Contact data and decides why it is processed. We do not use Contact data for our own purposes, we do not sell it, we do not combine Contact data across different Customers, and we do not build our own contact database from it. This processing is governed by our Data Processing Agreement (DPA), which forms part of our contract with every Customer and lists the categories of data, the retention periods, the security measures and our sub-processors.
+
+**One exception: sample lists we prepare ourselves.** When one of our founders enriches a handful of profiles for a prospective customer as a free sample, nobody has instructed us. For those few Contacts we are the controller. Section 12 explains this under "Sample lists prepared by Preb".
 
 If you are a Contact and want to know why a particular company processed your data, that company is your first point of contact. We will still help you, as described in Section 12.
 
@@ -108,6 +110,7 @@ The GDPR requires us to name a legal basis for every purpose. The table below ap
 | Answering support requests and collecting product feedback | Support and feedback data | Performance of our contract (Art. 6 (1) (b) GDPR) and our legitimate interest in improving Preb (Art. 6 (1) (f) GDPR) |
 | Showing a consent banner and remembering your cookie choices | Consent records | Our legal obligation to obtain and document consent (Art. 6 (1) (c) GDPR, § 25 TDDDG) |
 | Website analytics and non-essential cookies, where used | Usage data, cookie identifiers | Your consent (Art. 6 (1) (a) GDPR, § 25 TDDDG), which you can withdraw at any time |
+| Preparing a free sample list for a prospective customer: enriching a few profiles the prospect names, showing the prospect the result behind a link and an access code, and recording whether the link was opened, unlocked, downloaded and whether the prospect signed up | Name, company and LinkedIn profile of the prospect, optionally their email address; names, employers and LinkedIn profiles of the people in the sample and the results found; engagement events without IP address or device data | Our legitimate interest in demonstrating the service to business prospects and in following up on our outreach (Art. 6 (1) (f) GDPR). For the people in the sample, see Section 12 |
 | Internal administration: our founders viewing user, workspace and operations data to run the service, send announcements and resolve incidents | Account data, usage data, aggregated operations data | Performance of our contract (Art. 6 (1) (b) GDPR) and our legitimate interest in operating the service (Art. 6 (1) (f) GDPR) |
 | Responding to legal requests, defending claims, enforcing our terms | Any of the above as needed | Our legal obligations (Art. 6 (1) (c) GDPR) and our legitimate interest in protecting our rights (Art. 6 (1) (f) GDPR) |
 | Responding to privacy requests and keeping a record of them | Identity and contact data of the requester | Our legal obligation (Art. 6 (1) (c) GDPR, Art. 12 to 22 GDPR) |
@@ -191,6 +194,7 @@ We keep personal data only as long as we need it for the purposes above or as th
 | Session and sign-in tokens | Magic links expire after a short time. Sessions end when you sign out or after the session lifetime |
 | Draft lists and uploaded files not yet enriched | Deleted after 24 hours |
 | Lists, Contact data, enrichment results and uploaded files (Customer Content) | Until the Customer deletes the list or the workspace is deleted. Deleting a list permanently removes its contacts, results and the uploaded file |
+| Sample lists we prepare for prospective customers, the prospect's details and the engagement record | Until our founder closes and deletes the sample, at the latest 12 months after the link was last opened. The prospect's workspace, if they sign up, follows the account retention above |
 | Enrichment cache used to avoid charging the same workspace twice for the same contact | 90 days from the enrichment, or earlier when the related list is deleted. The cache is kept per workspace |
 | Enrichment results at our data provider | 3 months, then deleted automatically by the provider |
 | Raw notifications from our data provider and from Stripe (webhook payloads) | 30 days after processing |
@@ -260,6 +264,8 @@ If a recruiting team has used Preb to find your contact details, this section is
 **What happens.** A Customer uploads a spreadsheet or enters details of people they want to reach, typically name and employer, a LinkedIn profile URL or an email address. On the Customer's instruction we ask specialist B2B contact data providers to find and verify a work email address, a personal email address or a phone number, and to return public professional profile information such as job title, employer and location. The results are shown to the Customer and can be downloaded by them.
 
 **Who is responsible.** The Customer who uploaded your details is the controller. It decides why it wants to contact you and must have a lawful basis for doing so. We act as its processor. We do not decide to look you up, we do not use your data for our own purposes, we do not combine your data across Customers, we do not sell it and we do not build a database of Contacts.
+
+**Sample lists prepared by Preb.** Occasionally one of our founders enriches a small number of profiles, typically 10 to 20, that a prospective customer names, so the prospect can judge the quality of the data before signing up. In that case we decide to look you up, so we are the controller for that sample. We rely on our legitimate interest in demonstrating our service to a business prospect (Art. 6 (1) (f) GDPR). The sample is limited to the people the prospect named, it is shown only to that prospect behind a private link and an access code, it is never combined with other samples or with Customer data, and we delete it at the latest 12 months after the link was last opened. The prospect may download the sample; what they do with it afterwards is their own responsibility as a controller. You can object to this processing or ask us to delete your details at any time through the form linked below, and we will also stop including you in future samples.
 
 **Where the data comes from.** Your data comes from the Customer's own files and from our data providers, who compile publicly available professional information and verify contact details. The providers' own privacy notices explain their sources.
 

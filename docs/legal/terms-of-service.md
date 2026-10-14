@@ -1,7 +1,7 @@
 # Terms of Service
 
 **Last updated:** [date of publication]
-**Version:** 1.0 (draft for review)
+**Version:** 1.1 (2026-10-14: sample lists for prospects)
 
 These Terms of Service (the "Terms") are a contract between Kranz & Gupta, Indiepal GbR, Brunnenstr. 11, 53123 Bonn, Germany ("Preb", "we", "us") and the business that creates or uses a Preb workspace (the "Customer", "you"). They govern the use of the Preb website and application at preb.co and all related services (the "Service").
 
@@ -63,6 +63,8 @@ The Data Processing Agreement (the "DPA") and the Privacy Policy form part of th
 ## 5. Free trial
 
 New Workspaces created with a work email address receive 50 Credits that expire 30 days after sign-up. The Trial requires no payment details and ends on its own. We grant one Trial per person, limit the number of Trials per email domain, and may refuse or revoke a Trial where we see signs of abuse, for example repeated sign-ups or accounts created to resell Results. Invited members and re-created accounts do not receive a Trial. Trial Credits follow the same rules as paid Credits.
+
+**Sample lists.** We may, at our discretion, enrich a small number of profiles you name as a free sample and show you the result behind a private link and an access code, without an account. The link and the code are personal to you and must not be passed on. Sample Results are provided as they are, without any warranty, and count as Results under Sections 9 and 10 once you download them: you may use them for recruiting and hiring only and you are responsible for your own lawful basis towards the people in the list. We can close a sample link at any time and delete samples 12 months after they were last opened.
 
 ---
 

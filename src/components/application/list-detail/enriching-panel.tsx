@@ -56,8 +56,11 @@ const PAUSED_COPY: Partial<Record<ListRow["status"], string>> = {
   failed: "Enrichment stopped after repeated provider errors. Our team has been alerted.",
 };
 
-/** Centered progress panel for running or paused lists (plan § List detail · enriching). */
-export function EnrichingPanel({ list, eta }: { list: ListRow; eta: ListEta }) {
+/**
+ * Centered progress panel for running or paused lists (plan § List detail · enriching).
+ * `variant="public"` (lead share page): no Buy credits button, no "we'll email you" line.
+ */
+export function EnrichingPanel({ list, eta, variant = "app" }: { list: ListRow; eta: ListEta; variant?: "app" | "public" }) {
   const { openSettings } = useSettingsUrl();
   const { steps, completed } = stepsFor(list);
   const paused = list.status in PAUSED_COPY;
@@ -89,15 +92,19 @@ export function EnrichingPanel({ list, eta }: { list: ListRow; eta: ListEta }) {
           </p>
           <p className="text-body-regular text-text-secondary">{subtitle}</p>
           {!paused ? <AgentThinking variant="stars" label={THINKING[msg]} tone="subtle" showTimer={false} /> : null}
-          {list.status === "paused_credits" ? (
+          {variant === "app" && list.status === "paused_credits" ? (
             <Button size="small" leadingIcon={RiCoinLine} className="rounded-full" onClick={() => openSettings("billing", { plan: true })}>
               Buy credits
             </Button>
           ) : null}
-          <p className="mt-2 flex items-center gap-2 text-body-2-regular text-text-tertiary">
-            <RiMailSendLine className="size-4 shrink-0" aria-hidden />
-            You can leave this page, we&apos;ll email you when it&apos;s done.
-          </p>
+          {variant === "app" ? (
+            <p className="mt-2 flex items-center gap-2 text-body-2-regular text-text-tertiary">
+              <RiMailSendLine className="size-4 shrink-0" aria-hidden />
+              You can leave this page, we&apos;ll email you when it&apos;s done.
+            </p>
+          ) : (
+            <p className="mt-2 text-body-2-regular text-text-tertiary">This page updates by itself. Come back in a few minutes if you prefer.</p>
+          )}
         </div>
       </div>
     </section>

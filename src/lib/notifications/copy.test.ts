@@ -14,6 +14,11 @@ describe("notification copy", () => {
     expect(c.href).toBe("/lists/l1");
     expect(c.status).toBe("success");
   });
+  it("routes lead magnet lists (internal workspace) to the admin Leads page", () => {
+    const c = listFinishedCopy({ ...list, workspace_kind: "internal", name: "Sample for Jane" }, false);
+    expect(c.href).toBe("/admin/leads?list=l1");
+    expect(listPausedCreditsCopy({ ...list, workspace_kind: "internal" }, 3).href).toBe("/admin/leads?list=l1&settings=billing&plan=1");
+  });
   it("routes manual runs to the Enrich tab", () => {
     const c = listFinishedCopy({ ...list, source: "manual", name: "Jon Snow + 2 more" }, false);
     expect(c.title).toBe("Enrichment of Jon Snow + 2 more is ready");

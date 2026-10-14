@@ -9,6 +9,7 @@ import { subscribeContact } from "@/lib/email/contacts";
 import { firstNameFor } from "@/lib/email/name";
 import { normalizePhone } from "@/lib/phone/phone";
 import { WelcomeEmail } from "@/lib/email/templates/welcome";
+import { attributeLeadSignup } from "@/lib/leads/attribution";
 
 export interface OnboardingState {
   /** `done` → the form performs a full navigation to /lists (see onboarding-form.tsx). */
@@ -105,6 +106,8 @@ export async function completeOnboarding(_prev: OnboardingState, formData: FormD
       }
     };
     await Promise.all([welcome(), subscribeContact({ email: profile.email, fullName })]);
+    // Lead magnet: credit the share this signup came from (cookie set by /l/<token>/go).
+    await attributeLeadSignup(profile.id);
   }
 
   // No `redirect()` here: the action runs under the (auth) layout and the

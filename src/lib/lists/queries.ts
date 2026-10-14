@@ -1,7 +1,9 @@
 import "server-only";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import type { ListRow } from "@/lib/supabase/queries";
+import type { Database } from "@/lib/supabase/types";
 import { EMPTY_MAPPING } from "@/lib/csv/automap";
 import { PROCESSED_STATUSES, RISKY_STATUSES, VALID_STATUSES, type ContactRow, type Segment } from "./segments";
 import { SORT_COLUMNS, type ContactQuery } from "./contact-query";
@@ -10,6 +12,9 @@ export type { ContactQuery, ContactSort, PageSize, PhoneFilter } from "./contact
 export { PAGE_SIZES, DEFAULT_CONTACT_QUERY, parseContactQuery } from "./contact-query";
 
 type Builder = ReturnType<ReturnType<Awaited<ReturnType<typeof createClient>>["from"]>["select"]>;
+
+/** The RLS session client (default) or the service-role client (public lead share page). */
+export type ListsClient = SupabaseClient<Database>;
 
 /** Applies a download/filter segment to a `list_contacts` query. */
 export function applySegment<T extends { in: Builder["in"]; is: Builder["is"]; not: Builder["not"] }>(query: T, segment: Segment): T {
@@ -33,9 +38,9 @@ export interface ContactsPage {
   totalPages: number;
 }
 
-/** One server-side page of contacts for the detail table (RLS-scoped). */
-export async function getListContacts(listId: string, query: ContactQuery): Promise<ContactsPage> {
-  const supabase = await createClient();
+/** One server-side page of contacts for the detail table (RLS-scoped unless a client is passed). */
+export async function getListContacts(listId: string, query: ContactQuery, client?: ListsClient): Promise<ContactsPage> {
+  const supabase = client ?? (await createClient());
   let q = supabase.from("list_contacts").select("*", { count: "exact" }).eq("list_id", listId);
   q = applySegment(q, query.email);
   if (query.phone === "found") q = q.not("phone", "is", null);
@@ -85,10 +90,10 @@ export interface ListEta {
 }
 
 /** ETA from the list's observed throughput (settled batches, else elapsed time). */
-export async function getListEta(list: ListRow): Promise<ListEta> {
+export async function getListEta(list: ListRow, client?: ListsClient): Promise<ListEta> {
   const target = list.row_limit ? Math.min(list.row_limit, list.enrichable_rows) : list.enrichable_rows;
   const remaining = Math.max(0, target - list.processed_rows);
-  const supabase = await createClient();
+  const supabase = client ?? (await createClient());
   const { data: batches } = await supabase
     .from("enrichment_batches")
     .select("contact_count, submitted_at, settled_at")

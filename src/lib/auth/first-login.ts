@@ -2,6 +2,7 @@ import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { subscribeContact } from "@/lib/email/contacts";
+import { attributeLeadSignup } from "@/lib/leads/attribution";
 
 /**
  * First sign-in of an invitee the signup trigger already joined to a
@@ -13,7 +14,9 @@ export async function finishInviteeSignup(userId: string): Promise<void> {
   try {
     const admin = createAdminClient();
     const { data: memberships } = await admin.from("workspace_members").select("role").eq("user_id", userId);
+    // Owners finish in `completeOnboarding`, which attributes a lead magnet signup there.
     if (!memberships?.length || memberships.some((m) => m.role === "owner")) return;
+    await attributeLeadSignup(userId);
 
     const { data: updated } = await admin
       .from("profiles")

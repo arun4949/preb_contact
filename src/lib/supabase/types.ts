@@ -443,6 +443,155 @@ export type Database = {
           },
         ]
       }
+      lead_share_events: {
+        Row: {
+          created_at: string
+          id: number
+          kind: string
+          meta: Json
+          share_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          kind: string
+          meta?: Json
+          share_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          kind?: string
+          meta?: Json
+          share_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_share_events_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "lead_shares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_shares: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string
+          download_count: number
+          failed_attempts: number
+          first_opened_at: string | null
+          id: string
+          last_seen_at: string | null
+          lead_company: string | null
+          lead_email: string | null
+          lead_linkedin_url: string
+          lead_name: string
+          list_id: string
+          locked_until: string | null
+          owner_id: string
+          popup_shown_at: string | null
+          revoked_at: string | null
+          signed_up_at: string | null
+          signed_up_user_id: string | null
+          token: string
+          token_hash: string
+          unlocked_at: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by: string
+          download_count?: number
+          failed_attempts?: number
+          first_opened_at?: string | null
+          id?: string
+          last_seen_at?: string | null
+          lead_company?: string | null
+          lead_email?: string | null
+          lead_linkedin_url: string
+          lead_name: string
+          list_id: string
+          locked_until?: string | null
+          owner_id: string
+          popup_shown_at?: string | null
+          revoked_at?: string | null
+          signed_up_at?: string | null
+          signed_up_user_id?: string | null
+          token: string
+          token_hash: string
+          unlocked_at?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string
+          download_count?: number
+          failed_attempts?: number
+          first_opened_at?: string | null
+          id?: string
+          last_seen_at?: string | null
+          lead_company?: string | null
+          lead_email?: string | null
+          lead_linkedin_url?: string
+          lead_name?: string
+          list_id?: string
+          locked_until?: string | null
+          owner_id?: string
+          popup_shown_at?: string | null
+          revoked_at?: string | null
+          signed_up_at?: string | null
+          signed_up_user_id?: string | null
+          token?: string
+          token_hash?: string
+          unlocked_at?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_shares_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_shares_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: true
+            referencedRelation: "lists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_shares_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_shares_signed_up_user_id_fkey"
+            columns: ["signed_up_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_shares_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       list_contacts: {
         Row: {
           batch_id: string | null
@@ -1073,6 +1222,7 @@ export type Database = {
           created_at: string
           current_period_end: string | null
           id: string
+          kind: string
           low_credits_notified_at: string | null
           name: string
           owner_id: string
@@ -1089,6 +1239,7 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           id?: string
+          kind?: string
           low_credits_notified_at?: string | null
           name: string
           owner_id: string
@@ -1105,6 +1256,7 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           id?: string
+          kind?: string
           low_credits_notified_at?: string | null
           name?: string
           owner_id?: string

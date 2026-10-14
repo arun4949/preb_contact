@@ -15,6 +15,7 @@ import {
   CONTACT_KINDS,
   countPendingOfKind,
   countUpstreamRows,
+  internalWorkspaceIds,
   log,
   logError,
   minutesAgo,
@@ -67,11 +68,14 @@ export async function dispatch(admin: Admin): Promise<DispatchSummary> {
     .order("updated_at", { ascending: true })
     .limit(5);
 
-  for (const list of [...(active ?? []), ...(retry ?? [])]) {
+  const lists = [...(active ?? []), ...(retry ?? [])];
+  const internal = await internalWorkspaceIds(admin, lists.map((l) => l.workspace_id));
+
+  for (const list of lists) {
     if (summary.rateLimited || summary.upstreamPaused) break;
     summary.lists += 1;
     try {
-      await dispatchList(admin, list, hook, summary);
+      await dispatchList(admin, list, hook, summary, internal.has(list.workspace_id));
     } catch (error) {
       logError("dispatch.list_failed", error, { listId: list.id });
     }
@@ -79,7 +83,7 @@ export async function dispatch(admin: Admin): Promise<DispatchSummary> {
   return summary;
 }
 
-async function dispatchList(admin: Admin, list: ListRow, hook: string, summary: DispatchSummary) {
+async function dispatchList(admin: Admin, list: ListRow, hook: string, summary: DispatchSummary, isInternal: boolean) {
   let status = list.status;
 
   // Row limit: how many more rows may go out.
@@ -97,7 +101,8 @@ async function dispatchList(admin: Admin, list: ListRow, hook: string, summary: 
     if (pendingCount === 0) break;
 
     // Credits: the list may spend the workspace balance plus its own hold.
-    const spendable = await spendableCredits(admin, list);
+    // Internal (Preb outreach) lists are measured, never charged, so they never pause.
+    const spendable = isInternal ? Number.POSITIVE_INFINITY : await spendableCredits(admin, list);
     if (spendable <= 0) {
       if (status !== "paused_credits") {
         const { data: updated } = await admin

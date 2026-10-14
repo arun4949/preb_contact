@@ -59,6 +59,22 @@ export async function ownHold(admin: Admin, listId: string): Promise<number> {
   return (data ?? []).reduce((sum, h) => sum + h.amount, 0);
 }
 
+/**
+ * Internal workspaces (`workspaces.kind = 'internal'`, the Preb outreach
+ * workspace behind the lead magnet) are never charged: the dispatcher treats
+ * their balance as unlimited and `settle_batch` only records the spend.
+ */
+export async function internalWorkspaceIds(admin: Admin, ids: readonly string[]): Promise<Set<string>> {
+  const unique = [...new Set(ids)];
+  if (unique.length === 0) return new Set();
+  const { data } = await admin.from("workspaces").select("id").in("id", unique).eq("kind", "internal");
+  return new Set((data ?? []).map((w) => w.id));
+}
+
+export async function isInternalWorkspace(admin: Admin, workspaceId: string): Promise<boolean> {
+  return (await internalWorkspaceIds(admin, [workspaceId])).has(workspaceId);
+}
+
 /** Credits the list may still spend: workspace availability plus its own reservation. */
 export async function spendableCredits(admin: Admin, list: Pick<ListRow, "id" | "workspace_id">): Promise<number> {
   const [{ data: available }, hold] = await Promise.all([

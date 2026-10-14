@@ -8,9 +8,11 @@ export interface ListPausedProps {
   listName: string;
   processed: number;
   remaining: number;
+  /** Where the "list page" link goes; defaults to the list page. */
+  href?: string;
 }
 
-export function ListPausedEmail({ firstName, listId, listName, processed, remaining }: ListPausedProps) {
+export function ListPausedEmail({ firstName, listId, listName, processed, remaining, href }: ListPausedProps) {
   const n = (v: number) => v.toLocaleString("en-US");
   return (
     <EmailLayout preview={`${listName} is paused because your workspace is out of credits`}>
@@ -25,7 +27,7 @@ export function ListPausedEmail({ firstName, listId, listName, processed, remain
       </Button>
       <Text style={emailStyles.footnote}>
         Everything enriched so far is saved on the{" "}
-        <a href={appUrl(`/lists/${listId}`)} style={{ color: "inherit" }}>
+        <a href={appUrl(href ?? `/lists/${listId}`)} style={{ color: "inherit" }}>
           list page
         </a>
         .

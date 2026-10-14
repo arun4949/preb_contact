@@ -11,6 +11,7 @@ import {
   RiMegaphoneLine,
   RiPulseLine,
   RiUserForbidLine,
+  RiUserStarLine,
   RiSettings3Line, RiTeamLine } from "@remixicon/react";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Dropdown, DropdownDivider, DropdownGroup, DropdownItem, DropdownPopover, DropdownTrigger } from "@/components/base/dropdown/dropdown";
@@ -125,6 +126,15 @@ export function AccountDropdown({ name, email, avatarUrl, workspaceName, isAdmin
               >
                 <RiPulseLine className="size-5 text-foreground-icon-secondary" aria-hidden />
                 <span className="text-body-medium">Ops</span>
+              </DropdownItem>
+              <DropdownItem
+                onSelect={() => {
+                  setOpen(false);
+                  router.push("/admin/leads");
+                }}
+              >
+                <RiUserStarLine className="size-5 text-foreground-icon-secondary" aria-hidden />
+                <span className="text-body-medium">Leads</span>
               </DropdownItem>
               <DropdownItem
                 onSelect={() => {
