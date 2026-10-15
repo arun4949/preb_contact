@@ -6,6 +6,7 @@ import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { PhoneField } from "@/components/application/phone-field/phone-field";
 import { completeOnboarding, type OnboardingState } from "./actions";
+import { newMetaEventId, trackMetaEvent } from "@/lib/meta/client";
 
 export type OnboardingMode = "first_login" | "no_workspace";
 
@@ -33,6 +34,8 @@ export interface OnboardingFormProps {
 export function OnboardingForm({ mode, defaultName, defaultWorkspace, defaultPhone, defaultCountry }: OnboardingFormProps) {
   const [state, action, pending] = useActionState<OnboardingState, FormData>(completeOnboarding, { status: "idle" });
   const [phoneValid, setPhoneValid] = useState(true);
+  // One id per form instance, shared by the browser pixel and the server event (deduplication).
+  const [metaEventId] = useState(newMetaEventId);
   const copy = COPY[mode];
   const done = state.status === "done";
   const phoneError = state.status === "error" && state.field === "phone" ? state.message : null;
@@ -48,9 +51,12 @@ export function OnboardingForm({ mode, defaultName, defaultWorkspace, defaultPho
   // Full navigation (not router.push): the app shell is a different layout
   // group and must render from a fresh tree with the new workspace.
   useEffect(() => {
+    if (!done) return;
+    // Meta Ads: browser half of the signup conversion; the action sent the server half with the same id.
+    if (mode === "first_login") trackMetaEvent("CompleteRegistration", {}, metaEventId);
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- intentional hard navigation, see actions.ts
-    if (done) window.location.assign("/lists");
-  }, [done]);
+    window.location.assign("/lists");
+  }, [done, metaEventId, mode]);
 
   return (
     <div className="flex w-full max-w-[440px] flex-col rounded-3xl border border-border-button-default bg-background-primary-default p-6 shadow-xs sm:p-8">
@@ -66,6 +72,7 @@ export function OnboardingForm({ mode, defaultName, defaultWorkspace, defaultPho
       ) : null}
 
       <form action={action} onSubmit={guardSubmit} className="mt-6 flex flex-col gap-4">
+        <input type="hidden" name="meta_event_id" value={metaEventId} />
         <Input name="full_name" label="Full name" placeholder="Ada Lovelace" defaultValue={defaultName} autoComplete="name" isRequired />
         <Input
           name="workspace_name"

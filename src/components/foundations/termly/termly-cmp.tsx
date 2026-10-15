@@ -5,7 +5,12 @@ import { usePathname } from "next/navigation";
 
 declare global {
   interface Window {
-    Termly?: { initialize: () => void };
+    Termly?: {
+      initialize: () => void;
+      /** Event API: `consent` fires on every consent change (see meta-pixel.tsx). */
+      on?: (event: "consent" | "initialized", handler: (payload: unknown) => void) => void;
+      getConsentState?: () => unknown;
+    };
     displayPreferenceModal?: () => void;
   }
 }
@@ -39,6 +44,8 @@ export function TermlyCMP({ websiteUUID, autoBlock, masterConsentsOrigin }: Term
     const script = document.createElement("script");
     script.src = scriptSrc;
     script.async = true;
+    // Lets consent-gated integrations (Meta Pixel) subscribe to Termly's events once it exists.
+    script.onload = () => window.dispatchEvent(new Event("termly:loaded"));
     document.head.appendChild(script);
   }, [scriptSrc]);
 

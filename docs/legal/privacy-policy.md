@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Last updated:** [date of publication]
-**Version:** 1.1 (2026-10-14: sample lists for prospects)
+**Version:** 1.2 (2026-10-15: advertising measurement with Meta)
 
 Preb is a contact data enrichment service for recruiting teams. This Privacy Policy explains how Kranz & Gupta, Indiepal GbR ("Preb", "we", "us") collects, uses, shares and protects personal data when you visit preb.co, create an account, use the Preb application, receive our emails or contact our support.
 
@@ -109,7 +109,8 @@ The GDPR requires us to name a legal basis for every purpose. The table below ap
 | Finding and fixing errors, monitoring availability and performance | Usage and log data | Our legitimate interest in running a reliable service (Art. 6 (1) (f) GDPR) |
 | Answering support requests and collecting product feedback | Support and feedback data | Performance of our contract (Art. 6 (1) (b) GDPR) and our legitimate interest in improving Preb (Art. 6 (1) (f) GDPR) |
 | Showing a consent banner and remembering your cookie choices | Consent records | Our legal obligation to obtain and document consent (Art. 6 (1) (c) GDPR, § 25 TDDDG) |
-| Website analytics and non-essential cookies, where used | Usage data, cookie identifiers | Your consent (Art. 6 (1) (a) GDPR, § 25 TDDDG), which you can withdraw at any time |
+| Measuring our advertising: understanding whether a visit, sign-up or purchase followed one of our ads on Meta platforms (Facebook, Instagram) | Cookie identifiers, click identifier, IP address, browser details, and a hashed form of your email address and user ID at sign-up and purchase | Your consent (Art. 6 (1) (a) GDPR, § 25 TDDDG), which you can withdraw at any time, see Section 5 |
+| Website analytics and other non-essential cookies, where used | Usage data, cookie identifiers | Your consent (Art. 6 (1) (a) GDPR, § 25 TDDDG), which you can withdraw at any time |
 | Preparing a free sample list for a prospective customer: enriching a few profiles the prospect names, showing the prospect the result behind a link and an access code, and recording whether the link was opened, unlocked, downloaded and whether the prospect signed up | Name, company and LinkedIn profile of the prospect, optionally their email address; names, employers and LinkedIn profiles of the people in the sample and the results found; engagement events without IP address or device data | Our legitimate interest in demonstrating the service to business prospects and in following up on our outreach (Art. 6 (1) (f) GDPR). For the people in the sample, see Section 12 |
 | Internal administration: our founders viewing user, workspace and operations data to run the service, send announcements and resolve incidents | Account data, usage data, aggregated operations data | Performance of our contract (Art. 6 (1) (b) GDPR) and our legitimate interest in operating the service (Art. 6 (1) (f) GDPR) |
 | Responding to legal requests, defending claims, enforcing our terms | Any of the above as needed | Our legal obligations (Art. 6 (1) (c) GDPR) and our legitimate interest in protecting our rights (Art. 6 (1) (f) GDPR) |
@@ -133,7 +134,9 @@ We use a small number of cookies and browser storage entries.
 
 **Consent-based.** Analytics, measurement or marketing cookies are only set after you accept them in the consent banner. Our consent manager blocks such scripts until you decide. You can change or withdraw your choice at any time through the "Cookie preferences" link in the account menu and in the website footer. We honour the Global Privacy Control (GPC) browser signal as an opt-out from non-essential cookies.
 
-We currently use no analytics or marketing cookies at all. If we introduce any, we will list them in the Cookie Policy and set them only after your consent.
+**Advertising measurement (Meta).** If you accept advertising cookies, we use the Meta Pixel and the Meta Conversions API of Meta Platforms Ireland Limited, Merrion Road, Dublin 4, Ireland ("Meta") on preb.co and app.preb.co. The pixel sets the cookies `_fbp` (identifies your browser, 90 days) and `_fbc` (stores the click identifier of a Meta ad you clicked, 90 days) and reports page views to Meta. When you request a sign-in link for a new account, finish creating your workspace, open the checkout or pay for your first subscription, we additionally send Meta a server-side event with the event type, the time, the page, your IP address and browser details, the `_fbp` and `_fbc` values, the plan and amount where applicable, and your email address and user ID in hashed form (SHA-256) so that Meta can match the event to an ad click. We use this data only to measure and improve our advertising on Meta platforms. Meta is a joint controller with us for the collection and transmission of this data under Art. 26 GDPR, based on Meta's Controller Addendum, and sole controller for its further processing, which is described in Meta's privacy policy at facebook.com/privacy/policy. Meta is certified under the EU-US Data Privacy Framework. Nothing is sent to Meta, in the browser or from our servers, until you accept advertising cookies in the consent banner, and you can withdraw your consent at any time through "Cookie preferences", which stops all further transmission.
+
+We use no other analytics or marketing cookies. If we introduce any, we will list them in the Cookie Policy and set them only after your consent.
 
 A full list of cookies with names, purposes and lifetimes is published in our Cookie Policy.
 
@@ -152,6 +155,7 @@ We share personal data only with service providers that help us run Preb, and on
 | Google LLC (USA) | Google sign-in (only if you choose it) | Name, email, profile picture, Google account ID | USA |
 | Cordnet OÜ, trading as Featurebase (Estonia) | Support chat, help center, feedback board | Data listed in Section 3.5 and the content of your messages | Germany (hosting), Estonia |
 | Termly LLC (USA) | Cookie consent banner and consent records | Consent choices, truncated IP address, browser details | USA |
+| Meta Platforms Ireland Limited (Ireland) and Meta Platforms, Inc. (USA) | Advertising measurement (only with your consent, see Section 5) | Cookie and click identifiers, IP address, browser details, event data, hashed email address and user ID | Ireland and USA |
 | Specialist B2B contact data providers | Finding and verifying work emails, personal emails, phone numbers and professional profile data for Customer Content | Contact names, company names and domains, LinkedIn URLs, email addresses, together with technical reference IDs | USA and EU, see our Sub-processor List |
 
 Our enrichment data providers process Contact data only on our instructions and only to deliver the result our Customer requested. They are named, together with their own sub-processors and locations, in our Sub-processor List, which forms part of the DPA.
@@ -174,6 +178,7 @@ The European Commission has decided that companies certified under the EU-US Dat
 |---|---|
 | Vercel, Resend, Stripe, Google | EU-US Data Privacy Framework (and UK Extension), supplemented by Standard Contractual Clauses in the provider's data processing agreement |
 | Termly | EU-US Data Privacy Framework as stated by the provider, supplemented by Standard Contractual Clauses |
+| Meta | EU-US Data Privacy Framework (Meta Platforms, Inc.), supplemented by Standard Contractual Clauses in Meta's data transfer addendum |
 | Supabase | Standard Contractual Clauses (Module 2 and Module 3) included in the Supabase data processing addendum |
 | Enrichment data providers | Standard Contractual Clauses included in their data processing agreements |
 | Featurebase | No third-country transfer for hosting (Germany). Its own sub-processors are covered by Standard Contractual Clauses |

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { isLiveMode, stripe } from "@/lib/stripe/client";
 import { planForPriceId, planKeyFromLookup } from "@/lib/stripe/catalogue";
@@ -18,6 +18,8 @@ import { notifyWorkspace } from "@/lib/notifications/emit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/types";
 import { log, logError, type Admin } from "@/lib/jobs/shared";
+import { sendMetaEventDetached } from "@/lib/meta/capi";
+import { isAdsConsentValue, META_CONSENT_METADATA_KEY } from "@/lib/meta/consent";
 
 export const maxDuration = 60;
 
@@ -135,6 +137,31 @@ async function onInvoicePaid(admin: Admin, invoice: Stripe.Invoice) {
     roles: ["owner", "admin"],
     dedupeKey: `credits_granted:${invoice.id}`,
   });
+  if (invoice.billing_reason === "subscription_create") after(() => sendPurchaseEvent(admin, wsId, invoice, decision.plan.key));
+}
+
+/**
+ * Meta Ads: the first paid invoice of a subscription is the Purchase
+ * conversion. Consent and browser ids were stored in the subscription
+ * metadata at checkout; without the consent flag nothing is sent. The event id
+ * is derived from the invoice so Stripe retries never double count.
+ */
+async function sendPurchaseEvent(admin: Admin, wsId: string, invoice: Stripe.Invoice, planKey: string) {
+  const metadata = invoice.parent?.subscription_details?.metadata ?? {};
+  const consent = isAdsConsentValue(metadata[META_CONSENT_METADATA_KEY]);
+  const { data: ws } = await admin.from("workspaces").select("owner_id").eq("id", wsId).maybeSingle();
+  const { data: owner } = ws ? await admin.from("profiles").select("email").eq("id", ws.owner_id).maybeSingle() : { data: null };
+  await sendMetaEventDetached(
+    {
+      eventName: "Purchase",
+      eventId: `purchase:${invoice.id}`,
+      value: invoice.amount_paid / 100,
+      currency: invoice.currency,
+      customData: { content_name: planKey },
+      userData: { email: owner?.email ?? null, externalId: ws?.owner_id ?? null, fbp: metadata.meta_fbp ?? null, fbc: metadata.meta_fbc ?? null },
+    },
+    consent,
+  );
 }
 
 async function onSubscription(admin: Admin, sub: Stripe.Subscription, deleted: boolean) {

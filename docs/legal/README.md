@@ -8,7 +8,7 @@ Copy rules: no em dashes, en dashes or " - " as punctuation (AGENTS.md). The enr
 
 | Document | File | Status |
 |---|---|---|
-| Privacy Policy | `privacy-policy.md` | v1.1 (2026-10-14): § 2 exception, § 4 purpose row, § 8 retention row and § 12 "Sample lists prepared by Preb" for the lead magnet funnel. Re-paste `/privacy` in Framer |
+| Privacy Policy | `privacy-policy.md` | v1.2 (2026-10-15): § 4 purpose row, § 5 "Advertising measurement (Meta)", § 6 recipient row and § 7 transfer row for the Meta Pixel and Conversions API. Re-paste `/privacy` in Framer |
 | Terms of Service (B2B only, incl. acceptable use, credits, refunds) | `terms-of-service.md` | v1.1 (2026-10-14): § 5 "Sample lists" clause for the lead magnet funnel. Re-paste `/terms` in Framer |
 | Data Processing Agreement (Art. 28 GDPR, SCCs by reference, CCPA service provider terms) | `dpa.md` | Draft v1.0, awaiting founder review |
 | Sub-processor List (names the enrichment provider and its sub-processors) | `sub-processors.md` | Draft v1.0, awaiting founder review |
@@ -35,7 +35,7 @@ Paste-ready HTML for the Framer Embeds (2026-10-13): `privacy-policy.html` (/pri
 
 - `[date of publication]` at the top of every text: set when the pages are built.
 - Confirm the DPF status of Supabase and Termly on dataprivacyframework.gov before publishing. Vercel, Resend, Stripe and Google are certified per their own pages.
-- Answered 2026-10-09: no analytics or marketing tools on the website so far (privacy policy says so); no Sentry (removed from all texts); DPA Annex 2 statements on 2FA and restore tests confirmed by the CTO.
+- Answered 2026-10-09: no analytics tools on the website; no Sentry (removed from all texts); DPA Annex 2 statements on 2FA and restore tests confirmed by the CTO. Superseded 2026-10-15 for marketing: the Meta Pixel and Conversions API are now used with consent (privacy policy v1.2).
 
 ## Code and process changes the policy depends on
 
@@ -46,7 +46,7 @@ The policy describes the target state. These items must be done before or at pub
 3. ~~Deletion~~ Done 2026-10-09: self-service Delete account (Profile) and Delete workspace (Members, owner only). Privacy requests go to hello@preb.co (CTO decision 2026-10-09, no separate privacy mailbox).
 4. ~~`email_sends` retention~~ Done 2026-10-09: deleted with the account and purged after 12 months by the daily job.
 5. ~~Suppression list~~ Done 2026-10-09 (migration 0018): `/admin/suppressions` for founders; suppressed people are skipped at upload, provider results that match are discarded, stored results are cleared, rows show "Suppressed" and export empty.
-6. Termly: maintain the cookie list, enable GPC handling, confirm autoBlock covers the Featurebase widget and any website analytics. Add a "Cookie preferences" link to the website footer. Finding 2026-10-14: autoBlock is not effective in the app. The resource blocker is injected after the app bundle (Termly warns "ResourceBlocker is not the first script"), and a fresh visitor gets the Featurebase cookie `featurebase-anon-id-…` (1 year) before any consent. Loading the blocker first (`beforeInteractive`) was tried and reverted: it loaded Termly three times, caused a hydration error and blocked Cloudflare Turnstile, which breaks the opt-out form. Open decision for the founders: either categorise Turnstile as essential in the Termly dashboard and retry the early load, or mount the Featurebase messenger only after functional consent.
+6. Termly: maintain the cookie list, enable GPC handling, confirm autoBlock covers the Featurebase widget and any website analytics. Add a "Cookie preferences" link to the website footer. Finding 2026-10-14: autoBlock is not effective in the app. The resource blocker is injected after the app bundle (Termly warns "ResourceBlocker is not the first script"), and a fresh visitor gets the Featurebase cookie `featurebase-anon-id-…` (1 year) before any consent. Loading the blocker first (`beforeInteractive`) was tried and reverted: it loaded Termly three times, caused a hydration error and blocked Cloudflare Turnstile, which breaks the opt-out form. Termly's cookie scan (13 Oct 2026) classifies all 9 cookies as Essential, including the five Featurebase ones (`featurebase-anon-id-…`, `featurebase-anon-id`, `featurebase-interacted`, `fb:…:sdkFlags:v1`, `featurebase-js:org:…`), and finds nothing in Advertising, Analytics, Performance or Social. So today autoBlock has nothing to hold back and the warning has no practical effect. Turnstile sets no cookies and is not in that report. Open decision for the founders: keep Featurebase as Essential (then no code change is needed), or classify it as Functional, which requires loading the messenger only after consent (code change in the app, not the early Termly load).
 7. Link Privacy Policy, Terms and Imprint from every page (website and app) and enter the privacy URL in the Google OAuth consent screen. App side done: the login card and the auth footer link to `https://preb.co/terms` and `https://preb.co/privacy` (2026-10-10, the website and legal pages are built in Framer by Leon on preb.co; the app moves to app.preb.co, see `docs/setup_manual.md` M11). Open: publish the pages in Framer, and the Google console entry.
 8. ~~Featurebase data minimisation~~ Done 2026-10-09: the Stripe customer id is no longer sent to Featurebase.
 9. ~~Two-factor authentication~~ Confirmed by the CTO 2026-10-09.
@@ -57,3 +57,4 @@ The policy describes the target state. These items must be done before or at pub
 ## Reference material reviewed
 
 FullEnrich privacy policy, DPA (incl. Appendix 1 security measures), sub-processor list and cookie policy as of October 2026, used for structure only.
+13. Meta Ads conversion tracking (2026-10-15): Meta Pixel on preb.co and app.preb.co plus Conversions API events (Lead, CompleteRegistration, InitiateCheckout, Purchase), all gated by Termly's Advertising category and a first-party consent cookie (`preb_ads_consent`). Privacy policy v1.2 updated (§ 4, § 5, § 6, § 7); Leon re-pastes `/privacy` in Framer. Still to do in Termly: run a new cookie scan after the pixel is live so `_fbp` and `_fbc` appear under Advertising in the Cookie Policy, and accept Meta's Controller Addendum in Business Settings (joint controllership, Art. 26 GDPR) before the first campaign.

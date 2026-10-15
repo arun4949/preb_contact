@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { getProfile, getSessionContext } from "@/lib/supabase/queries";
 import { createOwnWorkspace } from "@/lib/workspace/create";
@@ -10,6 +11,8 @@ import { firstNameFor } from "@/lib/email/name";
 import { normalizePhone } from "@/lib/phone/phone";
 import { WelcomeEmail } from "@/lib/email/templates/welcome";
 import { attributeLeadSignup } from "@/lib/leads/attribution";
+import { sendMetaEvent } from "@/lib/meta/capi";
+import { isMetaEventId } from "@/lib/meta/client";
 
 export interface OnboardingState {
   /** `done` → the form performs a full navigation to /lists (see onboarding-form.tsx). */
@@ -108,6 +111,12 @@ export async function completeOnboarding(_prev: OnboardingState, formData: FormD
     await Promise.all([welcome(), subscribeContact({ email: profile.email, fullName })]);
     // Lead magnet: credit the share this signup came from (cookie set by /l/<token>/go).
     await attributeLeadSignup(profile.id);
+    // Meta Ads: the signup conversion, once per new owner. Same event id as the
+    // browser pixel event fired by the form, so Meta deduplicates the pair.
+    const metaEventId = formData.get("meta_event_id");
+    if (session && isMetaEventId(metaEventId)) {
+      after(() => sendMetaEvent({ eventName: "CompleteRegistration", eventId: metaEventId, userData: { email: profile.email, externalId: profile.id } }));
+    }
   }
 
   // No `redirect()` here: the action runs under the (auth) layout and the

@@ -5,6 +5,8 @@ import { Suspense } from "react";
 import "@/styles/globals.css";
 import { Providers } from "./providers";
 import { TermlyCMP } from "@/components/foundations/termly/termly-cmp";
+import { MetaPixel } from "@/components/foundations/meta/meta-pixel";
+import { metaPixelId } from "@/lib/meta/config";
 
 /* Termly CMP website (shared with the old Preb app's Termly instance). */
 const TERMLY_WEBSITE_UUID = "3c682d29-57d4-46b6-b071-9e88af258653";
@@ -39,6 +41,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Suspense fallback={null}>
           <TermlyCMP websiteUUID={TERMLY_WEBSITE_UUID} autoBlock />
         </Suspense>
+        {/* Consent-gated by Termly (advertising); renders nothing without NEXT_PUBLIC_META_PIXEL_ID. */}
+        <MetaPixel pixelId={metaPixelId()} />
       </body>
     </html>
   );

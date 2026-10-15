@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { getSessionContext } from "@/lib/supabase/queries";
 import { appOrigin } from "@/lib/jobs/shared";
 import { getCatalogue, getCataloguePlan, type CataloguePlan } from "@/lib/stripe/catalogue";
@@ -8,6 +9,8 @@ import { createCheckoutSession, ensureCustomer } from "@/lib/stripe/checkout";
 import { createPortalSession } from "@/lib/stripe/portal";
 import { activeSubscriptionId, applySwitch, previewSwitch, type SwitchPreview } from "@/lib/stripe/subscription";
 import { getBillingOverview, type BillingOverview } from "./queries";
+import { readMetaRequestContext, sendMetaEvent } from "@/lib/meta/capi";
+import { isMetaEventId } from "@/lib/meta/client";
 
 type Result<T = undefined> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -50,7 +53,7 @@ export async function fetchPlanCatalogue(): Promise<Result<PlanCatalogue>> {
 }
 
 /** New subscribers: Stripe Checkout. Existing subscribers use `previewPlanSwitch` + `confirmPlanSwitch`. */
-export async function startCheckout(planKey: string): Promise<Result<never>> {
+export async function startCheckout(planKey: string, metaEventId?: string): Promise<Result<never>> {
   const session = await requireSession();
   if (session.role === "member") return { ok: false, error: "Only owners and admins can change the plan." };
   const plan = await getCataloguePlan(planKey);
@@ -63,16 +66,34 @@ export async function startCheckout(planKey: string): Promise<Result<never>> {
       return { ok: false, error: "You already have a subscription. Use Switch plan instead." };
     }
     const customerId = await ensureCustomer(ws, session.email);
-    const checkout = await createCheckoutSession(ws, customerId, plan, {
-      successUrl: `${BILLING_RETURN()}&checkout=success`,
-      cancelUrl: `${BILLING_RETURN()}&checkout=cancelled`,
-    });
+    // Meta Ads: the browser ids ride along in the subscription metadata so the
+    // webhook can attribute the first payment; only with advertising consent.
+    const meta = await readMetaRequestContext();
+    const checkout = await createCheckoutSession(
+      ws,
+      customerId,
+      plan,
+      { successUrl: `${BILLING_RETURN()}&checkout=success`, cancelUrl: `${BILLING_RETURN()}&checkout=cancelled` },
+      meta.consent ? { fbp: meta.fbp, fbc: meta.fbc } : null,
+    );
     url = checkout.url;
   } catch (error) {
     console.error(JSON.stringify({ scope: "billing", event: "checkout.failed", error: error instanceof Error ? error.message : String(error) }));
     return { ok: false, error: "Could not start checkout. Please try again." };
   }
   if (!url) return { ok: false, error: "Could not start checkout. Please try again." };
+  if (isMetaEventId(metaEventId)) {
+    after(() =>
+      sendMetaEvent({
+        eventName: "InitiateCheckout",
+        eventId: metaEventId,
+        value: plan.priceCents / 100,
+        currency: "USD",
+        customData: { content_name: plan.key },
+        userData: { email: session.email, externalId: session.userId },
+      }),
+    );
+  }
   redirect(url);
 }
 

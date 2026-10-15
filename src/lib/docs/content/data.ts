@@ -118,8 +118,8 @@ export const data: DocsCollection = {
       slug: "data-privacy-and-retention",
       title: "Your data and your contacts' data",
       summary: "How long Preb keeps lists and results, what people can ask for, and where to find the legal documents.",
-      keywords: ["privacy", "gdpr", "retention", "delete", "opt out", "suppressed", "processor", "dpa", "security"],
-      updated: "2026-10-13",
+      keywords: ["privacy", "gdpr", "retention", "delete", "opt out", "suppressed", "processor", "dpa", "security", "cookies", "advertising", "meta pixel"],
+      updated: "2026-10-15",
       related: ["delete-workspace-or-account", "duplicates-and-already-enriched", "faq"],
       blocks: [
         { type: "heading", text: "How long we keep things" },
@@ -137,6 +137,8 @@ export const data: DocsCollection = {
         { type: "heading", text: "People who do not want to be contacted" },
         { type: "paragraph", text: "Anyone can ask Preb not to process their data through the form at [preb.co/contact-opt-out](https://preb.co/contact-opt-out), without an account. Such a person shows up as **Suppressed** in your lists, with no data and no charge, even if another source would have a result. The [Privacy Policy](https://preb.co/privacy) explains the details." },
         { type: "callout", tone: "note", text: "If a contact writes to you instead, you can point them to that page. Preb handles the request and the row in your list changes to Suppressed." },
+        { type: "heading", text: "Cookies and advertising" },
+        { type: "paragraph", text: "Preb sets only the cookies it needs to keep you signed in. If you accept advertising cookies in the consent banner, Preb also uses the Meta Pixel to measure whether a sign-up or purchase followed one of our ads. Nothing is sent to Meta before you accept, and you can change your choice at any time with **Cookie preferences** in the account menu." },
         { type: "heading", text: "The documents" },
         { type: "list", items: [
           "[Privacy Policy](https://preb.co/privacy), what Preb stores about you and your contacts.",

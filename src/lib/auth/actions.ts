@@ -2,11 +2,13 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isRateLimited, sendEmail } from "@/lib/email/resend";
 import { MagicLinkEmail } from "@/lib/email/templates/magic-link";
 import { isAdminEmail, isFreeEmailDomain, WORK_EMAIL_MESSAGE } from "@/lib/auth/work-email";
+import { sendMetaEvent } from "@/lib/meta/capi";
 
 /**
  * Origin for auth redirects (magic link, OAuth return). Sign-in should return
@@ -78,6 +80,12 @@ export async function sendMagicLink(_prev: MagicLinkState, formData: FormData): 
   } catch (error) {
     console.error("[sendMagicLink] send failed", error instanceof Error ? error.message : error);
     return { status: "error", email, message: "We couldn't send the link right now. Please try again." };
+  }
+  // Meta: a first-time address is a Lead (server-only; the browser never learns
+  // whether the email already had an account). Runs after the response, consent-gated.
+  if (type === "signup") {
+    const eventId = `lead:${data.properties.hashed_token.slice(0, 40)}`;
+    after(() => sendMetaEvent({ eventName: "Lead", eventId, userData: { email } }));
   }
   return { status: "sent", email };
 }

@@ -14,6 +14,7 @@ import { confirmPlanSwitch, fetchPlanCatalogue, previewPlanSwitch, startCheckout
 import { formatUsd, formatUsdExact, formatUsdFine } from "@/lib/credits/money";
 import { CREDIT_COST } from "@/lib/fullenrich/mapping";
 import { cx } from "@/utils/cx";
+import { newMetaEventId, trackMetaEvent } from "@/lib/meta/client";
 
 const fmt = (n: number) => n.toLocaleString("en-US");
 /** Tick labels: 1k · 1.5k · 2k · 3k · 4k · 10k · 20k … 200k (annual: 12k … 2.4M). */
@@ -102,7 +103,10 @@ export function PlanPicker({ reason, onCancel }: PlanPickerProps) {
         else toast.error(res.error);
         return;
       }
-      const res = await startCheckout(chosen.key);
+      // Meta Ads: browser event now, server event from the action, same id (deduplicated).
+      const metaEventId = newMetaEventId();
+      trackMetaEvent("InitiateCheckout", { value: chosen.priceCents / 100, currency: "USD", content_name: chosen.key }, metaEventId);
+      const res = await startCheckout(chosen.key, metaEventId);
       // A successful call redirects the browser; only failures return.
       if (res && !res.ok) toast.error(res.error);
     });
