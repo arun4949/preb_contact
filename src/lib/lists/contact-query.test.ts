@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { csvCell, csvLine, safeFileName } from "@/lib/csv/export";
-import { parseContactQuery } from "./contact-query";
-import { contactUiStatus } from "./segments";
+import { activeFilterCount, parseContactQuery } from "./contact-query";
+import { contactUiStatus, parseSegment } from "./segments";
 
 describe("parseContactQuery", () => {
   it("falls back to defaults on garbage", () => {
@@ -18,8 +18,25 @@ describe("parseContactQuery", () => {
 
   it("accepts valid values and truncates long search terms", () => {
     const q = parseContactQuery({ page: "3", size: "100", sort: "company", dir: "desc", q: "a".repeat(200), email: "risky", phone: "found" });
-    expect(q).toMatchObject({ page: 3, pageSize: 100, sort: "company", dir: "desc", email: "risky", phone: "found" });
+    expect(q).toMatchObject({ page: 3, pageSize: 100, sort: "company", dir: "desc", email: "catch_all", phone: "found" });
     expect(q.q).toHaveLength(120);
+  });
+
+  it("knows every email level and counts active filters", () => {
+    expect(parseContactQuery({ email: "probable" }).email).toBe("probable");
+    expect(parseContactQuery({ email: "valid" }).email).toBe("valid");
+    expect(activeFilterCount({ email: "all", phone: null })).toBe(0);
+    expect(activeFilterCount({ email: "probable", phone: "not_found" })).toBe(2);
+  });
+});
+
+describe("parseSegment", () => {
+  it("accepts the download segments, maps the legacy risky alias and rejects garbage", () => {
+    expect(parseSegment("valid")).toBe("valid");
+    expect(parseSegment("catch_all")).toBe("catch_all");
+    expect(parseSegment("risky")).toBe("catch_all");
+    expect(parseSegment("probable")).toBeNull();
+    expect(parseSegment("x")).toBeNull();
   });
 });
 

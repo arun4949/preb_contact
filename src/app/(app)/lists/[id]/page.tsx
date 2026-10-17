@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { ListDetail } from "@/components/application/list-detail/list-detail";
 import { LIST_STATUS_META } from "@/components/application/list-card/list-status";
-import { extraColumns, getListContacts, getListEta, parseContactQuery } from "@/lib/lists/queries";
+import { extraColumns, getListContacts, getListEta, getListInsights, parseContactQuery } from "@/lib/lists/queries";
 import { getSessionContext } from "@/lib/supabase/queries";
 import { createClient } from "@/utils/supabase/server";
 
@@ -25,12 +25,17 @@ export default async function ListDetailPage({ params, searchParams }: PageProps
 
   const query = parseContactQuery(await searchParams);
   const running = LIST_STATUS_META[list.status].running;
-  const [contacts, eta] = await Promise.all([getListContacts(list.id, query), running ? getListEta(list) : Promise.resolve({ seconds: null, rowsPerMinute: null })]);
+  const [contacts, insights, eta] = await Promise.all([
+    getListContacts(list.id, query),
+    getListInsights(list.id),
+    running ? getListEta(list) : Promise.resolve({ seconds: null, rowsPerMinute: null }),
+  ]);
 
   return (
     <ListDetail
       list={list}
       contacts={contacts}
+      insights={insights}
       query={query}
       eta={eta}
       extras={extraColumns(list)}

@@ -1,5 +1,5 @@
 // Generated from the Supabase project via MCP `generate_typescript_types`
-// after migration 0021 (opt_out_requests). Regenerate after every migration.
+// after migration 0025 (list_result_insights). Regenerate after every migration.
 export type Json =
   | string
   | number
@@ -1318,6 +1318,7 @@ export type Database = {
       is_workspace_admin: { Args: { ws: string }; Returns: boolean }
       is_workspace_member: { Args: { ws: string }; Returns: boolean }
       is_free_email_domain: { Args: { p_email: string }; Returns: boolean }
+      list_result_insights: { Args: { p_list_id: string }; Returns: Json }
       recompute_list_counters: {
         Args: { p_list_id: string }
         Returns: undefined

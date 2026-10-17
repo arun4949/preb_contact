@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RiFilter3Line, RiLayoutColumnLine, RiSearchLine } from "@remixicon/react";
-import { Badge } from "@/components/base/badges/badge";
-import { Button } from "@/components/base/buttons/button";
+import { RiLayoutColumnLine, RiSearchLine } from "@remixicon/react";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { Dropdown, DropdownDivider, DropdownGroup, DropdownItem, DropdownPopover, DropdownTrigger } from "@/components/base/dropdown/dropdown";
 import { Input } from "@/components/base/input/input";
@@ -21,13 +19,10 @@ export interface ContactsToolbarProps {
   onResetColumns: () => void;
   extras: string[];
   enrichFields: string[];
-  /** Below `lg`: opens the filter sheet. */
-  onOpenFilters: () => void;
-  activeFilters: number;
 }
 
-/** Search (debounced → URL) · Column settings · Filters (mobile). */
-export function ContactsToolbar({ total, q, onSearch, visibility, onToggleColumn, onResetColumns, extras, enrichFields, onOpenFilters, activeFilters }: ContactsToolbarProps) {
+/** Search (debounced → URL) · Column settings. The filter chips sit in their own row below. */
+export function ContactsToolbar({ total, q, onSearch, visibility, onToggleColumn, onResetColumns, extras, enrichFields }: ContactsToolbarProps) {
   const [search, setSearch] = useState(q);
   const [columnsOpen, setColumnsOpen] = useState(false);
 
@@ -62,11 +57,6 @@ export function ContactsToolbar({ total, q, onSearch, visibility, onToggleColumn
         />
         <Kbd className="pointer-events-none absolute end-2.5 top-1/2 hidden -translate-y-1/2 sm:inline-flex">/</Kbd>
       </div>
-
-      <Button variant="secondary" leadingIcon={RiFilter3Line} className="lg:hidden" onClick={onOpenFilters}>
-        Filters
-        {activeFilters > 0 ? <Badge className="ms-1">{activeFilters}</Badge> : null}
-      </Button>
 
       <Dropdown isOpen={columnsOpen} onOpenChange={setColumnsOpen}>
         <DropdownTrigger

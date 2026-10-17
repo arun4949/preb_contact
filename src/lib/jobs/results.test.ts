@@ -36,7 +36,7 @@ describe("results", () => {
     expect(patch.work_email).toBeNull();
   });
 
-  it("keeps a catch-all email as a found (risky) result", () => {
+  it("keeps a catch-all email as a found result", () => {
     const patch = contactPatchFromRecord(catchAllRecord);
     expect(patch.status).toBe("enriched");
     expect(patch.work_email_status).toBe("CATCH_ALL");

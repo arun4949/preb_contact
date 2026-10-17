@@ -1,7 +1,7 @@
 # Terms of Service
 
 **Last updated:** [date of publication]
-**Version:** 1.1 (2026-10-14: sample lists for prospects)
+**Version:** 1.2 (2026-10-17: email levels Valid, Probably valid and Catch-all; connect rate signals)
 
 These Terms of Service (the "Terms") are a contract between Kranz & Gupta, Indiepal GbR, Brunnenstr. 11, 53123 Bonn, Germany ("Preb", "we", "us") and the business that creates or uses a Preb workspace (the "Customer", "you"). They govern the use of the Preb website and application at preb.co and all related services (the "Service").
 
@@ -32,7 +32,7 @@ The Data Processing Agreement (the "DPA") and the Privacy Policy form part of th
 
 **2.2 Where Results come from.** Preb does not keep its own database of people. Results are obtained on your behalf from specialist contact data providers that compile and verify publicly available professional information. The providers are named in our Sub-processor List.
 
-**2.3 Result quality.** Email addresses are shown as Valid (deliverable or high probability), Risky (the mail server accepts every address, so a bounce is possible) or Not found. Phone numbers carry a line type and, where available, a confidence that the number belongs to the person. Preb works on a best-effort basis. We do not guarantee that a Result is found, that it is accurate, current or deliverable, or that a particular find rate is reached. Data about people changes daily, and Results reflect the sources at the time of the request.
+**2.3 Result quality.** Email addresses are shown as Valid (the mailbox was confirmed), Probably valid (the mail server accepts every address, but additional checks point to a real mailbox), Catch-all (the mail server accepts every address, so a bounce is possible) or Not found. Phone numbers carry a line type and, where available, a confidence that the number belongs to the person and a connect rate signal. Bounce rates and connect rates shown in the Service are estimates, not guarantees. Preb works on a best-effort basis. We do not guarantee that a Result is found, that it is accurate, current or deliverable, or that a particular find rate is reached. Data about people changes daily, and Results reflect the sources at the time of the request.
 
 **2.4 Changes to the Service.** We develop the Service continuously. We may add, change or remove features, limits and data providers. We will not remove a core feature you pay for during a paid period without offering you the choice to cancel with a pro-rated refund of the fees for the remaining period.
 
@@ -74,7 +74,7 @@ New Workspaces created with a work email address receive 50 Credits that expire 
 
 | Result | Credits |
 |---|---|
-| Work email address (Valid or Risky) | 2 |
+| Work email address (Valid, Probably valid or Catch-all) | 2 |
 | Personal email address | 6 |
 | Mobile phone number | 20 |
 | Person identified from an email address (reverse lookup), charged only when a person is found | 2 |
@@ -82,7 +82,7 @@ New Workspaces created with a work email address receive 50 Credits that expire 
 | Landline or voice-over-IP number | 0 |
 | Job title, employer, location and profile data returned with a Result | 0 |
 
-A Risky email address is charged, because the source has confirmed the mailbox exists but the domain accepts all addresses. A contact that your Workspace already enriched within the last 90 days with the same fields is served again free of charge.
+A Catch-all email address is charged, because the source has verified it as far as the receiving mail server allows, even though the domain accepts all addresses. A contact that your Workspace already enriched within the last 90 days with the same fields is served again free of charge.
 
 **6.2 Estimates and holds.** Before a List starts, the application shows a typical and a maximum cost. We reserve the typical amount from your balance while the List runs and release whatever is not used. If a running List exhausts your balance, it pauses and continues automatically once Credits are available. If you stop a List, contacts already in progress finish and are charged; nothing new is submitted.
 

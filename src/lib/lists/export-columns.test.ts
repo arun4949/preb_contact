@@ -33,8 +33,14 @@ describe("export columns", () => {
     expect(preb["Preb: Phone"]).toBe("+44 7700 900123");
     expect(preb["Preb: Phone type"]).toBe("Mobile");
     expect(preb["Preb: Work email"]).toBe("ada@example.com");
-    expect(preb["Preb: Work email status"]).toBe("Risky (catch-all)");
+    expect(preb["Preb: Work email status"]).toBe("Catch-all");
     expect(preb["Preb: Status"]).toBe("Enriched");
     expect(preb["Preb: Credits"]).toBe(28);
+  });
+  it("labels a high probability email as probably valid and leaves missing emails blank", () => {
+    const cells = rowCells({ ...row, work_email_status: "HIGH_PROBABILITY", personal_email: null } as ContactRow, []);
+    const preb = Object.fromEntries(PREB_COLUMNS.map((h, i) => [h, cells[i]]));
+    expect(preb["Preb: Work email status"]).toBe("Probably valid");
+    expect(preb["Preb: Personal email status"]).toBe("");
   });
 });

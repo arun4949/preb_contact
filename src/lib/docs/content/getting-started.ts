@@ -141,9 +141,9 @@ export const gettingStarted: DocsCollection = {
         ] },
         { type: "callout", tone: "note", title: "Wrong code five times", text: "The link locks for 15 minutes after five wrong codes. Wait, then try again, or ask the person who sent it for a new code." },
         { type: "heading", text: "What you see" },
-        { type: "paragraph", text: "The page is the same list view our customers use: the counts at the top, the filters on the side, the table with every person and the results we found. While the enrichment is still running the page updates by itself." },
+        { type: "paragraph", text: "The page is the same list view our customers use: the summary cards at the top, the filter chips above the table, the table with every person and the results we found. While the enrichment is still running the page updates by itself." },
         { type: "list", items: [
-          "**Filters** narrow the table to valid, risky or missing emails and to people with or without a mobile number.",
+          "**Filters** narrow the table to valid, probably valid, catch-all or missing emails and to people with or without a mobile number. Hover the markers next to an email or a phone for the verification details.",
           "**Search** finds a person by name, company, title or email.",
           "**Column settings** hide or show columns.",
           "**Download** saves the list as CSV, either everything or one segment. Read [Download your enriched list](/docs/lists/download-your-list) for the file layout.",

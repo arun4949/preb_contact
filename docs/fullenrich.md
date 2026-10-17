@@ -51,7 +51,7 @@ profile:      Person | undefined   // guaranteed when linkedin_url given
 - `Phone`: `number` ("+1 555-123-4567"), `region` (ISO‑2), `line_type MOBILE|LANDLINE|VOIP|UNKNOWN`, `line_status ACTIVE|INACTIVE|UNKNOWN`, `ownership_match CONFIRMED|MISMATCH` (US/CA), `ownership_match_confidence 0–100`, `connect_rate HIGHEST|HIGH|MEDIUM`.
 - `Person`: `id, full_name, first_name, last_name, headline, description?, location{country,country_code,city,region}, social_profiles.professional_network{id,url,handle,connection_count}, educations[]{school_name,degree,start_at,end_at}, languages[], skills[], employment{ current: Employment, all: Employment[] }`.
 - `Employment`: `title, seniority, job_functions[], description, is_current, start_at, end_at?, company{ id, name, domain, website, description, year_founded, headcount, headcount_range, company_type, specialties[], technologies[], locations{headquarters{line1,line2,city,region,country,country_code}, offices[]}, industry.main_industry, social_profiles, logo_url }`.
-- **Only `most_probable_*` are billable and are what we display as primary values.** Arrays are candidates.
+- **Only `most_probable_*` are billable and are what we display as primary values.** Arrays are candidates, shown behind a counter in the table (2026-10-17). The response carries **no data-source / provider information per result**, so a "sources" breakdown cannot be built; the per-list breakdown comes from the SQL function `list_result_insights` (migration 0025).
 
 ### Our mapping (`src/lib/fullenrich/mapping.ts`)
 | Preb field | Source |
@@ -63,8 +63,8 @@ profile:      Person | undefined   // guaranteed when linkedin_url given
 | company / company_domain / logo | `profile.employment.current.company.{name,domain,logo_url}` fallback input |
 | location | `profile.location` → "City, Region, Country" |
 | linkedin_url | `profile.social_profiles.professional_network.url` fallback input |
-| UI email status | Valid = DELIVERABLE, HIGH_PROBABILITY · Risky = CATCH_ALL · Not found = null/INVALID/INVALID_DOMAIN |
-| UI phone chip | Mobile if `line_type = MOBILE`, else Landline (free) |
+| UI email level (`src/lib/lists/email-levels.ts`) | Valid = DELIVERABLE · Probably valid = HIGH_PROBABILITY · Catch-all = CATCH_ALL · Not found = null/INVALID/INVALID_DOMAIN. Download segment "Valid emails" = DELIVERABLE + HIGH_PROBABILITY. Markers and tooltips in the table; `ownership_match(_confidence)` and `connect_rate` shown as phone markers; `work_emails[]`, `personal_emails[]`, `phones[]` from `result` feed the candidate counter |
+| UI phone chip | Landline / VoIP chip when `line_type` is not MOBILE (free); mobile is the default and carries the ownership and connect-rate markers |
 | per‑contact credits | 1 if work email present (status ≠ INVALID*) + 3 if personal email + 10 if `most_probable_phone.line_type = MOBILE`; reconciled to batch `cost.credits`, delta → ledger `adjust` |
 
 ## Webhooks

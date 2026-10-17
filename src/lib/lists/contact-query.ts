@@ -1,4 +1,4 @@
-import type { Segment } from "./segments";
+import { parseEmailFilter, type EmailFilter } from "./segments";
 
 /** Pure (client-safe) table query types + URL parser. Server queries live in `queries.ts`. */
 export const PAGE_SIZES = [25, 50, 100] as const;
@@ -13,7 +13,7 @@ export interface ContactQuery {
   sort: ContactSort;
   dir: "asc" | "desc";
   q: string;
-  email: Segment;
+  email: EmailFilter;
   phone: PhoneFilter | null;
 }
 
@@ -42,10 +42,13 @@ export function parseContactQuery(params: Record<string, string | string[] | und
   const sort = (Object.keys(SORT_COLUMNS) as ContactSort[]).includes(sortRaw as ContactSort) ? (sortRaw as ContactSort) : "row";
   const dir = pick("dir") === "desc" ? "desc" : "asc";
   const q = pick("q").slice(0, 120);
-  const emailRaw = pick("email");
-  const email: Segment = emailRaw === "valid" || emailRaw === "risky" || emailRaw === "not_found" ? emailRaw : "all";
+  const email = parseEmailFilter(pick("email"));
   const phoneRaw = pick("phone");
   const phone: PhoneFilter | null = phoneRaw === "found" || phoneRaw === "not_found" ? phoneRaw : null;
   return { page, pageSize, sort, dir, q, email, phone };
 }
 
+/** Number of active table filters (search excluded). */
+export function activeFilterCount(query: Pick<ContactQuery, "email" | "phone">): number {
+  return (query.email !== "all" ? 1 : 0) + (query.phone ? 1 : 0);
+}

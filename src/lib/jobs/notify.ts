@@ -40,7 +40,7 @@ export async function notifyListFinished(admin: Admin, input: ListRow, stopped =
         listName: list.name,
         processed: list.processed_rows,
         validEmails: list.found_work_email,
-        riskyEmails: list.risky_email,
+        catchAllEmails: list.risky_email,
         mobiles: list.found_phone,
         creditsUsed: list.credits_used,
         stopped,

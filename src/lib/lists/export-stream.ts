@@ -8,7 +8,7 @@ import type { ListRow } from "@/lib/supabase/queries";
 
 const PAGE = 1000;
 
-const SEGMENT_SUFFIX: Record<string, string> = { all: "", valid: "-valid-emails", risky: "-risky-emails", not_found: "-not-found" };
+const SEGMENT_SUFFIX: Record<Segment, string> = { all: "", valid: "-valid-emails", catch_all: "-catch-all-emails", not_found: "-not-found" };
 
 /**
  * CSV export of a list: original columns first (file order), then the Preb

@@ -1,21 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Banner } from "@/components/base/banner/banner";
-import { Sheet } from "@/components/base/sheet/sheet";
 import { LIST_STATUS_META } from "@/components/application/list-card/list-status";
 import { useColumnVisibility } from "@/components/application/list-detail/columns";
 import { ContactsTable } from "@/components/application/list-detail/contacts-table";
 import { ContactsToolbar } from "@/components/application/list-detail/contacts-toolbar";
 import { EnrichingPanel } from "@/components/application/list-detail/enriching-panel";
-import { activeFilterCount, FilterRail } from "@/components/application/list-detail/filter-rail";
-import { ListStats } from "@/components/application/list-detail/list-stats";
+import { FilterChips } from "@/components/application/list-detail/filter-chips";
+import { SummaryCards } from "@/components/application/list-detail/summary-cards";
 import { useContactQuery } from "@/components/application/list-detail/use-contact-query";
 import type { LeadOwnerView } from "@/lib/leads/owners";
 import { trackLeadView } from "@/lib/leads/public-actions";
-import type { ContactQuery } from "@/lib/lists/contact-query";
-import type { ContactsPage, ListEta } from "@/lib/lists/queries";
+import { activeFilterCount, type ContactQuery } from "@/lib/lists/contact-query";
+import type { ContactsPage, ListEta, ListInsights } from "@/lib/lists/queries";
 import type { ListRow } from "@/lib/supabase/queries";
 import { LeadListHeader } from "./lead-list-header";
 import { LeadOfferDialog } from "./lead-offer-dialog";
@@ -28,6 +27,7 @@ export interface LeadViewProps {
   shareId: string;
   list: ListRow;
   contacts: ContactsPage;
+  insights: ListInsights;
   query: ContactQuery;
   eta: ListEta;
   extras: string[];
@@ -38,17 +38,16 @@ export interface LeadViewProps {
 }
 
 /**
- * The unlocked lead page: the same stats, toolbar, filter rail and table a
+ * The unlocked lead page: the same summary cards, toolbar, filter chips and table a
  * customer sees on /lists/[id], minus every account action. Anonymous
  * visitors cannot hold a realtime socket (RLS), so a running list polls.
  */
-export function LeadView({ token, shareId, list, contacts, query, eta, extras, owner, leadFirstName, isAdmin, revoked }: LeadViewProps) {
+export function LeadView({ token, shareId, list, contacts, insights, query, eta, extras, owner, leadFirstName, isAdmin, revoked }: LeadViewProps) {
   const router = useRouter();
   const running = LIST_STATUS_META[list.status].running;
   const paused = list.status === "paused_credits" || list.status === "paused_upstream" || list.status === "failed";
-  const { set, reset, pending } = useContactQuery(query);
+  const { query: liveQuery, set, reset, pending } = useContactQuery(query);
   const { visibility, toggle, resetColumns } = useColumnVisibility(list.enrich_fields, extras);
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const refreshing = useRef(false);
 
   const refresh = () => {
@@ -82,7 +81,7 @@ export function LeadView({ token, shareId, list, contacts, query, eta, extras, o
     void trackLeadView(token);
   }, [isAdmin, token]);
 
-  const filtered = activeFilterCount(query) > 0 || query.q.trim().length > 0;
+  const filtered = activeFilterCount(liveQuery) > 0 || liveQuery.q.trim().length > 0;
 
   return (
     <div className="flex flex-col gap-6 animate-page-enter">
@@ -94,7 +93,7 @@ export function LeadView({ token, shareId, list, contacts, query, eta, extras, o
 
       <LeadListHeader token={token} list={list} owner={owner} leadFirstName={leadFirstName} />
 
-      {running || paused ? <EnrichingPanel list={list} eta={eta} variant="public" /> : <ListStats list={list} />}
+      {running || paused ? <EnrichingPanel list={list} eta={eta} variant="public" /> : <SummaryCards list={list} insights={insights} query={liveQuery} onChange={set} />}
 
       <ContactsToolbar
         total={list.total_rows}
@@ -105,28 +104,11 @@ export function LeadView({ token, shareId, list, contacts, query, eta, extras, o
         onResetColumns={resetColumns}
         extras={extras}
         enrichFields={list.enrich_fields}
-        onOpenFilters={() => setFiltersOpen(true)}
-        activeFilters={activeFilterCount(query)}
       />
 
-      <div className="flex items-start gap-6">
-        <FilterRail list={list} query={query} onChange={set} onReset={reset} className="hidden w-[260px] shrink-0 rounded-3xl border border-border-button-default bg-background-primary-default p-5 lg:flex" />
-        <div className="min-w-0 flex-1">
-          <ContactsTable rows={contacts.rows} total={contacts.total} totalPages={contacts.totalPages} query={query} onChange={set} visibility={visibility} extras={extras} running={running} pending={pending} filtered={filtered} />
-        </div>
-      </div>
+      <FilterChips list={list} insights={insights} query={liveQuery} onChange={set} onReset={reset} />
 
-      <Sheet isOpen={filtersOpen} onOpenChange={setFiltersOpen} title="Filters">
-        <FilterRail
-          list={list}
-          query={query}
-          onChange={(patch) => set(patch)}
-          onReset={() => {
-            reset();
-            setFiltersOpen(false);
-          }}
-        />
-      </Sheet>
+      <ContactsTable rows={contacts.rows} total={contacts.total} totalPages={contacts.totalPages} query={liveQuery} onChange={set} visibility={visibility} extras={extras} running={running} pending={pending} filtered={filtered} />
 
       {!isAdmin ? <LeadOfferDialog token={token} shareId={shareId} owner={owner} /> : null}
     </div>

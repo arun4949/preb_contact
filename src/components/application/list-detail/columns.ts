@@ -2,14 +2,15 @@
 
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 
+/** Results first (after the name and company), profile details after, so a 1440 px screen shows what was found without scrolling. */
 export const CORE_COLUMNS = [
   { id: "name", label: "Name", always: true },
-  { id: "job_title", label: "Job title" },
   { id: "company", label: "Company" },
-  { id: "location", label: "Location" },
-  { id: "personal_email", label: "Personal email" },
-  { id: "phone", label: "Phone" },
   { id: "work_email", label: "Work email" },
+  { id: "phone", label: "Phone" },
+  { id: "personal_email", label: "Personal email" },
+  { id: "job_title", label: "Job title" },
+  { id: "location", label: "Location" },
   { id: "status", label: "Status" },
 ] as const;
 

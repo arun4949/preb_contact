@@ -1,5 +1,5 @@
-import { uiEmailStatus } from "@/lib/fullenrich/mapping";
-import type { EmailStatus, EnrichedPhone } from "@/lib/fullenrich/types";
+import type { EnrichedPhone } from "@/lib/fullenrich/types";
+import { EMAIL_LEVEL_META, emailLevel } from "@/lib/lists/email-levels";
 import { contactUiStatus, type ContactRow } from "@/lib/lists/segments";
 
 /** The Preb result columns appended to every CSV export (lists and the Enrich tab). */
@@ -19,10 +19,10 @@ export const PREB_COLUMNS = [
   "Preb: Credits",
 ] as const;
 
+/** Valid, Probably valid or Catch-all; empty when no email was returned. */
 function emailStatusLabel(status: string | null): string {
-  if (!status) return "";
-  const ui = uiEmailStatus(status as EmailStatus);
-  return ui === "valid" ? "Valid" : ui === "risky" ? "Risky (catch-all)" : "Not found";
+  const level = emailLevel(status);
+  return level ? EMAIL_LEVEL_META[level].label : "";
 }
 
 function phoneType(meta: ContactRow["phone_meta"]): string {

@@ -5,10 +5,12 @@ import { createClient } from "@/utils/supabase/server";
 import type { ListRow } from "@/lib/supabase/queries";
 import type { Database } from "@/lib/supabase/types";
 import { EMPTY_MAPPING } from "@/lib/csv/automap";
-import { PROCESSED_STATUSES, RISKY_STATUSES, VALID_STATUSES, type ContactRow, type Segment } from "./segments";
+import { EMPTY_INSIGHTS, shapeInsights, type ListInsights } from "./insights";
+import { FILTER_STATUSES, PROCESSED_STATUSES, SEGMENT_STATUSES, type ContactRow, type EmailFilter, type Segment } from "./segments";
 import { SORT_COLUMNS, type ContactQuery } from "./contact-query";
 
 export type { ContactQuery, ContactSort, PageSize, PhoneFilter } from "./contact-query";
+export type { ListInsights } from "./insights";
 export { PAGE_SIZES, DEFAULT_CONTACT_QUERY, parseContactQuery } from "./contact-query";
 
 type Builder = ReturnType<ReturnType<Awaited<ReturnType<typeof createClient>>["from"]>["select"]>;
@@ -16,18 +18,23 @@ type Builder = ReturnType<ReturnType<Awaited<ReturnType<typeof createClient>>["f
 /** The RLS session client (default) or the service-role client (public lead share page). */
 export type ListsClient = SupabaseClient<Database>;
 
-/** Applies a download/filter segment to a `list_contacts` query. */
-export function applySegment<T extends { in: Builder["in"]; is: Builder["is"]; not: Builder["not"] }>(query: T, segment: Segment): T {
-  switch (segment) {
-    case "valid":
-      return query.in("work_email_status", [...VALID_STATUSES]).not("work_email", "is", null) as T;
-    case "risky":
-      return query.in("work_email_status", [...RISKY_STATUSES]).not("work_email", "is", null) as T;
-    case "not_found":
-      return query.in("status", [...PROCESSED_STATUSES]).is("work_email", null) as T;
-    default:
-      return query;
-  }
+type Filterable = { in: Builder["in"]; is: Builder["is"]; not: Builder["not"] };
+
+function applyWorkEmail<T extends Filterable>(query: T, statuses: readonly string[] | "not_found"): T {
+  if (statuses === "not_found") return query.in("status", [...PROCESSED_STATUSES]).is("work_email", null) as T;
+  return query.in("work_email_status", [...statuses]).not("work_email", "is", null) as T;
+}
+
+/** Applies a download segment (Valid emails = valid + probably valid) to a `list_contacts` query. */
+export function applySegment<T extends Filterable>(query: T, segment: Segment): T {
+  if (segment === "all") return query;
+  return applyWorkEmail(query, segment === "not_found" ? "not_found" : SEGMENT_STATUSES[segment]);
+}
+
+/** Applies a table filter chip (one email level each) to a `list_contacts` query. */
+export function applyEmailFilter<T extends Filterable>(query: T, filter: EmailFilter): T {
+  if (filter === "all") return query;
+  return applyWorkEmail(query, filter === "not_found" ? "not_found" : FILTER_STATUSES[filter]);
 }
 
 const escapeLike = (s: string) => s.replace(/[%_\\]/g, "\\$&").replace(/[,()]/g, " ");
@@ -42,7 +49,7 @@ export interface ContactsPage {
 export async function getListContacts(listId: string, query: ContactQuery, client?: ListsClient): Promise<ContactsPage> {
   const supabase = client ?? (await createClient());
   let q = supabase.from("list_contacts").select("*", { count: "exact" }).eq("list_id", listId);
-  q = applySegment(q, query.email);
+  q = applyEmailFilter(q, query.email);
   if (query.phone === "found") q = q.not("phone", "is", null);
   else if (query.phone === "not_found") q = q.is("phone", null);
   const term = query.q.trim();
@@ -62,6 +69,21 @@ export async function getListContacts(listId: string, query: ContactQuery, clien
   const { data, count } = await q.range(from, from + query.pageSize - 1);
   const total = count ?? 0;
   return { rows: data ?? [], total, totalPages: Math.max(1, Math.ceil(total / query.pageSize)) };
+}
+
+/**
+ * Result breakdown for the summary cards and filter chips (SQL function
+ * `list_result_insights`, RLS-scoped unless the service-role client is passed).
+ * Any error degrades to zeros so the page still renders.
+ */
+export async function getListInsights(listId: string, client?: ListsClient): Promise<ListInsights> {
+  const supabase = client ?? (await createClient());
+  const { data, error } = await supabase.rpc("list_result_insights", { p_list_id: listId });
+  if (error) {
+    console.error("[lists] insights failed", { listId, message: error.message });
+    return EMPTY_INSIGHTS;
+  }
+  return shapeInsights(data);
 }
 
 /** Spreadsheet columns that were not mapped to a Preb field (pass-through columns). */

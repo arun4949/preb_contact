@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { RiArrowDownSLine, RiDownloadLine, RiGroupLine } from "@remixicon/react";
+import { RiArrowDownSLine, RiDownloadLine } from "@remixicon/react";
 import { Chip } from "@/components/base/badges/chip";
 import { Dropdown, DropdownGroup, DropdownItem, DropdownPopover, DropdownTrigger } from "@/components/base/dropdown/dropdown";
 import { LIST_STATUS_META } from "@/components/application/list-card/list-status";
+import { ListMetaPills } from "@/components/application/list-detail/list-meta-pills";
 import { leadExportPath } from "@/lib/leads/constants";
 import type { LeadOwnerView } from "@/lib/leads/owners";
 import { SEGMENTS } from "@/lib/lists/segments";
@@ -13,9 +14,7 @@ import { cx } from "@/utils/cx";
 import { requestLeadOffer } from "./lead-offer-dialog";
 import { OwnerPortrait } from "./owner-portrait";
 
-const fmt = (n: number) => n.toLocaleString("en-US");
-
-/** Title, who prepared it, status chip, contacts pill and the Download menu. No Stop, Rename or Delete here. */
+/** Title, who prepared it, status chip, meta pills and the Download menu. No Stop, Rename or Delete here. */
 export function LeadListHeader({ token, list, owner, leadFirstName }: { token: string; list: ListRow; owner: LeadOwnerView; leadFirstName: string }) {
   const meta = LIST_STATUS_META[list.status];
   const done = list.status === "completed" || list.status === "stopped";
@@ -50,15 +49,11 @@ export function LeadListHeader({ token, list, owner, leadFirstName }: { token: s
               ? `${owner.firstName} enriched these contacts for you, ${leadFirstName}. Filter by segment or download the whole list as CSV.`
               : `${owner.firstName} is enriching these contacts for you, ${leadFirstName}. Results fill in below as they come back.`}
           </p>
+          <ListMetaPills list={list} />
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border-button-default bg-background-primary-default px-3 text-body-medium text-text-primary tabular-nums" title="Contacts">
-          <RiGroupLine className="size-4 text-foreground-icon-secondary" aria-hidden />
-          {fmt(list.total_rows)} {list.total_rows === 1 ? "contact" : "contacts"}
-        </span>
-
         <Dropdown isOpen={downloadOpen} onOpenChange={setDownloadOpen}>
           <DropdownTrigger
             isDisabled={!done}

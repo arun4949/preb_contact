@@ -19,7 +19,7 @@ export const billing: DocsCollection = {
         { type: "paragraph", text: "Credits are the currency inside Preb. Your workspace has one balance that every teammate uses. Credits come from your plan, or from the free trial, and are spent on results." },
         { type: "heading", text: "What a result costs" },
         { type: "table", columns: ["Result", "Credits"], rows: [
-          ["Work email, valid or risky", String(CREDIT_COST.work_email)],
+          ["Work email, valid, probably valid or catch-all", String(CREDIT_COST.work_email)],
           ["Personal email", String(CREDIT_COST.personal_email)],
           ["Mobile phone, active", String(CREDIT_COST.mobile_phone)],
           ["Identifying a person from an email", String(CREDIT_COST.reverse)],

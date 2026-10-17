@@ -9,7 +9,7 @@ import { isAdminEmail } from "@/lib/auth/work-email";
 import { leadCookieName, verifyLeadAccess } from "@/lib/leads/access-cookie";
 import { logShareEvent, touchShare } from "@/lib/leads/events";
 import { getShareByToken } from "@/lib/leads/queries";
-import { extraColumns, getListContacts, getListEta, parseContactQuery } from "@/lib/lists/queries";
+import { extraColumns, getListContacts, getListEta, getListInsights, parseContactQuery } from "@/lib/lists/queries";
 import { firstNameFor } from "@/lib/email/name";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/supabase/queries";
@@ -60,8 +60,9 @@ export default async function LeadSharePage({ params, searchParams }: { params: 
   const admin = createAdminClient();
   const query = parseContactQuery(await searchParams);
   const running = LIST_STATUS_META[list.status].running;
-  const [contacts, eta] = await Promise.all([
+  const [contacts, insights, eta] = await Promise.all([
     getListContacts(list.id, query, admin),
+    getListInsights(list.id, admin),
     running ? getListEta(list, admin) : Promise.resolve({ seconds: null, rowsPerMinute: null }),
   ]);
 
@@ -74,6 +75,7 @@ export default async function LeadSharePage({ params, searchParams }: { params: 
           shareId={share.id}
           list={list}
           contacts={contacts}
+          insights={insights}
           query={query}
           eta={eta}
           extras={extraColumns(list)}

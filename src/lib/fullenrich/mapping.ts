@@ -1,14 +1,6 @@
 import type { EmailStatus, EnrichedPhone, EnrichmentRecord, PersonProfile } from "./types";
 
-/** UI email status: Valid = DELIVERABLE + HIGH_PROBABILITY · Risky = CATCH_ALL · Not found otherwise. */
-export type UiEmailStatus = "valid" | "risky" | "not_found";
-
-export function uiEmailStatus(status: EmailStatus | null | undefined): UiEmailStatus {
-  if (status === "DELIVERABLE" || status === "HIGH_PROBABILITY") return "valid";
-  if (status === "CATCH_ALL") return "risky";
-  return "not_found";
-}
-
+/** Email levels the UI shows (Valid, Probably valid, Catch-all) live in `@/lib/lists/email-levels`. */
 export function isBillableEmail(status: EmailStatus | null | undefined): boolean {
   return status === "DELIVERABLE" || status === "HIGH_PROBABILITY" || status === "CATCH_ALL";
 }

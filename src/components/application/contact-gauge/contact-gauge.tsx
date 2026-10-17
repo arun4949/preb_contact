@@ -7,7 +7,7 @@ import { cx } from "@/utils/cx";
 import { capFraction, dashFor, layoutSegments, type Segment } from "./geometry";
 
 /** The three outcomes a work email can have; `none` is the grey remainder. */
-export type GaugeKey = "valid" | "risky" | "none";
+export type GaugeKey = "valid" | "catch_all" | "none";
 
 export interface ContactGaugeProps {
   /** Total contacts in the list (centre number at rest). */
@@ -16,8 +16,8 @@ export interface ContactGaugeProps {
   base: number;
   /** Rows with a valid email (`chart-1` segment). */
   valid: number;
-  /** Rows with a risky (catch-all) email (`chart-3` segment, drawn after valid). */
-  risky: number;
+  /** Rows with a catch-all email (`chart-8` segment, drawn after valid). */
+  catchAll: number;
   /** Focused outcome: the centre names it and the other segments dim. */
   active?: GaugeKey | null;
   /** Hovering a segment reports it here so the rows below can follow. */
@@ -48,12 +48,12 @@ const ARC = `M ${CX - R} ${CY} A ${R} ${R} 0 0 1 ${CX + R} ${CY}`;
 
 const COLOR: Record<Exclude<GaugeKey, "none">, { fill: string; active: string }> = {
   valid: { fill: "var(--color-chart-1)", active: "var(--color-chart-1-active)" },
-  risky: { fill: "var(--color-chart-3)", active: "var(--color-chart-3-active)" },
+  catch_all: { fill: "var(--color-chart-8)", active: "var(--color-chart-8-active)" },
 };
 
 const CAPTION: Record<GaugeKey, string> = {
   valid: "Valid emails",
-  risky: "Risky emails",
+  catch_all: "Catch-all emails",
   none: "No email found",
 };
 
@@ -62,8 +62,8 @@ const pctOf = (n: number, of: number) => (of > 0 ? Math.round((n / of) * 100) : 
 
 /**
  * Segmented half gauge for list cards: one ring answering one question, the
- * work-email outcome per enrichable contact. Valid on `chart-1`, risky on
- * `chart-3`, the remainder is the `chart-track` track. Segments have round
+ * work-email outcome per enrichable contact. Valid on `chart-1`, catch-all on
+ * `chart-8`, the remainder is the `chart-track` track. Segments have round
  * ends and a 3° gap; hovering one (or the remainder) swaps the centre to its
  * count and share, the BoardUI stacked-gauge recipe.
  */
@@ -71,7 +71,7 @@ export function ContactGauge({
   total,
   base,
   valid,
-  risky,
+  catchAll,
   active = null,
   onActiveChange,
   label = "Contacts",
@@ -83,14 +83,14 @@ export function ContactGauge({
 
   const safeBase = Math.max(0, base);
   const validCount = Math.max(0, Math.min(valid, safeBase));
-  const riskyCount = Math.max(0, Math.min(risky, safeBase - validCount));
-  const noneCount = Math.max(0, safeBase - validCount - riskyCount);
-  const counts: Record<GaugeKey, number> = { valid: validCount, risky: riskyCount, none: noneCount };
+  const catchAllCount = Math.max(0, Math.min(catchAll, safeBase - validCount));
+  const noneCount = Math.max(0, safeBase - validCount - catchAllCount);
+  const counts: Record<GaugeKey, number> = { valid: validCount, catch_all: catchAllCount, none: noneCount };
 
   const segments = layoutSegments(
     [
       { key: "valid", value: safeBase > 0 ? validCount / safeBase : 0 },
-      { key: "risky", value: safeBase > 0 ? riskyCount / safeBase : 0 },
+      { key: "catch_all", value: safeBase > 0 ? catchAllCount / safeBase : 0 },
     ],
     GAP,
   ) as Array<Segment & { key: Exclude<GaugeKey, "none"> }>;
@@ -119,7 +119,7 @@ export function ContactGauge({
 
   const ariaLabel =
     `${label}: ${fmt(total)}. Valid emails ${fmt(validCount)} (${pctOf(validCount, safeBase)}%), ` +
-    `risky emails ${fmt(riskyCount)} (${pctOf(riskyCount, safeBase)}%), ` +
+    `catch-all emails ${fmt(catchAllCount)} (${pctOf(catchAllCount, safeBase)}%), ` +
     `no email found ${fmt(noneCount)} (${pctOf(noneCount, safeBase)}%).`;
 
   return (

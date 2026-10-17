@@ -9,7 +9,7 @@ Copy rules: no em dashes, en dashes or " - " as punctuation (AGENTS.md). The enr
 | Document | File | Status |
 |---|---|---|
 | Privacy Policy | `privacy-policy.md` | v1.2 (2026-10-15): § 4 purpose row, § 5 "Advertising measurement (Meta)", § 6 recipient row and § 7 transfer row for the Meta Pixel and Conversions API. Re-paste `/privacy` in Framer |
-| Terms of Service (B2B only, incl. acceptable use, credits, refunds) | `terms-of-service.md` | v1.1 (2026-10-14): § 5 "Sample lists" clause for the lead magnet funnel. Re-paste `/terms` in Framer |
+| Terms of Service (B2B only, incl. acceptable use, credits, refunds) | `terms-of-service.md` | v1.2 (2026-10-17): § 2.3 and § 6 use the three email levels Valid, Probably valid and Catch-all (the former "Risky"), and mention connect rate signals. Published in Framer on 2026-10-17 |
 | Data Processing Agreement (Art. 28 GDPR, SCCs by reference, CCPA service provider terms) | `dpa.md` | Draft v1.0, awaiting founder review |
 | Sub-processor List (names the enrichment provider and its sub-processors) | `sub-processors.md` | Draft v1.0, awaiting founder review |
 | Cookie Policy | Termly | Covered by Termly (CTO decision 2026-10-09), no markdown file |
@@ -58,3 +58,4 @@ The policy describes the target state. These items must be done before or at pub
 
 FullEnrich privacy policy, DPA (incl. Appendix 1 security measures), sub-processor list and cookie policy as of October 2026, used for structure only.
 13. Meta Ads conversion tracking (2026-10-15): Meta Pixel on preb.co and app.preb.co plus Conversions API events (Lead, CompleteRegistration, InitiateCheckout, Purchase), all gated by Termly's Advertising category and a first-party consent cookie (`preb_ads_consent`). Privacy policy v1.2 updated (§ 4, § 5, § 6, § 7); Leon re-pastes `/privacy` in Framer. Still to do in Termly: run a new cookie scan after the pixel is live so `_fbp` and `_fbc` appear under Advertising in the Cookie Policy, and accept Meta's Controller Addendum in Business Settings (joint controllership, Art. 26 GDPR) before the first campaign.
+14. Email levels (2026-10-17): the app shows Valid, Probably valid and Catch-all instead of Valid and Risky, plus phone ownership and connect rate signals. Terms v1.2 updated (§ 2.3, § 6 credits table and the catch-all sentence); `/terms` published in Framer on 2026-10-17.

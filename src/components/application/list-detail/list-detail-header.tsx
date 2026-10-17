@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { RiArrowDownSLine, RiCoinLine, RiDeleteBinLine, RiDownloadLine, RiMoreFill, RiPencilLine, RiStopCircleLine } from "@remixicon/react";
+import { RiArrowDownSLine, RiDeleteBinLine, RiDownloadLine, RiMoreFill, RiPencilLine, RiStopCircleLine } from "@remixicon/react";
 import { Breadcrumb, BreadcrumbItem } from "@/components/base/breadcrumb/breadcrumb";
 import { Button } from "@/components/base/buttons/button";
 import { Chip } from "@/components/base/badges/chip";
@@ -12,15 +12,14 @@ import { LIST_STATUS_META } from "@/components/application/list-card/list-status
 import { SEGMENTS } from "@/lib/lists/segments";
 import type { ListRow } from "@/lib/supabase/queries";
 import { cx } from "@/utils/cx";
-
-const fmt = (n: number) => n.toLocaleString("en-US");
+import { ListMetaPills } from "./list-meta-pills";
 
 export interface ListDetailHeaderProps {
   list: ListRow;
   canDelete: boolean;
 }
 
-/** Breadcrumb, title + status chip, credits pill, Download, Stop, overflow (Rename · Delete). */
+/** Breadcrumb, title + status chip, meta pills (contacts, credits, duplicates, already enriched), Download, Stop, overflow (Rename · Delete). */
 export function ListDetailHeader({ list, canDelete }: ListDetailHeaderProps) {
   const meta = LIST_STATUS_META[list.status];
   const done = list.status === "completed" || list.status === "stopped";
@@ -64,14 +63,10 @@ export function ListDetailHeader({ list, canDelete }: ListDetailHeaderProps) {
         <p className="text-body-regular text-text-secondary">
           {done ? "Find your contacts here or filter by segment to export specifics." : "Results fill in below as contacts come back."}
         </p>
+        <ListMetaPills list={list} showCredits />
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border-button-default bg-background-primary-default px-3 text-body-medium text-text-primary tabular-nums" title="Credits used">
-          <RiCoinLine className="size-4 text-foreground-icon-secondary" aria-hidden />
-          {fmt(list.credits_used)}
-        </span>
-
         {stoppable ? (
           <Button variant="secondary" leadingIcon={RiStopCircleLine} onClick={() => setDialog("stop")}>
             Stop

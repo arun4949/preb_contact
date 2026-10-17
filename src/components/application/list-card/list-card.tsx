@@ -137,7 +137,7 @@ export function ListCard({ list, ownerName, canDelete }: ListCardProps) {
           total={list.total_rows}
           base={base}
           valid={list.found_work_email}
-          risky={list.risky_email}
+          catchAll={list.risky_email}
           active={active}
           onActiveChange={setActive}
           sweeping={running}
@@ -156,12 +156,12 @@ export function ListCard({ list, ownerName, canDelete }: ListCardProps) {
             onHover={list.found_work_email > 0 ? (on) => setActive(on ? "valid" : null) : undefined}
           />
           <MetricRow
-            lead={<Swatch className="bg-chart-3" />}
+            lead={<Swatch className="bg-chart-8" />}
             chip={pct(list.risky_email, base)}
-            label="Risky emails"
+            label="Catch-all emails"
             value={list.risky_email}
-            dimmed={active !== null && active !== "risky"}
-            onHover={list.risky_email > 0 ? (on) => setActive(on ? "risky" : null) : undefined}
+            dimmed={active !== null && active !== "catch_all"}
+            onHover={list.risky_email > 0 ? (on) => setActive(on ? "catch_all" : null) : undefined}
           />
           <MetricRow lead={<RiUserUnfollowLine className="size-4 text-foreground-icon-secondary" aria-hidden />} label="Duplicates removed" value={list.duplicates_removed} />
         </ul>

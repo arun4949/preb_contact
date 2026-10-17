@@ -36,12 +36,14 @@ export interface TableProps extends Omit<AriaTableProps, "className"> {
   className?: string;
   /** Class for the scroll container that wraps the table. */
   containerClassName?: string;
+  /** The scroll container, for horizontal scroll cues (`useHorizontalScroll`). */
+  containerRef?: Ref<HTMLDivElement>;
   ref?: Ref<HTMLTableElement>;
 }
 
-export function Table({ size = "md", className, containerClassName, ref, ...props }: TableProps) {
+export function Table({ size = "md", className, containerClassName, containerRef, ref, ...props }: TableProps) {
   return (
-    <div className={cx("w-full overflow-x-auto", containerClassName)}>
+    <div ref={containerRef} className={cx("bui-table-scroll w-full overflow-x-auto", containerClassName)}>
       <AriaTable
         ref={ref}
         {...props}

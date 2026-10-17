@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { catchAllRecord, fullRecord, invalidRecord, reverseMissRecord, reverseRecord } from "./__fixtures__/records";
-import { CREDIT_COST, CREDIT_MULTIPLIER, UPSTREAM_CREDIT_COST, contactCredits, isUsablePhone, mapRecord, profileName, toPrebCredits, uiEmailStatus } from "./mapping";
+import { emailLevel } from "@/lib/lists/email-levels";
+import { CREDIT_COST, CREDIT_MULTIPLIER, UPSTREAM_CREDIT_COST, contactCredits, isUsablePhone, mapRecord, profileName, toPrebCredits } from "./mapping";
 
 describe("mapping", () => {
   it("charges CREDIT_MULTIPLIER × the upstream cost table and converts batch costs", () => {
@@ -20,7 +21,7 @@ describe("mapping", () => {
 
   it("charges catch-all work emails but not landlines", () => {
     expect(contactCredits(catchAllRecord)).toBe(2);
-    expect(uiEmailStatus(catchAllRecord.contact_info!.most_probable_work_email!.status)).toBe("risky");
+    expect(emailLevel(catchAllRecord.contact_info!.most_probable_work_email!.status)).toBe("catch_all");
   });
 
   it("charges nothing for INVALID results and hides the email", () => {

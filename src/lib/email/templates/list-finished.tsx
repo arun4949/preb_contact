@@ -8,7 +8,7 @@ export interface ListFinishedProps {
   listName: string;
   processed: number;
   validEmails: number;
-  riskyEmails: number;
+  catchAllEmails: number;
   mobiles: number;
   creditsUsed: number;
   stopped?: boolean;
@@ -16,7 +16,7 @@ export interface ListFinishedProps {
   href?: string;
 }
 
-export function ListFinishedEmail({ firstName, listId, listName, processed, validEmails, riskyEmails, mobiles, creditsUsed, stopped, href }: ListFinishedProps) {
+export function ListFinishedEmail({ firstName, listId, listName, processed, validEmails, catchAllEmails, mobiles, creditsUsed, stopped, href }: ListFinishedProps) {
   const n = (v: number) => v.toLocaleString("en-US");
   return (
     <EmailLayout preview={stopped ? `${listName} was stopped` : `${listName} is ready`}>
@@ -24,7 +24,7 @@ export function ListFinishedEmail({ firstName, listId, listName, processed, vali
       <Text style={emailStyles.body}>
         Hi {firstName || "there"}, {stopped ? "your list " : "good news: your list "}
         <strong>{listName}</strong> {stopped ? "was stopped as requested." : "is done."} We processed {n(processed)} contacts and found{" "}
-        {n(validEmails)} valid emails, {n(riskyEmails)} risky emails and {n(mobiles)} mobile numbers, using {n(creditsUsed)} credits.
+        {n(validEmails)} valid emails, {n(catchAllEmails)} catch-all emails and {n(mobiles)} mobile numbers, using {n(creditsUsed)} credits.
       </Text>
       <Button href={appUrl(href ?? `/lists/${listId}`)} style={emailStyles.button}>
         View list

@@ -2,7 +2,13 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { RiDownloadLine, RiExternalLinkLine, RiLinkedinBoxLine, RiSearchLine, RiUserSearchLine } from "@remixicon/react";
+import {
+  RiDownloadLine,
+  RiExternalLinkLine,
+  RiLinkedinBoxLine,
+  RiSearchLine,
+  RiUserSearchLine,
+} from "@remixicon/react";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Badge } from "@/components/base/badges/badge";
 import { Banner } from "@/components/base/banner/banner";
@@ -14,8 +20,23 @@ import { docsPath } from "@/lib/site-links";
 import { Input } from "@/components/base/input/input";
 import { Pagination } from "@/components/base/pagination/pagination";
 import { Skeleton } from "@/components/base/skeleton/skeleton";
-import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@/components/base/table/table";
-import { EmailCell, PhoneCell, StatusCell } from "@/components/application/list-detail/contacts-table";
+import {
+  HorizontalScrollEdges,
+  useHorizontalScroll,
+} from "@/components/base/table/horizontal-scroll-edges";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+} from "@/components/base/table/table";
+import {
+  EmailCell,
+  PhoneCell,
+  StatusCell,
+} from "@/components/application/list-detail/contacts-table";
 import { SEARCH_SHORTCUT_ATTR } from "@/components/application/header/use-shortcuts";
 import type { ManualHistory, ManualRunState } from "@/lib/enrich/queries";
 import type { ContactRow } from "@/lib/lists/segments";
@@ -25,7 +46,8 @@ import { initialsOf } from "@/utils/initials";
 
 const POLL_MS = 5000;
 const fmt = (n: number) => n.toLocaleString("en-US");
-const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
 const COLUMNS = [
   { id: "name", label: "Name", className: "min-w-[220px]" },
@@ -39,7 +61,14 @@ const COLUMNS = [
 ] as const;
 
 function displayName(c: ContactRow): string {
-  return c.full_name ?? ([c.first_name, c.last_name].filter(Boolean).join(" ") || c.linkedin_url?.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "") || "");
+  return (
+    c.full_name ??
+    ([c.first_name, c.last_name].filter(Boolean).join(" ") ||
+      c.linkedin_url
+        ?.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "")
+        .replace(/\/$/, "") ||
+      "")
+  );
 }
 
 function isPending(c: ContactRow) {
@@ -53,7 +82,12 @@ export interface EnrichedContactsTableProps {
   workspaceId: string;
 }
 
-export function EnrichedContactsTable({ history, runState, q, workspaceId }: EnrichedContactsTableProps) {
+export function EnrichedContactsTable({
+  history,
+  runState,
+  q,
+  workspaceId,
+}: EnrichedContactsTableProps) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -61,6 +95,8 @@ export function EnrichedContactsTable({ history, runState, q, workspaceId }: Enr
   const [pending, startNav] = useTransition();
   const { openSettings } = useSettingsUrl();
   const refreshing = useRef(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const edges = useHorizontalScroll(scrollRef);
 
   const refresh = () => {
     if (refreshing.current) return;
@@ -76,13 +112,18 @@ export function EnrichedContactsTable({ history, runState, q, workspaceId }: Enr
       else next.set(k, v);
     }
     const qs = next.toString();
-    startNav(() => router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false }));
+    startNav(() =>
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false }),
+    );
   };
 
   // Debounced search → URL.
   useEffect(() => {
     if (search === q) return;
-    const t = setTimeout(() => setParams({ q: search.trim() || null, page: null }), 300);
+    const t = setTimeout(
+      () => setParams({ q: search.trim() || null, page: null }),
+      300,
+    );
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
@@ -104,7 +145,16 @@ export function EnrichedContactsTable({ history, runState, q, workspaceId }: Enr
       if (cancelled) return;
       const channel = supabase
         .channel(`enrich:${workspaceId}`)
-        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "lists", filter: `workspace_id=eq.${workspaceId}` }, () => refresh())
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "lists",
+            filter: `workspace_id=eq.${workspaceId}`,
+          },
+          () => refresh(),
+        )
         .subscribe();
       cleanup = () => void supabase.removeChannel(channel);
     });
@@ -126,7 +176,9 @@ export function EnrichedContactsTable({ history, runState, q, workspaceId }: Enr
     <section className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <h2 className="text-headline-medium text-text-primary">Enriched contacts</h2>
+          <h2 className="text-headline-medium text-text-primary">
+            Enriched contacts
+          </h2>
           {total > 0 ? <Badge>{fmt(total)}</Badge> : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -141,7 +193,13 @@ export function EnrichedContactsTable({ history, runState, q, workspaceId }: Enr
             {...{ [SEARCH_SHORTCUT_ATTR]: "" }}
           />
           {total > 0 ? (
-            <ButtonLink href="/api/enrich/export" variant="secondary" size="small" leadingIcon={RiDownloadLine} download>
+            <ButtonLink
+              href="/api/enrich/export"
+              variant="secondary"
+              size="small"
+              leadingIcon={RiDownloadLine}
+              download
+            >
               Download CSV
             </ButtonLink>
           ) : null}
@@ -153,114 +211,196 @@ export function EnrichedContactsTable({ history, runState, q, workspaceId }: Enr
           tone="warning"
           title="Paused, add credits to continue"
           actions={
-            <Button variant="secondary" size="small" onClick={() => openSettings("billing", { plan: true })}>
+            <Button
+              variant="secondary"
+              size="small"
+              onClick={() => openSettings("billing", { plan: true })}
+            >
               Buy credits
             </Button>
           }
         >
-          A run is waiting for credits. It picks up again automatically within a minute of adding them.
+          A run is waiting for credits. It picks up again automatically within a
+          minute of adding them.
         </Banner>
       ) : null}
 
-      <div className={cx("flex w-full min-w-0 flex-col rounded-2xl border border-border-table bg-background-primary-default transition-opacity", pending && "opacity-70")}>
-        <Table aria-label="Enriched contacts" selectionMode="none" className="min-w-[960px]" containerClassName="rounded-t-2xl">
-          <TableHeader>
-            {COLUMNS.map((col) => (
-              <TableColumn
-                key={col.id}
-                id={col.id}
-                isRowHeader={col.id === "name"}
-                className={cx(col.className, col.id === "name" && "sticky start-0 z-10 border-e border-separator-border")}
-              >
-                {col.label}
-              </TableColumn>
-            ))}
-          </TableHeader>
-          <TableBody
-            renderEmptyState={() => (
-              <EmptyState
-                size="inline"
-                icon={RiUserSearchLine}
-                title={filtered ? "No contacts match" : "No contacts enriched yet"}
-                description={filtered ? "Try another name, company or email." : "Add a contact above to try it. Results show up here within a minute."}
-                actions={
-                  filtered ? undefined : (
-                    <LinkButton href={docsPath("enrich", "enrich-a-single-contact")} target="_blank" rel="noopener noreferrer" variant="secondary" size="xs">
-                      How Enrich works
-                    </LinkButton>
-                  )
-                }
-              />
-            )}
+      <div
+        className={cx(
+          "flex w-full min-w-0 flex-col rounded-2xl border border-border-table bg-background-primary-default transition-opacity",
+          pending && "opacity-70",
+        )}
+      >
+        <div className="relative">
+          <Table
+            aria-label="Enriched contacts"
+            selectionMode="none"
+            className="min-w-[960px]"
+            containerClassName="rounded-t-2xl"
+            containerRef={scrollRef}
           >
-            {rows.map((c) => {
-              const pending = isPending(c);
-              const name = displayName(c);
-              return (
-                <TableRow key={c.id} id={c.id} className="group/row">
-                  <TableCell className="sticky start-0 z-10 min-w-[220px] max-w-[320px] border-e border-separator-border bg-background-primary-default">
-                    <span className="flex items-center gap-2">
-                      <Avatar size="sm" initials={initialsOf(name || "?")} />
-                      <span className="truncate text-body-medium text-text-primary">{name}</span>
-                      {c.linkedin_url ? (
-                        <a
-                          href={c.linkedin_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          aria-label={`${name} on LinkedIn`}
-                          className="inline-flex shrink-0 text-foreground-icon-tertiary hover:text-foreground-icon-primary"
-                        >
-                          <RiLinkedinBoxLine className="size-4" aria-hidden />
-                        </a>
-                      ) : null}
-                    </span>
-                  </TableCell>
-                  <TableCell className="min-w-[180px] max-w-[320px]">
-                    {c.job_title ? <span className="block truncate text-text-secondary">{c.job_title}</span> : pending ? <Skeleton className="h-4 w-28" /> : <span className="text-text-tertiary">—</span>}
-                  </TableCell>
-                  <TableCell className="min-w-[180px] max-w-[320px]">
-                    {c.company || c.company_name || c.domain ? (
+            <TableHeader>
+              {COLUMNS.map((col) => (
+                <TableColumn
+                  key={col.id}
+                  id={col.id}
+                  isRowHeader={col.id === "name"}
+                  className={cx(
+                    col.className,
+                    col.id === "name" &&
+                      "sticky start-0 z-10 border-e border-separator-border",
+                  )}
+                >
+                  {col.label}
+                </TableColumn>
+              ))}
+            </TableHeader>
+            <TableBody
+              renderEmptyState={() => (
+                <EmptyState
+                  size="inline"
+                  icon={RiUserSearchLine}
+                  title={
+                    filtered ? "No contacts match" : "No contacts enriched yet"
+                  }
+                  description={
+                    filtered
+                      ? "Try another name, company or email."
+                      : "Add a contact above to try it. Results show up here within a minute."
+                  }
+                  actions={
+                    filtered ? undefined : (
+                      <LinkButton
+                        href={docsPath("enrich", "enrich-a-single-contact")}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        variant="secondary"
+                        size="xs"
+                      >
+                        How Enrich works
+                      </LinkButton>
+                    )
+                  }
+                />
+              )}
+            >
+              {rows.map((c) => {
+                const pending = isPending(c);
+                const name = displayName(c);
+                return (
+                  <TableRow key={c.id} id={c.id} className="group/row">
+                    <TableCell className="sticky start-0 z-10 min-w-[220px] max-w-[320px] border-e border-separator-border bg-background-primary-default">
                       <span className="flex items-center gap-2">
-                        <span className="truncate text-text-secondary">{c.company ?? c.company_name ?? c.domain}</span>
-                        {c.company_domain || c.domain ? (
+                        <Avatar size="sm" initials={initialsOf(name || "?")} />
+                        <span className="truncate text-body-medium text-text-primary">
+                          {name}
+                        </span>
+                        {c.linkedin_url ? (
                           <a
-                            href={`https://${c.company_domain ?? c.domain}`}
+                            href={c.linkedin_url}
                             target="_blank"
                             rel="noreferrer"
-                            aria-label={`Open ${c.company_domain ?? c.domain}`}
+                            aria-label={`${name} on LinkedIn`}
                             className="inline-flex shrink-0 text-foreground-icon-tertiary hover:text-foreground-icon-primary"
                           >
-                            <RiExternalLinkLine className="size-3.5" aria-hidden />
+                            <RiLinkedinBoxLine className="size-4" aria-hidden />
                           </a>
                         ) : null}
                       </span>
-                    ) : pending ? (
-                      <Skeleton className="h-4 w-24" />
-                    ) : (
-                      <span className="text-text-tertiary">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="min-w-[220px] max-w-[320px]">
-                    <EmailCell email={c.personal_email} status={c.personal_email_status} isPending={pending} />
-                  </TableCell>
-                  <TableCell className="min-w-[180px] max-w-[320px]">
-                    <PhoneCell phone={c.phone} meta={c.phone_meta} isPending={pending} />
-                  </TableCell>
-                  <TableCell className="min-w-[240px] max-w-[320px]">
-                    <EmailCell email={c.work_email} status={c.work_email_status} isPending={pending} />
-                  </TableCell>
-                  <TableCell className="min-w-[140px]">
-                    <StatusCell c={c} running={!runState.paused || runState.running} />
-                  </TableCell>
-                  <TableCell className="min-w-[90px] text-text-tertiary tabular-nums">{fmtDate(c.created_at)}</TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+                    </TableCell>
+                    <TableCell className="min-w-[180px] max-w-[320px]">
+                      {c.job_title ? (
+                        <span className="block truncate text-text-secondary">
+                          {c.job_title}
+                        </span>
+                      ) : pending ? (
+                        <Skeleton className="h-4 w-28" />
+                      ) : (
+                        <span className="text-text-tertiary">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="min-w-[180px] max-w-[320px]">
+                      {c.company || c.company_name || c.domain ? (
+                        <span className="flex items-center gap-2">
+                          <span className="truncate text-text-secondary">
+                            {c.company ?? c.company_name ?? c.domain}
+                          </span>
+                          {c.company_domain || c.domain ? (
+                            <a
+                              href={`https://${c.company_domain ?? c.domain}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              aria-label={`Open ${c.company_domain ?? c.domain}`}
+                              className="inline-flex shrink-0 text-foreground-icon-tertiary hover:text-foreground-icon-primary"
+                            >
+                              <RiExternalLinkLine
+                                className="size-3.5"
+                                aria-hidden
+                              />
+                            </a>
+                          ) : null}
+                        </span>
+                      ) : pending ? (
+                        <Skeleton className="h-4 w-24" />
+                      ) : (
+                        <span className="text-text-tertiary">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="min-w-[220px] max-w-[320px]">
+                      <EmailCell
+                        email={c.personal_email}
+                        status={c.personal_email_status}
+                        result={c.result}
+                        field="personal"
+                        isPending={pending}
+                      />
+                    </TableCell>
+                    <TableCell className="min-w-[180px] max-w-[320px]">
+                      <PhoneCell
+                        phone={c.phone}
+                        meta={c.phone_meta}
+                        result={c.result}
+                        isPending={pending}
+                      />
+                    </TableCell>
+                    <TableCell className="min-w-[240px] max-w-[320px]">
+                      <EmailCell
+                        email={c.work_email}
+                        status={c.work_email_status}
+                        result={c.result}
+                        field="work"
+                        isPending={pending}
+                      />
+                    </TableCell>
+                    <TableCell className="min-w-[140px]">
+                      <StatusCell
+                        c={c}
+                        running={!runState.paused || runState.running}
+                      />
+                    </TableCell>
+                    <TableCell className="min-w-[90px] text-text-tertiary tabular-nums">
+                      {fmtDate(c.created_at)}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+          <HorizontalScrollEdges {...edges} className="rounded-t-2xl" />
+        </div>
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-separator-border px-3 py-3">
-          <p className="text-body-2-regular text-text-tertiary tabular-nums">{total === 0 ? "No contacts" : `${fmt(from)}–${fmt(to)} of ${fmt(total)} contacts`}</p>
-          {totalPages > 1 ? <Pagination page={page} totalPages={totalPages} onChange={(p) => setParams({ page: p > 1 ? String(p) : null })} /> : null}
+          <p className="text-body-2-regular text-text-tertiary tabular-nums">
+            {total === 0
+              ? "No contacts"
+              : `${fmt(from)}–${fmt(to)} of ${fmt(total)} contacts`}
+          </p>
+          {totalPages > 1 ? (
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              onChange={(p) => setParams({ page: p > 1 ? String(p) : null })}
+            />
+          ) : null}
         </div>
       </div>
     </section>
