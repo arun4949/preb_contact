@@ -351,6 +351,7 @@ export type Database = {
           provider_enrichment_id: string | null
           raw: Json | null
           settled_at: string | null
+          settled_credits: number
           status: Database["public"]["Enums"]["batch_status"]
           submitted_at: string
           workspace_id: string
@@ -369,6 +370,7 @@ export type Database = {
           provider_enrichment_id?: string | null
           raw?: Json | null
           settled_at?: string | null
+          settled_credits?: number
           status?: Database["public"]["Enums"]["batch_status"]
           submitted_at?: string
           workspace_id: string
@@ -387,6 +389,7 @@ export type Database = {
           provider_enrichment_id?: string | null
           raw?: Json | null
           settled_at?: string | null
+          settled_credits?: number
           status?: Database["public"]["Enums"]["batch_status"]
           submitted_at?: string
           workspace_id?: string

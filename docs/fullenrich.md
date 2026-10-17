@@ -69,6 +69,7 @@ profile:      Person | undefined   // guaranteed when linkedin_url given
 
 ## Webhooks
 - `webhook_url`: POST when the whole batch is FINISHED, CREDITS_INSUFFICIENT or CANCELED; body = GET response.
+- Observed live (2026-10-17): after CREDITS_INSUFFICIENT the enrichment is **resumed by FullEnrich once the account is topped up**, and the same enrichment id reports FINISHED again with the full `cost` (partial 62 → final 211 credits for one 19-row batch). The engine treats that second report as a resumed batch: records are applied to the contacts still attached to the batch, the batch is re-opened and `settle_batch` charges only the difference (`enrichment_batches.settled_credits`, migration 0024).
 - `webhook_events.contact_finished`: POST per contact as it completes; body has **one** item in `data[]` and `status: "IN_PROGRESS"`.
 - Signature: header `X-Signature-SHA1` = lowercase hex HMAC‑SHA1 of the **raw body** with our API key as secret.
   ```ts

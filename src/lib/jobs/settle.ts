@@ -40,15 +40,22 @@ export async function settlePending(admin: Admin): Promise<number> {
 
 /**
  * Move a list to its terminal state when nothing is left in flight:
- * enriching → completed, stopping → stopped. Also applies `row_limit` by
- * skipping pending rows beyond the limit. Idempotent; guarded by status.
+ * enriching → completed, stopping → stopped. A paused list (credits or
+ * upstream) whose last rows arrived while it was paused, for instance a
+ * batch the provider resumed after a top-up, completes the same way. Also
+ * applies `row_limit` by skipping pending rows beyond the limit. Idempotent;
+ * guarded by status.
  */
 export async function finalizeList(admin: Admin, listId: string): Promise<"completed" | "stopped" | null> {
   const { data: list } = await admin.from("lists").select("*").eq("id", listId).maybeSingle();
   if (!list) return null;
   if (!["queued", "enriching", "stopping", "paused_credits", "paused_upstream"].includes(list.status)) return null;
 
-  const [submitted, pendingBefore] = await Promise.all([countContacts(admin, list.id, "submitted"), countContacts(admin, list.id, "pending")]);
+  const [submitted, pendingBefore, pendingBatches] = await Promise.all([
+    countContacts(admin, list.id, "submitted"),
+    countContacts(admin, list.id, "pending"),
+    countSubmittedBatches(admin, list.id),
+  ]);
 
   let pending = pendingBefore;
   if (pending > 0 && list.row_limit && list.status !== "stopping") {
@@ -60,8 +67,9 @@ export async function finalizeList(admin: Admin, listId: string): Promise<"compl
   }
 
   let next: "completed" | "stopped" | null = null;
-  if (list.status === "stopping" && submitted === 0) next = "stopped";
-  else if ((list.status === "enriching" || list.status === "queued") && submitted === 0 && pending === 0) next = "completed";
+  const inFlight = submitted > 0 || pendingBatches > 0;
+  if (list.status === "stopping" && !inFlight) next = "stopped";
+  else if (list.status !== "stopping" && !inFlight && pending === 0) next = "completed";
   if (!next) return null;
 
   const { data: updated } = await admin
@@ -82,11 +90,17 @@ export async function finalizeList(admin: Admin, listId: string): Promise<"compl
   return next;
 }
 
+/** Batches the provider has not reported on yet (a list with one is still in flight). */
+async function countSubmittedBatches(admin: Admin, listId: string): Promise<number> {
+  const { count } = await admin.from("enrichment_batches").select("id", { count: "exact", head: true }).eq("list_id", listId).eq("status", "submitted");
+  return count ?? 0;
+}
+
 export async function finalizeLists(admin: Admin): Promise<number> {
   const { data: lists } = await admin
     .from("lists")
     .select("id")
-    .in("status", ["queued", "enriching", "stopping"])
+    .in("status", ["queued", "enriching", "stopping", "paused_credits", "paused_upstream"])
     .order("updated_at", { ascending: true })
     .limit(50);
   let finalized = 0;

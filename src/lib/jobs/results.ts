@@ -154,6 +154,13 @@ export function batchCreditsAfterSuppression(providerCredits: number | null | un
  * A batch reached a terminal provider status: apply every record, resolve
  * contacts that got no record (silentFail drops invalid rows), and mark the
  * batch so the settler can charge it exactly once.
+ *
+ * A batch that ended in CREDITS_INSUFFICIENT may report again: once the
+ * provider account is topped up, FullEnrich resumes the same enrichment and
+ * sends FINISHED with the full cost. That second report is applied to the
+ * contacts still attached to the batch (rows already moved back to `pending`
+ * belong to a newer batch by then and are left alone) and the batch is
+ * re-opened for settlement; `settle_batch` charges only the difference.
  */
 export async function applyTerminalResult(
   admin: Admin,
@@ -162,6 +169,12 @@ export async function applyTerminalResult(
   fields: readonly string[],
 ): Promise<{ status: BatchStatus; applied: number }> {
   const status = batchStatusFromProvider(result.status);
+  const { data: current } = await admin.from("enrichment_batches").select("status").eq("id", batch.id).maybeSingle();
+  const resumed = current?.status === "credits_insufficient" && status !== "credits_insufficient";
+  if (current && current.status !== "submitted" && !resumed) {
+    log("results.batch_already_terminal", { batchId: batch.id, status: current.status, incoming: status });
+    return { status: current.status, applied: 0 };
+  }
   const { applied, suppressedCredits } = await applyRecords(admin, batch, result.data ?? [], fields);
 
   // Contacts still `submitted` got no result.
@@ -185,11 +198,13 @@ export async function applyTerminalResult(
       status,
       credits_cost: credits,
       finished_at: new Date().toISOString(),
-      raw: { status: result.status, cost: result.cost ?? null, records: result.data?.length ?? 0, suppressed_credits: suppressedCredits } as Json,
+      raw: { status: result.status, cost: result.cost ?? null, records: result.data?.length ?? 0, suppressed_credits: suppressedCredits, resumed } as Json,
+      // Re-open a resumed batch so settle_batch charges the difference.
+      ...(resumed ? { settled_at: null } : {}),
     })
     .eq("id", batch.id)
-    .eq("status", "submitted");
+    .in("status", resumed ? ["credits_insufficient"] : ["submitted"]);
 
-  log("results.batch_terminal", { batchId: batch.id, listId: batch.list_id, status, applied, credits, suppressedCredits });
+  log("results.batch_terminal", { batchId: batch.id, listId: batch.list_id, status, applied, credits, suppressedCredits, resumed });
   return { status, applied };
 }
