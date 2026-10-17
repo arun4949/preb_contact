@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import {
+  RiCheckLine,
   RiExternalLinkLine,
   RiFileCopyLine,
   RiGroupLine,
@@ -19,6 +20,10 @@ import { Chip } from "@/components/base/badges/chip";
 import { EmptyState } from "@/components/base/empty-state/empty-state";
 import { Pagination } from "@/components/base/pagination/pagination";
 import { Select, SelectItem } from "@/components/base/select/select";
+import {
+  CopiedBubble,
+  useCopyFeedback,
+} from "@/components/base/copy-feedback/copy-feedback";
 import { Skeleton } from "@/components/base/skeleton/skeleton";
 import {
   HorizontalScrollEdges,
@@ -32,7 +37,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/base/table/table";
-import { useToast } from "@/components/base/toast/toast";
 import { ChevronSortDown } from "@/components/foundations/icons/chevrons";
 import type { EnrichedPhone } from "@/lib/fullenrich/types";
 import { emailCandidates, phoneCandidates } from "@/lib/lists/candidates";
@@ -105,25 +109,51 @@ function displayName(c: ContactRow): string {
   );
 }
 
+/**
+ * Copy glyph that confirms in place: the icon turns into a check and the
+ * shared "Copied" bubble rises above it. The button stays visible while it
+ * confirms, even after the pointer leaves the row.
+ */
 export function CopyButton({ value, label }: { value: string; label: string }) {
-  const toast = useToast();
+  const { copied, copy } = useCopyFeedback();
+  const done = copied !== null;
   return (
-    <button
-      type="button"
-      aria-label={`Copy ${label}`}
-      onClick={async (e) => {
-        e.stopPropagation();
-        try {
-          await navigator.clipboard.writeText(value);
-          toast.success("Copied");
-        } catch {
-          toast.error("Couldn't copy");
-        }
-      }}
-      className="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-foreground-icon-tertiary opacity-0 transition-opacity hover:bg-background-secondary-hover hover:text-foreground-icon-primary focus-visible:opacity-100 group-hover/row:opacity-100 outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring"
-    >
-      <RiFileCopyLine className="size-4" aria-hidden />
-    </button>
+    <span className="relative inline-flex shrink-0">
+      <button
+        type="button"
+        aria-label={`Copy ${label}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          void copy(value);
+        }}
+        className={cx(
+          "relative inline-flex size-6 items-center justify-center rounded-md outline-none transition-[opacity,background-color,color] duration-150",
+          "hover:bg-background-secondary-hover focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-border-focus-ring group-hover/row:opacity-100",
+          done
+            ? "text-notification-success-foreground opacity-100"
+            : "text-foreground-icon-tertiary opacity-0 hover:text-foreground-icon-primary",
+        )}
+      >
+        <RiFileCopyLine
+          className={cx(
+            "absolute size-4 transition-[opacity,transform] duration-200 ease-out",
+            done ? "scale-50 opacity-0" : "scale-100 opacity-100",
+          )}
+          aria-hidden
+        />
+        <RiCheckLine
+          className={cx(
+            "absolute size-4 transition-[opacity,transform] duration-200 ease-out",
+            done ? "scale-100 opacity-100" : "scale-50 opacity-0",
+          )}
+          aria-hidden
+        />
+      </button>
+      <CopiedBubble
+        show={done}
+        label={`${label.charAt(0).toUpperCase()}${label.slice(1)} copied`}
+      />
+    </span>
   );
 }
 

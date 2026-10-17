@@ -198,7 +198,7 @@ export const lists: DocsCollection = {
           "Mobile numbers in the US and Canada carry a **double check** when the ownership was confirmed, with the confidence in the tooltip, and a **signal** icon for the connect rate (Highest, High or Medium). Other numbers show a question mark with the line details. See [Mobile and landline numbers](/docs/data/phone-types).",
           "A small **counter** after an email or a phone means we found more than one. Hover it to see every candidate with its level. The table shows the most likely one, and the download contains that one too.",
           "Numbers that are not mobile carry a **Landline** or **VoIP** chip.",
-          "Every email and phone has a copy button. Names link to the LinkedIn profile when we know it, companies link to their website.",
+          "Every email and phone has a copy button. A check mark and a small **Copied** label confirm it right next to the address. Names link to the LinkedIn profile when we know it, companies link to their website.",
           "A row marked as not to be contacted shows no data. The person asked not to be contacted through Preb.",
         ] },
       ],
