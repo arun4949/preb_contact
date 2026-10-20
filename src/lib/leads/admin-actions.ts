@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { isAdminEmail } from "@/lib/auth/work-email";
 import { fileTypeFor, MAX_BYTES, parseSpreadsheet } from "@/lib/csv/parse";
-import { cleanEmail, cleanLinkedin } from "@/lib/csv/normalize";
+import { cleanEmail } from "@/lib/csv/normalize";
 import type { EnrichmentField } from "@/lib/credits/estimate";
 import { firstNameFor } from "@/lib/email/name";
 import { insertContacts, purgeCacheRows, queueList, type Result } from "@/lib/lists/insert-contacts";
@@ -15,6 +15,7 @@ import { LEAD_MAX_ROWS, leadPath } from "./constants";
 import { logShareEvent } from "./events";
 import { leadOwnerView, type LeadOwnerView } from "./owners";
 import { normalisePasted, normaliseSheet, parsePastedContacts } from "./parse-input";
+import { cleanLeadProfileUrl } from "./profile-url";
 import { createShareToken, generateCode } from "./token";
 import { ensureInternalWorkspace } from "./workspace";
 
@@ -95,8 +96,9 @@ export async function createLeadShare(formData: FormData): Promise<Result<Create
 
   const leadName = clean(formData.get("lead_name"), 120);
   if (leadName.length < 2) return { ok: false, error: "Enter the lead's name." };
-  const linkedin = cleanLinkedin(clean(formData.get("lead_linkedin_url"), 300));
-  if (!linkedin) return { ok: false, error: "Enter the lead's LinkedIn profile URL." };
+  // LinkedIn, Reddit or any other web URL the lead came from (column name is historical).
+  const linkedin = cleanLeadProfileUrl(clean(formData.get("lead_linkedin_url"), 300));
+  if (!linkedin) return { ok: false, error: "Enter a valid profile URL for the lead, for example their LinkedIn or Reddit profile." };
   const company = clean(formData.get("lead_company"), 120) || null;
   const emailRaw = clean(formData.get("lead_email"), 254);
   const email = emailRaw ? cleanEmail(emailRaw) : null;

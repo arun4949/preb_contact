@@ -1,11 +1,17 @@
 # Sub-processor List
 
-**Last updated:** [date of publication]
-**Version:** 1.0 (draft for review)
+**Last updated:** October 20, 2026
+**Version:** 1.1
 
 This list forms Annex 3 of the Preb Data Processing Agreement (DPA). It names every company that processes Customer Data and Results (the contact data our Customers upload and enrich) on behalf of Kranz & Gupta, Indiepal GbR ("Preb"). Providers that process only account, billing, support or website data, such as Stripe, Resend, Google sign-in, Featurebase and Termly, are not sub-processors for Customer Data and are described in our Privacy Policy instead.
 
 Each sub-processor is bound by a written data processing agreement that imposes obligations equivalent to those Preb accepts in the DPA.
+
+## How enrichment works
+
+When you enrich a contact, Preb sends the details you provide, such as a name, a company or a LinkedIn profile URL, to FullEnrich, our enrichment sub-processor. FullEnrich queries a waterfall of specialised data providers one after another until one of them finds a result, and separate verification providers check the deliverability of every email address found. Preb then shows you the result, with a verification level for each email address.
+
+The data providers in this waterfall are listed under Tier 2 below, as published by FullEnrich. FullEnrich does not report which provider produced an individual result, so we cannot name the source of a specific email address or phone number.
 
 ## How we tell you about changes
 
@@ -23,7 +29,9 @@ We give Owners and Admins at least 30 days notice by email before we add or repl
 
 Our sub-processors use their own providers. We list the ones that can come into contact with Customer Data, as published by each sub-processor on the date above. The live lists are maintained by the sub-processors at the links given.
 
-**Engaged by FullEnrich** (list published at fullenrich.com/sub-processor):
+**Engaged by FullEnrich: data providers in our enrichment waterfall** (list published at fullenrich.com/sub-processor, last updated by FullEnrich on August 2, 2026):
+
+These providers find and verify contact data inside the FullEnrich waterfall. FullEnrich engages them under its own data processing agreements. Under Article 28(4) GDPR, FullEnrich must bind each of them to data protection obligations equivalent to its own, and under Chapter V GDPR it must safeguard transfers to the providers located in the USA.
 
 | Provider | Entity and location | Activity | Data processed | Where the data is stored |
 |---|---|---|---|---|
@@ -52,7 +60,8 @@ Our sub-processors use their own providers. We list the ones that can come into 
 
 | Date | Change |
 |---|---|
-| [date of publication] | First version |
+| October 20, 2026 | Explained how enrichment works and which providers take part in the FullEnrich waterfall. No sub-processor added, removed or replaced |
+| October 13, 2026 | First version |
 
 ## Contact
 

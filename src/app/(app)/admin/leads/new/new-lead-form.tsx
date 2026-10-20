@@ -29,7 +29,7 @@ type Mode = "paste" | "upload";
 const PASTE_PLACEHOLDER = ["https://www.linkedin.com/in/jane-doe", "John Smith, acme.com", "Maria Garcia @ globex.io"].join("\n");
 
 /**
- * Lead name, LinkedIn, company, email, owner, what to find, then the
+ * Lead name, profile URL (LinkedIn, Reddit, ...), company, email, owner, what to find, then the
  * contacts: pasted lines or a spreadsheet. Submits as FormData so the file
  * travels with the request; the server parses, enriches and creates the share.
  */
@@ -99,7 +99,7 @@ export function NewLeadForm({ owners, meId }: { owners: AdminProfile[]; meId: st
           <h2 className="text-headline-medium text-text-primary">The lead</h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Input label="Name" value={leadName} onChange={setLeadName} placeholder="Jane Doe" isDisabled={pending} autoFocus />
-            <Input label="LinkedIn profile" value={linkedin} onChange={setLinkedin} placeholder="https://www.linkedin.com/in/jane-doe" inputDir="ltr" isDisabled={pending} />
+            <Input label="Profile URL" value={linkedin} onChange={setLinkedin} placeholder="https://www.linkedin.com/in/jane-doe" inputDir="ltr" isDisabled={pending} hint="LinkedIn, Reddit or any other link where the lead found you." />
             <Input label="Company (optional)" value={company} onChange={setCompany} placeholder="Acme" isDisabled={pending} />
             <Input label="Email (optional)" value={email} onChange={setEmail} placeholder="jane@acme.com" inputDir="ltr" type="email" isDisabled={pending} hint="Prefills the sign-in form when the lead clicks Sign up." />
           </div>

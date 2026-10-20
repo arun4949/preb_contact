@@ -13,6 +13,7 @@ import {
   RiLink,
   RiLinkedinBoxLine,
   RiMoreFill,
+  RiRedditLine,
   RiRefreshLine,
   RiUserStarLine,
 } from "@remixicon/react";
@@ -55,6 +56,7 @@ import {
   setLeadShareRevoked,
   type LeadShareSummary,
 } from "@/lib/leads/admin-actions";
+import { leadProfileSource } from "@/lib/leads/profile-url";
 import { initialsOf } from "@/utils/initials";
 import { cx } from "@/utils/cx";
 import { chatMessage, shareUrl } from "./new/share-dialog";
@@ -73,6 +75,28 @@ const day = (iso: string) =>
 const n = (v: number) => v.toLocaleString("en-US");
 /** "/l/HEtLd7…": enough to recognise the link, never the full token. */
 const shortLink = (path: string) => `${path.slice(0, 9)}…`;
+
+const PROFILE_LINK = {
+  linkedin: { icon: RiLinkedinBoxLine, label: (name: string) => `${name} on LinkedIn` },
+  reddit: { icon: RiRedditLine, label: (name: string) => `${name} on Reddit` },
+  other: { icon: RiExternalLinkLine, label: (name: string) => `Open profile of ${name}` },
+};
+
+/** Where the lead came from: LinkedIn, Reddit or any other link. */
+function ProfileLink({ url, leadName }: { url: string; leadName: string }) {
+  const { icon: Icon, label } = PROFILE_LINK[leadProfileSource(url)];
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={label(leadName)}
+      className="rounded-sm text-foreground-icon-secondary outline-none hover:text-foreground-icon-primary focus-visible:ring-2 focus-visible:ring-border-focus-ring"
+    >
+      <Icon className="size-4" aria-hidden />
+    </a>
+  );
+}
 
 /** Short link in the table; copies the full URL and confirms in place (the link icon turns into a check). */
 function CopyLinkCell({
@@ -390,15 +414,7 @@ export function LeadsAdmin({
                           <span className="truncate text-body-medium text-text-primary">
                             {s.leadName}
                           </span>
-                          <a
-                            href={s.leadLinkedinUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label={`${s.leadName} on LinkedIn`}
-                            className="rounded-sm text-foreground-icon-secondary outline-none hover:text-foreground-icon-primary focus-visible:ring-2 focus-visible:ring-border-focus-ring"
-                          >
-                            <RiLinkedinBoxLine className="size-4" aria-hidden />
-                          </a>
+                          <ProfileLink url={s.leadLinkedinUrl} leadName={s.leadName} />
                         </span>
                         <span className="truncate text-caption-1-regular text-text-tertiary">
                           {[s.leadCompany, s.leadEmail]
