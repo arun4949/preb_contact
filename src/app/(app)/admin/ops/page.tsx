@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from 
 import { LIST_STATUS_META } from "@/components/application/list-card/list-status";
 import { isAdminEmail } from "@/lib/auth/work-email";
 import { getAccountCredits } from "@/lib/fullenrich/client";
+import { formatUsd } from "@/lib/credits/money";
 import { getPlan } from "@/lib/credits/plans";
 import { formatPhone } from "@/lib/phone/phone";
 import { findArticle } from "@/lib/docs/registry";
@@ -37,7 +38,7 @@ export default async function OpsPage() {
   if (!isAdminEmail(session.email)) notFound();
 
   const admin = createAdminClient();
-  const [balance, stuck, webhooks, paused, lastTick, emails, running, signups, docsVotes] = await Promise.all([
+  const [balance, stuck, webhooks, paused, lastTick, emails, running, signups, docsVotes, overages] = await Promise.all([
     getAccountCredits().then((r) => r.balance).catch((e: unknown) => (e instanceof Error ? e.message : "unavailable")),
     admin
       .from("enrichment_batches")
@@ -70,7 +71,21 @@ export default async function OpsPage() {
       .limit(50),
     // Help center votes: anonymous counts only (migration 0020).
     admin.from("docs_feedback").select("article_slug, helpful").gte("created_at", minutesAgo(DOCS_FEEDBACK_DAYS * 24 * 60)).limit(5000),
+    // Overspend: unpaid invoices need a human when the daily retries run out.
+    admin.from("credit_overages").select("status, credits, amount_cents, workspace_id, created_at").gte("created_at", minutesAgo(31 * 24 * 60)).limit(5000),
   ]);
+  const overspend = { pending: 0, unpaid: 0, unpaidCents: 0, paid: 0, paidCents: 0, workspaces: new Set<string>() };
+  for (const o of overages.data ?? []) {
+    if (o.status === "pending" || o.status === "invoicing") overspend.pending += o.credits;
+    else if (o.status === "failed" || o.status === "action_required") {
+      overspend.unpaid += o.credits;
+      overspend.unpaidCents += o.amount_cents ?? 0;
+      overspend.workspaces.add(o.workspace_id);
+    } else if (o.status === "paid") {
+      overspend.paid += o.credits;
+      overspend.paidCents += o.amount_cents ?? 0;
+    }
+  }
 
   const docsByArticle = new Map<string, { yes: number; no: number }>();
   for (const v of docsVotes.data ?? []) {
@@ -94,6 +109,11 @@ export default async function OpsPage() {
     { label: "Last provider call", value: lastTick.data?.window_start ? when(lastTick.data.window_start) : "never" },
     { label: `Signups (${SIGNUP_DAYS} d)`, value: String(signups.data?.length ?? 0) },
     { label: `Docs votes (${DOCS_FEEDBACK_DAYS} d)`, value: docsShare === null ? "0" : `${docsTotal} · ${docsShare}% helpful`, tone: docsShare !== null && docsTotal >= 10 && docsShare < 60 ? "warn" : undefined },
+    {
+      label: "Overspend (31 d)",
+      value: `${formatUsd(overspend.paidCents)} paid · ${overspend.pending.toLocaleString("en-US")} cr pending · ${overspend.unpaid ? `${formatUsd(overspend.unpaidCents)} unpaid (${overspend.workspaces.size})` : "none unpaid"}`,
+      tone: overspend.unpaid ? "bad" : undefined,
+    },
   ];
 
   return (

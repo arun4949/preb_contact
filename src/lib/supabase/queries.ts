@@ -144,6 +144,8 @@ export interface CreditSummary {
   /** Earliest upcoming expiry among grants with remaining credits. */
   nextExpiry: { amount: number; at: string } | null;
   isTrial: boolean;
+  /** Overspend opted in and on a running plan: an empty balance does not stop lists. */
+  overspendOn: boolean;
 }
 
 /** Balance + next expiry for the credits dropdown. `available` comes from the session context (same request, no second RPC). */
@@ -167,5 +169,6 @@ export const getCreditSummary = cache(async (workspace: Workspace, available: nu
     planCredits: Math.max(planCredits, available),
     nextExpiry: next ? { amount: next.remaining, at: next.expires_at } : null,
     isTrial,
+    overspendOn: workspace.overspend_enabled && !isTrial && !workspace.overspend_blocked_reason && ["active", "trialing"].includes(workspace.subscription_status ?? ""),
   };
 });

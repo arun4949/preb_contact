@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { ListDetail } from "@/components/application/list-detail/list-detail";
 import { LIST_STATUS_META } from "@/components/application/list-card/list-status";
 import { extraColumns, getListContacts, getListEta, getListInsights, parseContactQuery } from "@/lib/lists/queries";
+import { getOverspendStart } from "@/lib/billing/queries";
 import { getSessionContext } from "@/lib/supabase/queries";
 import { createClient } from "@/utils/supabase/server";
 
@@ -25,10 +26,12 @@ export default async function ListDetailPage({ params, searchParams }: PageProps
 
   const query = parseContactQuery(await searchParams);
   const running = LIST_STATUS_META[list.status].running;
-  const [contacts, insights, eta] = await Promise.all([
+  const active = running || list.status === "paused_credits";
+  const [contacts, insights, eta, overspend] = await Promise.all([
     getListContacts(list.id, query),
     getListInsights(list.id),
     running ? getListEta(list) : Promise.resolve({ seconds: null, rowsPerMinute: null }),
+    active ? getOverspendStart(session) : Promise.resolve(null),
   ]);
 
   return (
@@ -40,6 +43,12 @@ export default async function ListDetailPage({ params, searchParams }: PageProps
       eta={eta}
       extras={extraColumns(list)}
       canDelete={session.role !== "member" || list.created_by === session.userId}
+      overspend={{
+        active: overspend?.active ?? false,
+        enabled: overspend?.enabled ?? false,
+        canManage: session.role !== "member",
+        balanceEmpty: (overspend?.creditsAvailable ?? session.creditsAvailable) <= 0,
+      }}
     />
   );
 }

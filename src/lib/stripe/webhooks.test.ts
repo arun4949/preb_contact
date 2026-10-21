@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type Stripe from "stripe";
 import { PLANS } from "@/lib/credits/plans";
-import { decideGrant, subscriptionChange, subscriptionPatch, type InvoiceLineSummary, type SubscriptionBefore, type SubscriptionPatch } from "./webhooks";
+import { decideGrant, isOverspendInvoice, STRIPE_EVENTS, subscriptionChange, subscriptionPatch, type InvoiceLineSummary, type SubscriptionBefore, type SubscriptionPatch } from "./webhooks";
 import { planKeyFromLookup as fromCatalogue } from "./catalogue";
 
 const p1k = PLANS.find((p) => p.key === "p2_1k_m")!;
@@ -125,5 +125,19 @@ describe("subscriptionChange", () => {
   it("ignores repeated events and past_due churn", () => {
     expect(subscriptionChange(running, patch({}))).toBeNull();
     expect(subscriptionChange({ ...running, subscription_status: "past_due" }, patch({}))).toBeNull();
+  });
+});
+
+describe("overspend invoices", () => {
+  it("are recognised by their metadata and never earn credits", () => {
+    expect(isOverspendInvoice({ metadata: { preb_kind: "overage", app: "preb" } })).toBe(true);
+    expect(isOverspendInvoice({ metadata: { app: "preb" } })).toBe(false);
+    expect(isOverspendInvoice({ metadata: null })).toBe(false);
+    // A one-off invoice has billing_reason "manual": decideGrant stays silent.
+    expect(decideGrant("manual", [{ priceId: null, amount: 657 }], () => null)).toBeNull();
+  });
+
+  it("subscribes to payment failures so a failed overspend charge blocks further overspend", () => {
+    expect(STRIPE_EVENTS).toContain("invoice.payment_failed");
   });
 });

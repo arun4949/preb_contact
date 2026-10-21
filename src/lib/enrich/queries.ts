@@ -17,6 +17,8 @@ export interface ManualRunState {
   running: boolean;
   /** A manual run waits for credits. */
   paused: boolean;
+  /** Why (lists.pause_reason) when paused. */
+  pauseReason: "credits" | "overspend_limit" | "overspend_payment" | null;
 }
 
 function escapeLike(value: string) {
@@ -60,13 +62,15 @@ export async function getManualRunState(workspaceId: string): Promise<ManualRunS
   const supabase = await createClient();
   const { data } = await supabase
     .from("lists")
-    .select("status")
+    .select("status, pause_reason")
     .eq("workspace_id", workspaceId)
     .eq("source", "manual")
     .in("status", ["queued", "enriching", "stopping", "paused_credits", "paused_upstream"]);
   const statuses = new Set((data ?? []).map((l) => l.status));
+  const pausedRow = (data ?? []).find((l) => l.status === "paused_credits");
   return {
     running: statuses.has("queued") || statuses.has("enriching") || statuses.has("stopping") || statuses.has("paused_upstream"),
     paused: statuses.has("paused_credits"),
+    pauseReason: pausedRow ? ((pausedRow.pause_reason as ManualRunState["pauseReason"]) ?? "credits") : null,
   };
 }

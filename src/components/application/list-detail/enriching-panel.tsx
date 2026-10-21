@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { RiCoinLine, RiMailSendLine } from "@remixicon/react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { RiBankCardLine, RiCoinLine, RiMailSendLine } from "@remixicon/react";
 import { Button } from "@/components/base/buttons/button";
+import { useToast } from "@/components/base/toast/toast";
+import { allowListOverspend } from "@/lib/lists/actions";
 import { useSettingsUrl } from "@/components/application/settings/use-settings-url";
 import { AgentThinking } from "@/components/application/agent-thinking/agent-thinking";
 import { useCountUp } from "@/hooks/use-count-up";
@@ -56,14 +59,42 @@ const PAUSED_COPY: Partial<Record<ListRow["status"], string>> = {
   failed: "Enrichment stopped after repeated provider errors. Our team has been alerted.",
 };
 
+const PAUSE_REASON_COPY: Record<string, string> = {
+  overspend_limit: "Paused, your monthly overspend limit is reached. Raise the limit or add credits to continue. Your progress so far is saved.",
+  overspend_payment: "Paused, your last overspend payment failed. Fix the payment to continue. Your progress so far is saved.",
+};
+
+export interface EnrichingPanelOverspend {
+  /** The workspace may overspend right now (opted in, running plan, not blocked). */
+  active: boolean;
+  /** Opted in at all (may still be blocked or ineligible). */
+  enabled: boolean;
+  canManage: boolean;
+  /** Workspace balance is empty: a running overspend list is charging the card. */
+  balanceEmpty: boolean;
+}
+
 /**
  * Centered progress panel for running or paused lists (plan § List detail · enriching).
  * `variant="public"` (lead share page): no Buy credits button, no "we'll email you" line.
  */
-export function EnrichingPanel({ list, eta, variant = "app" }: { list: ListRow; eta: ListEta; variant?: "app" | "public" }) {
+export function EnrichingPanel({ list, eta, variant = "app", overspend }: { list: ListRow; eta: ListEta; variant?: "app" | "public"; overspend?: EnrichingPanelOverspend }) {
   const { openSettings } = useSettingsUrl();
+  const router = useRouter();
+  const toast = useToast();
+  const [allowPending, startAllow] = useTransition();
   const { steps, completed } = stepsFor(list);
   const paused = list.status in PAUSED_COPY;
+  const reason = list.status === "paused_credits" ? (list.pause_reason ?? "credits") : null;
+
+  const continueWithOverspend = () =>
+    startAllow(async () => {
+      const res = await allowListOverspend(list.id);
+      if (res.ok) {
+        toast.success("Continuing beyond your balance", { description: "The list picks up again within a minute. Extra credits are invoiced when it finishes." });
+        router.refresh();
+      } else toast.error(res.error);
+    });
   const target = enrichmentTarget(list);
   const processed = useCountUp(list.processed_rows, 600);
   const [msg, setMsg] = useState(0);
@@ -75,11 +106,12 @@ export function EnrichingPanel({ list, eta, variant = "app" }: { list: ListRow; 
   }, [paused]);
 
   const subtitle = useMemo(() => {
-    if (paused) return PAUSED_COPY[list.status];
+    if (paused) return (reason && PAUSE_REASON_COPY[reason]) || PAUSED_COPY[list.status];
     if (list.status === "queued") return "Starting in a few seconds…";
     if (list.status === "stopping") return "Finishing contacts already in progress. Nothing new is submitted.";
-    return formatEta(eta.seconds);
-  }, [paused, list.status, eta.seconds]);
+    const eta_ = formatEta(eta.seconds);
+    return list.overspend_allowed && overspend?.balanceEmpty ? `${eta_}. Extra credits are charged to your card.` : eta_;
+  }, [paused, reason, list.status, list.overspend_allowed, overspend?.balanceEmpty, eta.seconds]);
 
   return (
     <section className="mx-auto w-full max-w-[720px] rounded-3xl border border-border-button-default bg-background-primary-default p-6 sm:p-8">
@@ -93,9 +125,30 @@ export function EnrichingPanel({ list, eta, variant = "app" }: { list: ListRow; 
           <p className="text-body-regular text-text-secondary">{subtitle}</p>
           {!paused ? <AgentThinking variant="stars" label={THINKING[msg]} tone="subtle" showTimer={false} /> : null}
           {variant === "app" && list.status === "paused_credits" ? (
-            <Button size="small" leadingIcon={RiCoinLine} className="rounded-full" onClick={() => openSettings("billing", { plan: true })}>
-              Buy credits
-            </Button>
+            <div className="flex flex-wrap items-center justify-center gap-2 md:justify-start">
+              {reason === "credits" ? (
+                <>
+                  <Button size="small" leadingIcon={RiCoinLine} className="rounded-full" onClick={() => openSettings("billing", { plan: true })}>
+                    Buy credits
+                  </Button>
+                  {overspend?.canManage && !list.overspend_allowed ? (
+                    overspend.active ? (
+                      <Button variant="secondary" size="small" leadingIcon={RiBankCardLine} className="rounded-full" onClick={continueWithOverspend} disabled={allowPending} aria-busy={allowPending}>
+                        {allowPending ? "Continuing…" : "Continue beyond balance"}
+                      </Button>
+                    ) : !overspend.enabled ? (
+                      <Button variant="secondary" size="small" leadingIcon={RiBankCardLine} className="rounded-full" onClick={() => openSettings("billing", { overspend: true })}>
+                        Turn on overspend
+                      </Button>
+                    ) : null
+                  ) : null}
+                </>
+              ) : (
+                <Button size="small" leadingIcon={RiBankCardLine} className="rounded-full" onClick={() => openSettings("billing", { overspend: true })}>
+                  {reason === "overspend_limit" ? "Raise limit" : "Fix payment"}
+                </Button>
+              )}
+            </div>
           ) : null}
           {variant === "app" ? (
             <p className="mt-2 flex items-center gap-2 text-body-2-regular text-text-tertiary">

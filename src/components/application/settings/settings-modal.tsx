@@ -47,6 +47,8 @@ export interface SettingsModalProps {
   planReason?: string;
   /** Bumped by the host after a Checkout return so Billing reloads. */
   billingRefreshKey?: number;
+  /** Scroll Billing to the Overspend section and highlight it (URL `&overspend=1`). */
+  focusOverspend?: boolean;
 }
 
 type IconComponent = ComponentType<{
@@ -92,6 +94,7 @@ export function SettingsModal({
   onBillingViewChange,
   planReason,
   billingRefreshKey,
+  focusOverspend,
 }: SettingsModalProps) {
   const direction = useDirection();
   const [page, setPage] = useState<SettingsPage>(defaultPage);
@@ -312,7 +315,7 @@ export function SettingsModal({
               onScroll={(e) => setContentScrolled(e.currentTarget.scrollTop > 0)}
             >
               {page === "billing" ? (
-                <SettingsBilling view={billingView} onViewChange={onBillingViewChange} onClose={onClose} planReason={planReason} refreshKey={billingRefreshKey} />
+                <SettingsBilling view={billingView} onViewChange={onBillingViewChange} onClose={onClose} planReason={planReason} refreshKey={billingRefreshKey} focusOverspend={focusOverspend} onSaved={showSavedToast} />
               ) : page === "workspace" ? (
                 <SettingsMembers />
               ) : (

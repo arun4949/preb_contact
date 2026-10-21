@@ -1,13 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { RiArrowLeftSLine, RiSparklingLine } from "@remixicon/react";
 import { Button } from "@/components/base/buttons/button";
 import { Stepper } from "@/components/base/stepper/stepper";
 import { useToast } from "@/components/base/toast/toast";
 import { autoMap, type ColumnMapping } from "@/lib/csv/automap";
 import type { ParsedSheet, FileType } from "@/lib/csv/parse";
+import { fetchOverspendStart } from "@/lib/billing/actions";
+import type { OverspendStart } from "@/lib/billing/queries";
 import { discardDraft, type ParseSummary } from "@/lib/lists/actions";
 import { cx } from "@/utils/cx";
 import { StepUpload } from "./step-upload";
@@ -34,9 +36,26 @@ export interface UploadedFile {
 }
 
 /** Three-step wizard (Figma 1015:39/41/43). Step state lives here; steps are presentational + actions. */
-export function NewListWizard({ creditsAvailable }: { creditsAvailable: number }) {
+export function NewListWizard({ creditsAvailable: initialCredits, overspend: initialOverspend }: { creditsAvailable: number; overspend: OverspendStart }) {
   const router = useRouter();
   const toast = useToast();
+  const params = useSearchParams();
+  const [overspend, setOverspend] = useState(initialOverspend);
+  const [creditsAvailable, setCreditsAvailable] = useState(initialCredits);
+  // The settings modal (Buy credits, Turn on overspend) changes what the Configure step may start: refetch when it closes.
+  const settingsOpen = params.get("settings") !== null;
+  const wasOpen = useRef(settingsOpen);
+  useEffect(() => {
+    if (wasOpen.current && !settingsOpen) {
+      fetchOverspendStart()
+        .then((o) => {
+          setOverspend(o);
+          setCreditsAvailable(o.creditsAvailable);
+        })
+        .catch(() => {});
+    }
+    wasOpen.current = settingsOpen;
+  }, [settingsOpen]);
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState<1 | -1>(1);
   const [upload, setUpload] = useState<UploadedFile | null>(null);
@@ -152,6 +171,7 @@ export function NewListWizard({ creditsAvailable }: { creditsAvailable: number }
             defaultName={upload.file.name.replace(/\.[^.]+$/, "")}
             summary={summary}
             creditsAvailable={creditsAvailable}
+            overspend={overspend}
             onStarting={() => {
               startedRef.current = true;
             }}

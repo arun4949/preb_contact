@@ -5,7 +5,7 @@ import { ListFinishedEmail } from "@/lib/email/templates/list-finished";
 import { ListPausedEmail } from "@/lib/email/templates/list-paused";
 import { OpsAlertEmail } from "@/lib/email/templates/ops-alert";
 import { firstNameFor } from "@/lib/email/name";
-import { listFailedCopy, listFinishedCopy, listPausedCreditsCopy, listPausedUpstreamCopy } from "@/lib/notifications/copy";
+import { listFailedCopy, listFinishedCopy, listPausedCreditsCopy, listPausedUpstreamCopy, type PauseReason } from "@/lib/notifications/copy";
 import { notifyUsers } from "@/lib/notifications/emit";
 import { isInternalWorkspace, logError, type Admin, type ListRow } from "./shared";
 
@@ -52,9 +52,15 @@ export async function notifyListFinished(admin: Admin, input: ListRow, stopped =
   }
 }
 
-export async function notifyListPaused(admin: Admin, input: ListRow, remaining: number) {
+const PAUSED_SUBJECT: Record<PauseReason, (name: string) => string> = {
+  credits: (name) => `${name} is paused, add credits to continue`,
+  overspend_limit: (name) => `${name} is paused, your monthly overspend limit is reached`,
+  overspend_payment: (name) => `${name} is paused, an overspend payment failed`,
+};
+
+export async function notifyListPaused(admin: Admin, input: ListRow, remaining: number, reason: PauseReason = "credits") {
   const list = await withKind(admin, input);
-  await notifyUsers(admin, [list.created_by], listPausedCreditsCopy(list, remaining), { workspaceId: list.workspace_id });
+  await notifyUsers(admin, [list.created_by], listPausedCreditsCopy(list, remaining, reason), { workspaceId: list.workspace_id });
   try {
     const recipient = await creator(admin, list);
     if (!recipient) return;
@@ -62,8 +68,8 @@ export async function notifyListPaused(admin: Admin, input: ListRow, remaining: 
       to: recipient.email,
       kind: "list_paused",
       workspaceId: list.workspace_id,
-      subject: `${list.name} is paused, add credits to continue`,
-      react: ListPausedEmail({ firstName: recipient.firstName, listId: list.id, listName: list.name, processed: list.processed_rows, remaining, href: emailHref(list) }),
+      subject: PAUSED_SUBJECT[reason](list.name),
+      react: ListPausedEmail({ firstName: recipient.firstName, listId: list.id, listName: list.name, processed: list.processed_rows, remaining, href: emailHref(list), reason }),
     });
   } catch (error) {
     logError("notify.list_paused_failed", error, { listId: list.id });

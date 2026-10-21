@@ -1,11 +1,12 @@
 import "server-only";
 
 import { maybeNotifyLowCredits } from "@/lib/billing/low-credits";
+import { invoicePendingOverspend } from "@/lib/billing/overspend";
 import { notifyListFinished } from "./notify";
 import { countContacts, countUpstreamRows, log, logError, releaseHolds, type Admin } from "./shared";
 
 /** Charge one terminal batch exactly once (`settle_batch` is atomic and idempotent). */
-export async function settleBatch(admin: Admin, batchId: string): Promise<{ charged: number; consumed: number; derived: number } | null> {
+export async function settleBatch(admin: Admin, batchId: string): Promise<{ charged: number; consumed: number; derived: number; overage: number } | null> {
   const { data, error } = await admin.rpc("settle_batch", { p_batch_id: batchId });
   if (error) throw new Error(`settle_batch failed: ${error.message}`);
   const row = data?.[0];
@@ -86,6 +87,14 @@ export async function finalizeList(admin: Admin, listId: string): Promise<"compl
   }
   await releaseHolds(admin, list.id);
   log("finalize.list", { listId: list.id, status: next, processed: updated.processed_rows, creditsUsed: updated.credits_used });
+  // Overspend: everything this workspace spent beyond its balance is invoiced now (never blocks finalisation).
+  if (updated.overspend_allowed) {
+    try {
+      await invoicePendingOverspend(admin, list.workspace_id, "list_finished");
+    } catch (error) {
+      logError("finalize.overspend_invoice_failed", error, { listId: list.id });
+    }
+  }
   await notifyListFinished(admin, updated, next === "stopped");
   return next;
 }

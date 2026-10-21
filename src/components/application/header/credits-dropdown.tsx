@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { RiCoinLine } from "@remixicon/react";
+import { RiBankCardLine, RiCoinLine } from "@remixicon/react";
 import { Chip } from "@/components/base/badges/chip";
 import { Dropdown, DropdownPopover, DropdownTrigger } from "@/components/base/dropdown/dropdown";
 import { ProgressBar } from "@/components/base/progress-bar/progress-bar";
@@ -18,6 +18,8 @@ export function CreditsDropdown({ summary }: { summary: CreditSummary }) {
   const [open, setOpen] = useState(false);
   const { openSettings } = useSettingsUrl();
   const low = summary.planCredits > 0 && summary.available < summary.planCredits * 0.1;
+  // With overspend on, a low balance is information, not an alarm.
+  const alarm = low && !summary.overspendOn;
 
   return (
     <Dropdown isOpen={open} onOpenChange={setOpen}>
@@ -28,7 +30,7 @@ export function CreditsDropdown({ summary }: { summary: CreditSummary }) {
         <RiCoinLine className="size-5 shrink-0 text-foreground-icon-primary" aria-hidden />
         <span className="hidden text-body-medium sm:inline">Credits</span>
         <span className="hidden text-body-medium tabular-nums sm:inline">{fmt(summary.available)}</span>
-        {low ? (
+        {alarm ? (
           <span aria-hidden className="absolute end-1.5 top-1.5 size-2 rounded-full bg-notification-error-foreground ring-2 ring-background-primary-default" />
         ) : null}
       </DropdownTrigger>
@@ -47,7 +49,7 @@ export function CreditsDropdown({ summary }: { summary: CreditSummary }) {
               <RiCoinLine className="size-4 text-foreground-icon-secondary" aria-hidden />
               Available
             </span>
-            <span className={cx("text-body-medium tabular-nums", low ? "text-text-error-primary" : "text-text-primary")}>
+            <span className={cx("text-body-medium tabular-nums", alarm ? "text-text-error-primary" : "text-text-primary")}>
               {fmt(summary.available)} / {fmt(summary.planCredits)}
             </span>
           </div>
@@ -55,7 +57,7 @@ export function CreditsDropdown({ summary }: { summary: CreditSummary }) {
             aria-label="Credits remaining"
             value={summary.available}
             maxValue={Math.max(1, summary.planCredits)}
-            tone={low ? "error" : "accent"}
+            tone={alarm ? "error" : "accent"}
             size="sm"
           />
           <p className="text-body-2-regular text-text-tertiary">
@@ -63,6 +65,12 @@ export function CreditsDropdown({ summary }: { summary: CreditSummary }) {
               ? `${fmt(summary.nextExpiry.amount)} credits expire on ${fmtDate(summary.nextExpiry.at)}`
               : "No credits yet. Choose a plan to get started."}
           </p>
+          {summary.overspendOn ? (
+            <p className="flex items-center gap-1.5 text-body-2-regular text-text-secondary">
+              <RiBankCardLine className="size-4 shrink-0 text-foreground-icon-secondary" aria-hidden />
+              Overspend is on, your lists keep running.
+            </p>
+          ) : null}
         </div>
         <div className="flex items-center gap-2 border-t border-separator-border px-3 py-3">
           <Button

@@ -1,7 +1,11 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import { useSettingsUrl } from "@/components/application/settings/use-settings-url";
+import { fetchOverspendStart } from "@/lib/billing/actions";
+import type { OverspendStart } from "@/lib/billing/queries";
+import { formatUsdExact } from "@/lib/credits/money";
 import { RiAddLine, RiBuildingLine, RiCoinLine, RiDeleteBinLine, RiLightbulbLine, RiLinkM, RiUserLine } from "@remixicon/react";
 import { Banner } from "@/components/base/banner/banner";
 import { Chip } from "@/components/base/badges/chip";
@@ -36,12 +40,37 @@ function rowIsEmpty(r: Row) {
 
 export interface ManualEnrichFormProps {
   creditsAvailable: number;
+  overspend: OverspendStart;
 }
 
 /** The action revalidates /enrich, so the history below updates from the action response itself. */
-export function ManualEnrichForm({ creditsAvailable }: ManualEnrichFormProps) {
+export function ManualEnrichForm({ creditsAvailable: initialCredits, overspend: initialOverspend }: ManualEnrichFormProps) {
   const toast = useToast();
   const { openSettings } = useSettingsUrl();
+  const params = useSearchParams();
+  const [overspend, setOverspend] = useState(initialOverspend);
+  const [creditsAvailable, setCreditsAvailable] = useState(initialCredits);
+  // Server re-renders (after a run, revalidation) bring fresh props: adopt them without an effect.
+  const [seen, setSeen] = useState(initialOverspend);
+  if (seen !== initialOverspend) {
+    setSeen(initialOverspend);
+    setOverspend(initialOverspend);
+    setCreditsAvailable(initialCredits);
+  }
+  // Buy credits / Turn on overspend happen in the settings modal: refetch when it closes.
+  const settingsOpen = params.get("settings") !== null;
+  const wasOpen = useRef(settingsOpen);
+  useEffect(() => {
+    if (wasOpen.current && !settingsOpen) {
+      fetchOverspendStart()
+        .then((o) => {
+          setOverspend(o);
+          setCreditsAvailable(o.creditsAvailable);
+        })
+        .catch(() => {});
+    }
+    wasOpen.current = settingsOpen;
+  }, [settingsOpen]);
   const [pending, start] = useTransition();
   const [fields, setFields] = useState<EnrichmentField[]>(["personal_email", "mobile_phone"]);
   const [rows, setRows] = useState<Row[]>(() => [emptyRow()]);
@@ -52,7 +81,10 @@ export function ManualEnrichForm({ creditsAvailable }: ManualEnrichFormProps) {
   const invalid = rows.filter((r) => !rowIsComplete(r) && !rowIsEmpty(r));
   const estimate = useMemo(() => estimateCredits(complete.length, fields), [complete.length, fields]);
   const short = Math.max(0, estimate.typical - creditsAvailable);
-  const canStart = complete.length > 0 && invalid.length === 0 && fields.length > 0 && short === 0 && !pending;
+  // The Enrich tab follows the workspace overspend setting (no per-run switch).
+  const overspending = overspend.active;
+  const extraCents = overspend.centsPerCredit != null ? Math.ceil(short * overspend.centsPerCredit) : null;
+  const canStart = complete.length > 0 && invalid.length === 0 && fields.length > 0 && (short === 0 || overspending) && !pending;
 
   const toggle = (key: EnrichmentField, on: boolean) => setFields((prev) => (on ? [...new Set([...prev, key])] : prev.filter((f) => f !== key)));
   const patch = (id: number, p: Partial<Row>) => setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...p } : r)));
@@ -248,17 +280,30 @@ export function ManualEnrichForm({ creditsAvailable }: ManualEnrichFormProps) {
             You have <span className="text-body-medium text-text-primary tabular-nums">{fmt(creditsAvailable)}</span> credits
           </span>
         </div>
-        {short > 0 ? (
+        {short > 0 && overspending ? (
+          <Banner tone="info" title={`About ${fmt(short)} credits beyond your balance${extraCents != null ? `, roughly ${formatUsdExact(extraCents)}` : ""}`}>
+            Overspend is on, so this run can start. The extra credits are charged to your card at {overspend.rate} per credit when the run finishes.
+          </Banner>
+        ) : null}
+        {short > 0 && !overspending ? (
           <Banner
             tone="warning"
             title={`You need ${fmt(short)} more credits to start`}
             actions={
-              <Button type="button" variant="secondary" size="small" onClick={() => openPlans(short)}>
-                Buy credits
-              </Button>
+              <>
+                {!overspend.enabled && overspend.canManage ? (
+                  <Button type="button" variant="secondary" size="small" onClick={() => openSettings("billing", { overspend: true })}>
+                    Turn on overspend
+                  </Button>
+                ) : null}
+                <Button type="button" variant="secondary" size="small" onClick={() => openPlans(short)}>
+                  Buy credits
+                </Button>
+              </>
             }
           >
-            Choose fewer fields or remove contacts to start now.
+            {overspend.enabled ? "Overspend is on but cannot be used right now, check Settings, Billing. " : overspend.canManage ? "" : "Ask an owner or admin to turn on overspend, or "}
+            {overspend.canManage && !overspend.enabled ? "Turn on overspend to continue beyond your balance, or choose" : "Choose"} fewer fields or remove contacts to start now.
           </Banner>
         ) : null}
         <div className="flex justify-end">

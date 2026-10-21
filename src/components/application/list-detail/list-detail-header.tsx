@@ -8,7 +8,7 @@ import { Button } from "@/components/base/buttons/button";
 import { Chip } from "@/components/base/badges/chip";
 import { Dropdown, DropdownDivider, DropdownGroup, DropdownItem, DropdownPopover, DropdownTrigger } from "@/components/base/dropdown/dropdown";
 import { ListDialogs, type ListDialogKind } from "@/components/application/list-card/list-dialogs";
-import { LIST_STATUS_META } from "@/components/application/list-card/list-status";
+import { LIST_STATUS_META, listStatusLabel } from "@/components/application/list-card/list-status";
 import { SEGMENTS } from "@/lib/lists/segments";
 import type { ListRow } from "@/lib/supabase/queries";
 import { cx } from "@/utils/cx";
@@ -57,7 +57,7 @@ export function ListDetailHeader({ list, canDelete }: ListDetailHeaderProps) {
             {list.name}
           </button>
           <Chip variant="caption" color={meta.chip}>
-            {meta.label}
+            {listStatusLabel(list)}
           </Chip>
         </div>
         <p className="text-body-regular text-text-secondary">

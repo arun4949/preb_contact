@@ -209,19 +209,30 @@ export function EnrichedContactsTable({
       {runState.paused ? (
         <Banner
           tone="warning"
-          title="Paused, add credits to continue"
+          title={
+            runState.pauseReason === "overspend_limit"
+              ? "Paused, your monthly overspend limit is reached"
+              : runState.pauseReason === "overspend_payment"
+                ? "Paused, an overspend payment failed"
+                : "Paused, add credits to continue"
+          }
           actions={
-            <Button
-              variant="secondary"
-              size="small"
-              onClick={() => openSettings("billing", { plan: true })}
-            >
-              Buy credits
-            </Button>
+            runState.pauseReason === "overspend_limit" || runState.pauseReason === "overspend_payment" ? (
+              <Button variant="secondary" size="small" onClick={() => openSettings("billing", { overspend: true })}>
+                {runState.pauseReason === "overspend_limit" ? "Raise limit" : "Fix payment"}
+              </Button>
+            ) : (
+              <Button variant="secondary" size="small" onClick={() => openSettings("billing", { plan: true })}>
+                Buy credits
+              </Button>
+            )
           }
         >
-          A run is waiting for credits. It picks up again automatically within a
-          minute of adding them.
+          {runState.pauseReason === "overspend_limit"
+            ? "A run is waiting. Raise the limit or add credits and it picks up again automatically within a minute."
+            : runState.pauseReason === "overspend_payment"
+              ? "A run is waiting. Once the payment goes through, it picks up again automatically within a minute."
+              : "A run is waiting for credits. It picks up again automatically within a minute of adding them."}
         </Banner>
       ) : null}
 

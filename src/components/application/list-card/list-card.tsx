@@ -24,7 +24,7 @@ import { ContactGauge, type GaugeKey } from "@/components/application/contact-ga
 import type { ListRow } from "@/lib/supabase/queries";
 import { cx } from "@/utils/cx";
 import { ListDialogs, type ListDialogKind } from "./list-dialogs";
-import { LIST_STATUS_META } from "./list-status";
+import { LIST_STATUS_META, listStatusLabel } from "./list-status";
 const fmt = (n: number) => n.toLocaleString("en-US");
 const pct = (n: number, of: number) => (of > 0 ? `${Math.round((n / of) * 100)}%` : "0%");
 const fmtDate = (iso: string | null) =>
@@ -69,7 +69,7 @@ export function ListCard({ list, ownerName, canDelete }: ListCardProps) {
         ) : paused ? (
           <>
             <RiAlertLine className="size-4 shrink-0 text-status-orange-text" aria-hidden />
-            <span className="truncate text-text-primary">{meta.label}</span>
+            <span className="truncate text-text-primary">{listStatusLabel(list)}</span>
           </>
         ) : (
           <span className="truncate text-text-secondary">{meta.label}</span>

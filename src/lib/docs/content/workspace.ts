@@ -42,6 +42,7 @@ export const workspace: DocsCollection = {
           ["Invite teammates, resend and revoke invites", "Yes", "Yes", "No"],
           ["Change roles and remove members", "Yes", "Yes", "No"],
           ["Choose or change the plan, open the billing portal", "Yes", "Yes", "No"],
+          ["Turn overspend on or off and set its monthly limit", "Yes", "Yes", "No"],
           ["Leave the workspace", "No", "Yes", "Yes"],
           ["Delete the workspace", "Yes", "No", "No"],
         ] },

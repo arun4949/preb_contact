@@ -24,6 +24,8 @@ export const NOTIFICATION_KINDS = [
   "plan_cancel_scheduled",
   "plan_cancel_reverted",
   "plan_canceled",
+  "overspend_charged",
+  "overspend_failed",
 ] as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];

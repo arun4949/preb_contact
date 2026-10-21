@@ -2,6 +2,7 @@ import { CREDIT_COST } from "@/lib/fullenrich/mapping";
 import type { DocsCollection } from "../types";
 
 const UPDATED = "2026-10-12";
+const OVERSPEND_UPDATED = "2026-10-21";
 
 export const billing: DocsCollection = {
   slug: "billing",
@@ -14,7 +15,7 @@ export const billing: DocsCollection = {
       summary: "Credits pay for results. One pool per workspace, nothing found costs nothing.",
       keywords: ["credits", "balance", "cost", "price per result", "hold", "reserved", "credit history"],
       updated: UPDATED,
-      related: ["plans-and-pricing", "credit-expiry", "running-out-of-credits"],
+      related: ["plans-and-pricing", "credit-expiry", "running-out-of-credits", "overspend"],
       blocks: [
         { type: "paragraph", text: "Credits are the currency inside Preb. Your workspace has one balance that every teammate uses. Credits come from your plan, or from the free trial, and are spent on results." },
         { type: "heading", text: "What a result costs" },
@@ -27,7 +28,7 @@ export const billing: DocsCollection = {
         ] },
         { type: "heading", text: "Before, during and after a list" },
         { type: "list", items: [
-          "**Before**: the Configure step shows a typical estimate and a maximum. A list can start when your balance covers the typical estimate.",
+          "**Before**: the Configure step shows a typical estimate and a maximum. A list can start when your balance covers the typical estimate, or when [overspend](/docs/billing/overspend) is on.",
           "**During**: the typical amount is reserved so that two lists cannot spend the same credits twice. Rows are charged as results arrive.",
           "**After**: the reservation is released and the list shows exactly what it used, in the pill next to its status and under Settings, Billing, **Credit history**.",
         ] },
@@ -113,14 +114,15 @@ export const billing: DocsCollection = {
       title: "What happens when you run out of credits",
       summary: "Lists pause instead of failing, and continue by themselves after you add credits.",
       keywords: ["out of credits", "paused needs credits", "buy credits", "low credits", "empty balance"],
-      updated: UPDATED,
-      related: ["list-statuses", "plans-and-pricing", "how-credits-work"],
+      updated: OVERSPEND_UPDATED,
+      related: ["list-statuses", "plans-and-pricing", "how-credits-work", "overspend"],
       blocks: [
         { type: "list", items: [
-          "A new list cannot start when the balance is below its typical estimate. The Configure step shows how many credits you are short and a **Buy credits** button.",
+          "A new list cannot start when the balance is below its typical estimate. The Configure step shows how many credits you are short, a **Buy credits** button and, for owners and admins, **Turn on overspend**.",
           "A running list that uses the last credits changes to **Paused, needs credits**. Rows that were already found keep their results.",
           "As soon as credits arrive, from a new plan, a renewal or an upgrade, the paused list continues on its own. You do not need to restart it.",
         ] },
+        { type: "callout", tone: "note", text: "Workspaces on a plan can switch on [overspend](/docs/billing/overspend). Lists then keep running when the balance is empty, and the extra credits are charged to the card at the plan's price per credit." },
         { type: "heading", text: "Warnings before it happens" },
         { type: "paragraph", text: "When your balance drops under 10 percent of your plan, the workspace owner gets an email and everyone sees a notification in the bell. The credits menu in the top bar shows the balance at any time." },
         { type: "heading", text: "Adding credits" },
@@ -128,11 +130,51 @@ export const billing: DocsCollection = {
       ],
     },
     {
+      slug: "overspend",
+      title: "Keep enriching when credits run out",
+      summary: "Overspend lets lists continue beyond your balance. The extra credits are charged to your card at your plan's price per credit.",
+      keywords: ["overspend", "overage", "auto charge", "keep running", "beyond balance", "monthly limit", "payment failed", "card charged", "continue beyond balance"],
+      updated: OVERSPEND_UPDATED,
+      related: ["running-out-of-credits", "how-credits-work", "invoices-and-payment", "roles-and-permissions"],
+      blocks: [
+        { type: "paragraph", text: "By default a list pauses when your workspace balance reaches zero and continues once new credits arrive. With **overspend** switched on, lists keep running. Every credit used beyond your balance is counted and invoiced in money, so a large list finishes in one go without waiting for the next renewal." },
+        { type: "heading", text: "What it costs" },
+        { type: "list", items: [
+          "Extra credits cost exactly your plan's price per credit, the plan price divided by its credits. On a 1,000 credit plan at $36.50 that is $0.0365 per credit; the current rate is shown in Settings, Billing.",
+          "You only pay for results, like always. Nothing found costs nothing.",
+          "The rate of the plan you are on when a batch is settled applies. Trial workspaces and workspaces without an active plan cannot use overspend.",
+        ] },
+        { type: "heading", text: "When your card is charged" },
+        { type: "list", items: [
+          "Each list is invoiced once, when it finishes or is stopped. The invoice lists the extra credits per list and is charged to the card on file automatically. The owner gets a receipt by email, and the invoice PDF is in the billing portal.",
+          "Lists that run for more than a day are invoiced for the credits used so far once a day, so no invoice grows unnoticed.",
+          "Amounts under $0.50 carry over to the next invoice.",
+        ] },
+        { type: "heading", text: "Turn it on" },
+        { type: "steps", items: [
+          "Go to Settings, Billing, section **Overspend**. Only owners and admins can change it.",
+          "Switch on **Keep enriching when credits run out**. A dialog shows the price per credit, the card that will be charged and the monthly limit. Confirm with **Turn on overspend**.",
+          "Optionally set a **Monthly limit**. When the extra credits of a calendar month reach the limit, lists pause with the status **Paused, overspend limit reached** and continue once you raise the limit or new credits arrive.",
+        ] },
+        { type: "heading", text: "Per list" },
+        { type: "paragraph", text: "Once overspend is on, the Configure step shows **Continue beyond your balance**, switched on by default. Switch it off for a list that must not go beyond the balance; that list then pauses like before. The Enrich tab always follows the workspace setting. A list that is already paused for credits shows **Continue beyond balance** on its page, so you can let it finish without restarting." },
+        { type: "heading", text: "If a payment fails" },
+        { type: "paragraph", text: "When the card is declined or your bank asks for a confirmation, the owner and admins are notified and lists that need extra credits pause with **Paused, payment failed**. Settings, Billing shows the unpaid invoice with **Retry payment** or **Complete payment** and **Update card**. As soon as the invoice is paid, everything continues on its own. Overspend stays blocked until then, your balance and plan are not affected." },
+        { type: "heading", text: "Where to see it" },
+        { type: "list", items: [
+          "Settings, Billing, **Overspend** shows this month's extra credits and their amount.",
+          "**Credit history** lists every overspend charge per list as **Overspend**.",
+          "The credits menu in the top bar says **Overspend is on** instead of warning about a low balance.",
+        ] },
+        { type: "callout", tone: "important", text: "Overspend authorises automatic charges to the card on file. The exact terms are in the [Terms of Service](https://preb.co/terms), section 6. You can turn it off at any time; lists already running under overspend finish the batch in progress and are invoiced for it." },
+      ],
+    },
+    {
       slug: "invoices-and-payment",
       title: "Invoices, payment methods and cancelling",
       summary: "The billing portal is where you download invoices, change the card and cancel.",
-      keywords: ["invoice", "receipt", "payment method", "card", "cancel", "cancellation", "billing portal", "vat"],
-      updated: UPDATED,
+      keywords: ["invoice", "receipt", "payment method", "card", "cancel", "cancellation", "billing portal", "vat", "overspend invoice"],
+      updated: OVERSPEND_UPDATED,
       related: ["change-your-plan", "credit-expiry", "delete-workspace-or-account"],
       blocks: [
         { type: "paragraph", text: "Payments are handled by Stripe, a payment provider used by millions of businesses. Preb never sees or stores your card details." },
@@ -143,8 +185,8 @@ export const billing: DocsCollection = {
         ] },
         { type: "heading", text: "In the portal you can" },
         { type: "list", items: [
-          "Download every invoice and receipt as a PDF.",
-          "Change the card or the billing address, and add a tax ID for your invoices.",
+          "Download every invoice and receipt as a PDF, including [overspend](/docs/billing/overspend) invoices.",
+          "Change the card or the billing address, and add a tax ID for your invoices. The same card pays overspend invoices.",
           "Cancel the plan. The plan then runs until the end of the period you already paid, and no further charge is made.",
           "Undo a cancellation before the period ends.",
         ] },

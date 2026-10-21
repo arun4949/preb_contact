@@ -12,12 +12,20 @@ export const STRIPE_PROVIDER = "stripe";
 export const STRIPE_EVENTS: Stripe.WebhookEndpointCreateParams.EnabledEvent[] = [
   "checkout.session.completed",
   "invoice.paid",
+  "invoice.payment_failed",
   "customer.subscription.created",
   "customer.subscription.updated",
   "customer.subscription.deleted",
 ];
 
 export type GrantReason = "subscription_create" | "subscription_cycle" | "subscription_update";
+
+/** `metadata.preb_kind` of the one-off invoices that bill overspend (no credits are granted for them). */
+export const OVERSPEND_INVOICE_KIND = "overage";
+
+export function isOverspendInvoice(invoice: Pick<Stripe.Invoice, "metadata">): boolean {
+  return invoice.metadata?.preb_kind === OVERSPEND_INVOICE_KIND;
+}
 
 export interface InvoiceLineSummary {
   priceId: string | null;

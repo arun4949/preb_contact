@@ -15,6 +15,7 @@ export interface NotificationCopy {
 const n = (value: number) => value.toLocaleString("en-US");
 const day = (iso: string | Date) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 const plural = (count: number, one: string, many: string) => `${n(count)} ${count === 1 ? one : many}`;
+const usd = (cents: number) => (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export interface ListCopyInput {
   id: string;
@@ -50,12 +51,55 @@ export function listFinishedCopy(list: ListCopyInput, stopped: boolean): Notific
   };
 }
 
-export function listPausedCreditsCopy(list: Pick<ListCopyInput, "id" | "name" | "source" | "workspace_kind">, remaining: number): NotificationCopy {
+/** Why a list sits in `paused_credits` (lists.pause_reason). */
+export type PauseReason = "credits" | "overspend_limit" | "overspend_payment";
+
+const withSettings = (href: string, params: string) => `${href}${href.includes("?") ? "&" : "?"}${params}`;
+
+export function listPausedCreditsCopy(list: Pick<ListCopyInput, "id" | "name" | "source" | "workspace_kind">, remaining: number, reason: PauseReason = "credits"): NotificationCopy {
+  const waiting = plural(remaining, "contact is", "contacts are");
+  const base = { kind: "list_paused_credits" as const, title: `${listLabel(list)} is paused`, status: "error" as const };
+  switch (reason) {
+    case "overspend_limit":
+      return {
+        ...base,
+        body: `${waiting} waiting. Your monthly overspend limit is reached. Raise the limit or add credits and it continues on its own.`,
+        href: withSettings(listHref(list), "settings=billing&overspend=1"),
+      };
+    case "overspend_payment":
+      return {
+        ...base,
+        body: `${waiting} waiting. Your last overspend payment failed. Fix the payment and it continues on its own.`,
+        href: withSettings(listHref(list), "settings=billing&overspend=1"),
+      };
+    default:
+      return {
+        ...base,
+        body: `${waiting} waiting for credits. Add credits and it continues on its own.`,
+        href: withSettings(listHref(list), "settings=billing&plan=1"),
+      };
+  }
+}
+
+export function overspendChargedCopy(input: { credits: number; amountCents: number; listNames: string[] }): NotificationCopy {
+  const lists = input.listNames.length === 1 ? input.listNames[0] : plural(input.listNames.length, "list", "lists");
   return {
-    kind: "list_paused_credits",
-    title: `${listLabel(list)} is paused`,
-    body: `${plural(remaining, "contact is", "contacts are")} waiting for credits. Add credits and it continues on its own.`,
-    href: `${listHref(list)}${listHref(list).includes("?") ? "&" : "?"}settings=billing&plan=1`,
+    kind: "overspend_charged",
+    title: `Overspend charged, ${usd(input.amountCents)}`,
+    body: `${plural(input.credits, "credit", "credits")} beyond your balance for ${lists} were charged to your payment method.`,
+    href: "/lists?settings=billing&overspend=1",
+    status: "information",
+  };
+}
+
+export function overspendFailedCopy(input: { amountCents: number; actionRequired: boolean }): NotificationCopy {
+  return {
+    kind: "overspend_failed",
+    title: input.actionRequired ? `Overspend payment needs your confirmation` : `Overspend payment of ${usd(input.amountCents)} failed`,
+    body: input.actionRequired
+      ? `Your bank asks you to confirm the ${usd(input.amountCents)} overspend payment. Lists that need extra credits pause until it is done.`
+      : "Lists that need extra credits pause until the payment goes through. Update your card or retry the payment.",
+    href: "/lists?settings=billing&overspend=1",
     status: "error",
   };
 }

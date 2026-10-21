@@ -8,11 +8,13 @@ import {
   invoiceLines,
   invoiceSubscriptionId,
   invoiceWorkspaceId,
+  isOverspendInvoice,
   STRIPE_PROVIDER,
   subscriptionChange,
   subscriptionPatch,
 } from "@/lib/stripe/webhooks";
 import { getPlan } from "@/lib/credits/plans";
+import { markOverspendInvoiceFailed, markOverspendInvoicePaid } from "@/lib/billing/overspend";
 import { creditsGrantedCopy, planCopy } from "@/lib/notifications/copy";
 import { notifyWorkspace } from "@/lib/notifications/emit";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -59,6 +61,10 @@ export async function POST(request: Request) {
         break;
       case "invoice.paid":
         await onInvoicePaid(admin, event.data.object);
+        break;
+      case "invoice.payment_failed":
+        // Only overspend invoices are ours to react to; subscription dunning stays with Stripe.
+        if (isOverspendInvoice(event.data.object)) await markOverspendInvoiceFailed(admin, event.data.object);
         break;
       case "customer.subscription.created":
       case "customer.subscription.updated":
@@ -109,6 +115,11 @@ async function onCheckoutCompleted(admin: Admin, session: Stripe.Checkout.Sessio
 }
 
 async function onInvoicePaid(admin: Admin, invoice: Stripe.Invoice) {
+  // Overspend invoices carry no credits: mark the overage rows paid and lift the block (idempotent).
+  if (isOverspendInvoice(invoice)) {
+    await markOverspendInvoicePaid(admin, invoice.id, invoice);
+    return;
+  }
   const wsId = await workspaceIdFor(admin, customerIdOf(invoice), invoiceWorkspaceId(invoice));
   if (!wsId) {
     log("stripe.invoice_unknown_workspace", { invoiceId: invoice.id });

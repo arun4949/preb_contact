@@ -1,5 +1,5 @@
 // Generated from the Supabase project via MCP `generate_typescript_types`
-// after migration 0025 (list_result_insights). Regenerate after every migration.
+// after migration 0027 (overspend). Regenerate after every migration.
 export type Json =
   | string
   | number
@@ -56,6 +56,57 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_suppressions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          note: string | null
+          request_id: string | null
+          source: string
+          value_hash: string
+          value_hint: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind: string
+          note?: string | null
+          request_id?: string | null
+          source?: string
+          value_hash: string
+          value_hint: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          note?: string | null
+          request_id?: string | null
+          source?: string
+          value_hash?: string
+          value_hint?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_suppressions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_suppressions_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "opt_out_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -211,53 +262,75 @@ export type Database = {
           },
         ]
       }
-      contact_suppressions: {
+      credit_overages: {
         Row: {
+          amount_cents: number | null
+          batch_id: string | null
           created_at: string
-          created_by: string | null
+          credits: number
+          error: string | null
+          failed_at: string | null
           id: string
-          kind: string
-          note: string | null
-          request_id: string | null
-          source: string
-          value_hash: string
-          value_hint: string
+          invoiced_at: string | null
+          list_id: string
+          paid_at: string | null
+          plan_key: string | null
+          status: string
+          stripe_invoice_id: string | null
+          workspace_id: string
         }
         Insert: {
+          amount_cents?: number | null
+          batch_id?: string | null
           created_at?: string
-          created_by?: string | null
+          credits: number
+          error?: string | null
+          failed_at?: string | null
           id?: string
-          kind: string
-          note?: string | null
-          request_id?: string | null
-          source?: string
-          value_hash: string
-          value_hint: string
+          invoiced_at?: string | null
+          list_id: string
+          paid_at?: string | null
+          plan_key?: string | null
+          status?: string
+          stripe_invoice_id?: string | null
+          workspace_id: string
         }
         Update: {
+          amount_cents?: number | null
+          batch_id?: string | null
           created_at?: string
-          created_by?: string | null
+          credits?: number
+          error?: string | null
+          failed_at?: string | null
           id?: string
-          kind?: string
-          note?: string | null
-          request_id?: string | null
-          source?: string
-          value_hash?: string
-          value_hint?: string
+          invoiced_at?: string | null
+          list_id?: string
+          paid_at?: string | null
+          plan_key?: string | null
+          status?: string
+          stripe_invoice_id?: string | null
+          workspace_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "contact_suppressions_created_by_fkey"
-            columns: ["created_by"]
+            foreignKeyName: "credit_overages_batch_id_fkey"
+            columns: ["batch_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "enrichment_batches"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "contact_suppressions_request_id_fkey"
-            columns: ["request_id"]
+            foreignKeyName: "credit_overages_list_id_fkey"
+            columns: ["list_id"]
             isOneToOne: false
-            referencedRelation: "opt_out_requests"
+            referencedRelation: "lists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_overages_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -751,11 +824,13 @@ export type Database = {
           mode: Database["public"]["Enums"]["list_mode"]
           name: string
           not_found: number
+          overspend_allowed: boolean
+          pause_reason: string | null
           processed_rows: number
           reverse_lookup: boolean
-          source: string
           risky_email: number
           row_limit: number | null
+          source: string
           started_at: string | null
           status: Database["public"]["Enums"]["list_status"]
           submitted_rows: number
@@ -788,11 +863,13 @@ export type Database = {
           mode?: Database["public"]["Enums"]["list_mode"]
           name?: string
           not_found?: number
+          overspend_allowed?: boolean
+          pause_reason?: string | null
           processed_rows?: number
           reverse_lookup?: boolean
-          source?: string
           risky_email?: number
           row_limit?: number | null
+          source?: string
           started_at?: string | null
           status?: Database["public"]["Enums"]["list_status"]
           submitted_rows?: number
@@ -825,11 +902,13 @@ export type Database = {
           mode?: Database["public"]["Enums"]["list_mode"]
           name?: string
           not_found?: number
+          overspend_allowed?: boolean
+          pause_reason?: string | null
           processed_rows?: number
           reverse_lookup?: boolean
-          source?: string
           risky_email?: number
           row_limit?: number | null
+          source?: string
           started_at?: string | null
           status?: Database["public"]["Enums"]["list_status"]
           submitted_rows?: number
@@ -1228,6 +1307,12 @@ export type Database = {
           kind: string
           low_credits_notified_at: string | null
           name: string
+          overspend_blocked_at: string | null
+          overspend_blocked_reason: string | null
+          overspend_enabled: boolean
+          overspend_enabled_at: string | null
+          overspend_enabled_by: string | null
+          overspend_monthly_limit: number | null
           owner_id: string
           plan_key: string | null
           slug: string
@@ -1245,6 +1330,12 @@ export type Database = {
           kind?: string
           low_credits_notified_at?: string | null
           name: string
+          overspend_blocked_at?: string | null
+          overspend_blocked_reason?: string | null
+          overspend_enabled?: boolean
+          overspend_enabled_at?: string | null
+          overspend_enabled_by?: string | null
+          overspend_monthly_limit?: number | null
           owner_id: string
           plan_key?: string | null
           slug: string
@@ -1262,6 +1353,12 @@ export type Database = {
           kind?: string
           low_credits_notified_at?: string | null
           name?: string
+          overspend_blocked_at?: string | null
+          overspend_blocked_reason?: string | null
+          overspend_enabled?: boolean
+          overspend_enabled_at?: string | null
+          overspend_enabled_by?: string | null
+          overspend_monthly_limit?: number | null
           owner_id?: string
           plan_key?: string | null
           slug?: string
@@ -1271,16 +1368,67 @@ export type Database = {
           trial_granted_at?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "workspaces_overspend_enabled_by_fkey"
+            columns: ["overspend_enabled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      apply_contact_suppression: {
+        Args: { p_cache_hashes: string[]; p_kind: string; p_value: string }
+        Returns: number
+      }
       claim_pending_contacts: {
-        Args: { p_batch_id: string; p_limit: number; p_list_id: string }
-        Returns: Database["public"]["Tables"]["list_contacts"]["Row"][]
+        Args: {
+          p_batch_id: string
+          p_kind?: Database["public"]["Enums"]["list_mode"]
+          p_limit: number
+          p_list_id: string
+        }
+        Returns: {
+          batch_id: string | null
+          company: string | null
+          company_domain: string | null
+          company_logo_url: string | null
+          company_name: string | null
+          created_at: string
+          credits_cost: number
+          domain: string | null
+          email_input: string | null
+          enriched_at: string | null
+          first_name: string | null
+          full_name: string | null
+          id: string
+          input_hash: string | null
+          job_title: string | null
+          kind: Database["public"]["Enums"]["list_mode"]
+          last_name: string | null
+          linkedin_url: string | null
+          list_id: string
+          location: string | null
+          personal_email: string | null
+          personal_email_status: string | null
+          phone: string | null
+          phone_meta: Json | null
+          profile: Json | null
+          raw: Json
+          result: Json | null
+          row_index: number
+          skip_reason: string | null
+          status: Database["public"]["Enums"]["contact_status"]
+          work_email: string | null
+          work_email_status: string | null
+          workspace_id: string
+        }[]
         SetofOptions: {
           from: "*"
           to: "list_contacts"
@@ -1302,7 +1450,6 @@ export type Database = {
         Returns: number
       }
       credits_available: { Args: { ws: string }; Returns: number }
-      apply_contact_suppression: { Args: { p_kind: string; p_value: string; p_cache_hashes: string[] }; Returns: number }
       expire_grants: { Args: never; Returns: number }
       grant_credits: {
         Args: {
@@ -1315,10 +1462,11 @@ export type Database = {
         }
         Returns: string
       }
+      is_free_email_domain: { Args: { p_email: string }; Returns: boolean }
       is_workspace_admin: { Args: { ws: string }; Returns: boolean }
       is_workspace_member: { Args: { ws: string }; Returns: boolean }
-      is_free_email_domain: { Args: { p_email: string }; Returns: boolean }
       list_result_insights: { Args: { p_list_id: string }; Returns: Json }
+      overspend_used_this_month: { Args: { ws: string }; Returns: number }
       recompute_list_counters: {
         Args: { p_list_id: string }
         Returns: undefined
@@ -1343,6 +1491,7 @@ export type Database = {
           charged: number
           consumed: number
           derived: number
+          overage: number
         }[]
       }
     }
@@ -1371,8 +1520,10 @@ export type Database = {
         | "ops_alert"
         | "opt_out_verify"
         | "opt_out_done"
+        | "overspend_charged"
+        | "overspend_failed"
       grant_source: "trial" | "subscription" | "manual"
-      ledger_kind: "grant" | "consume" | "expire" | "adjust"
+      ledger_kind: "grant" | "consume" | "expire" | "adjust" | "overage"
       list_mode: "enrich" | "reverse"
       list_status:
         | "draft"
@@ -1538,9 +1689,11 @@ export const Constants = {
         "ops_alert",
         "opt_out_verify",
         "opt_out_done",
+        "overspend_charged",
+        "overspend_failed",
       ],
       grant_source: ["trial", "subscription", "manual"],
-      ledger_kind: ["grant", "consume", "expire", "adjust"],
+      ledger_kind: ["grant", "consume", "expire", "adjust", "overage"],
       list_mode: ["enrich", "reverse"],
       list_status: [
         "draft",

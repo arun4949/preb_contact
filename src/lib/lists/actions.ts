@@ -2,6 +2,9 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { workspaceOverspendState } from "@/lib/billing/overspend";
+import { runTick } from "@/lib/jobs/tick";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSessionContext } from "@/lib/supabase/queries";
@@ -167,6 +170,31 @@ export async function startList(listId: string, input: StartListInput): Promise<
   // Layout scope: the dashboard and every /lists/[id] page re-render from the action response.
   revalidatePath("/lists", "layout");
   redirect(`/lists/${list.id}`);
+}
+
+/**
+ * A list paused for credits may continue beyond the balance once the
+ * workspace has overspend on (the Configure switch happened before the opt-in,
+ * or the list opted out). Owners and admins only, since it authorises charges.
+ */
+export async function allowListOverspend(listId: string): Promise<Result> {
+  const { session, list } = await loadOwnList(listId);
+  if (session.role === "member") return { ok: false, error: "Only owners and admins can allow overspend." };
+  if (!["queued", "enriching", "paused_credits"].includes(list.status)) return { ok: false, error: "This list isn't running." };
+  const admin = createAdminClient();
+  const state = await workspaceOverspendState(admin, session.workspace.id);
+  if (!state?.active) return { ok: false, error: "Turn on overspend under Settings, Billing first." };
+  const { error } = await admin.from("lists").update({ overspend_allowed: true }).eq("id", list.id);
+  if (error) return { ok: false, error: "Could not update the list." };
+  after(async () => {
+    try {
+      await runTick();
+    } catch {
+      // The cron tick picks the list up within a minute.
+    }
+  });
+  revalidatePath("/lists", "layout");
+  return { ok: true, data: undefined };
 }
 
 /* ------------------------------------------------------------ card actions */

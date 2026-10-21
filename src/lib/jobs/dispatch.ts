@@ -1,9 +1,12 @@
 import "server-only";
 
+import { workspaceOverspendStates, type WorkspaceOverspendState } from "@/lib/billing/overspend";
+import { batchRowsWithinBudget, maxRowCost } from "@/lib/credits/overspend";
 import { ProviderError, startBulkEnrichment, startReverseEmailLookup } from "@/lib/fullenrich/client";
 import type { EnrichmentRecord } from "@/lib/fullenrich/types";
 import type { Json } from "@/lib/supabase/types";
 import { notifyListFailed, notifyListPaused, notifyListPausedUpstream, notifyOps } from "./notify";
+import type { PauseReason } from "@/lib/notifications/copy";
 import { buildEnrichPayload, buildReversePayload } from "./payload";
 import { claimRateSlot } from "./rate-limit";
 import { applyRecords } from "./results";
@@ -70,12 +73,14 @@ export async function dispatch(admin: Admin): Promise<DispatchSummary> {
 
   const lists = [...(active ?? []), ...(retry ?? [])];
   const internal = await internalWorkspaceIds(admin, lists.map((l) => l.workspace_id));
+  // Overspend state (opt-in, limit, block) once per workspace per tick; only lists that may overspend need it.
+  const overspend = await workspaceOverspendStates(admin, lists.filter((l) => l.overspend_allowed).map((l) => l.workspace_id));
 
   for (const list of lists) {
     if (summary.rateLimited || summary.upstreamPaused) break;
     summary.lists += 1;
     try {
-      await dispatchList(admin, list, hook, summary, internal.has(list.workspace_id));
+      await dispatchList(admin, list, hook, summary, internal.has(list.workspace_id), overspend.get(list.workspace_id) ?? null);
     } catch (error) {
       logError("dispatch.list_failed", error, { listId: list.id });
     }
@@ -83,7 +88,7 @@ export async function dispatch(admin: Admin): Promise<DispatchSummary> {
   return summary;
 }
 
-async function dispatchList(admin: Admin, list: ListRow, hook: string, summary: DispatchSummary, isInternal: boolean) {
+async function dispatchList(admin: Admin, list: ListRow, hook: string, summary: DispatchSummary, isInternal: boolean, overspend: WorkspaceOverspendState | null) {
   let status = list.status;
 
   // Row limit: how many more rows may go out.
@@ -102,24 +107,38 @@ async function dispatchList(admin: Admin, list: ListRow, hook: string, summary: 
 
     // Credits: the list may spend the workspace balance plus its own hold.
     // Internal (Preb outreach) lists are measured, never charged, so they never pause.
+    // A list with the overspend permission may also spend the workspace's
+    // remaining overspend budget (Infinity without a monthly limit); the
+    // shortfall is invoiced at settlement.
     const spendable = isInternal ? Number.POSITIVE_INFINITY : await spendableCredits(admin, list);
-    if (spendable <= 0) {
-      if (status !== "paused_credits") {
+    const overspending = !isInternal && list.overspend_allowed && overspend?.active === true;
+    const extra = overspending ? overspend!.budget : 0;
+    if (spendable + extra <= 0) {
+      const reason: PauseReason = !list.overspend_allowed ? "credits" : overspend?.blockedReason === "payment_failed" ? "overspend_payment" : overspending ? "overspend_limit" : "credits";
+      if (status !== "paused_credits" || list.pause_reason !== reason) {
         const { data: updated } = await admin
           .from("lists")
-          .update({ status: "paused_credits" })
+          .update({ status: "paused_credits", pause_reason: reason })
           .eq("id", list.id)
           .eq("status", status)
           .select("*")
           .maybeSingle();
-        if (updated) {
+        if (updated && status !== "paused_credits") {
           summary.paused += 1;
-          log("dispatch.paused_credits", { listId: list.id, pending: pendingCount });
-          await notifyListPaused(admin, updated, pendingCount);
+          log("dispatch.paused_credits", { listId: list.id, pending: pendingCount, reason });
+          await notifyListPaused(admin, updated, pendingCount, reason);
         }
       }
       return;
     }
+    // With a monthly overspend limit the batch shrinks so the worst case stays within balance + budget.
+    const batchRows = batchRowsWithinBudget({
+      batchSize: BATCH_SIZE,
+      spendable,
+      extra,
+      perRowMax: maxRowCost(list.enrich_fields, kind),
+      cap: overspending && Number.isFinite(extra),
+    });
 
     // Same-workspace cache: rows this workspace enriched within 90 days are served free, no provider call.
     const cacheServed = await serveFromCache(admin, list, Math.min(BATCH_SIZE, remaining), kind);
@@ -148,7 +167,7 @@ async function dispatchList(admin: Admin, list: ListRow, hook: string, summary: 
     const { data: contacts, error: claimErr } = await admin.rpc("claim_pending_contacts", {
       p_list_id: list.id,
       p_batch_id: batch.id,
-      p_limit: Math.min(BATCH_SIZE, remaining),
+      p_limit: Math.min(batchRows, remaining),
       p_kind: kind,
     });
     if (claimErr) throw new Error(`claim_pending_contacts failed: ${claimErr.message}`);
@@ -225,7 +244,7 @@ async function dispatchList(admin: Admin, list: ListRow, hook: string, summary: 
 
 async function markEnriching(admin: Admin, listId: string, current: ListRow["status"]): Promise<ListRow["status"]> {
   if (current === "enriching") return current;
-  await admin.from("lists").update({ status: "enriching", error: null }).eq("id", listId).eq("status", current);
+  await admin.from("lists").update({ status: "enriching", error: null, pause_reason: null }).eq("id", listId).eq("status", current);
   return "enriching";
 }
 

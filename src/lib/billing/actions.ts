@@ -8,7 +8,9 @@ import { getCatalogue, getCataloguePlan, type CataloguePlan } from "@/lib/stripe
 import { createCheckoutSession, ensureCustomer } from "@/lib/stripe/checkout";
 import { createPortalSession } from "@/lib/stripe/portal";
 import { activeSubscriptionId, applySwitch, previewSwitch, type SwitchPreview } from "@/lib/stripe/subscription";
-import { getBillingOverview, type BillingOverview } from "./queries";
+import { getBillingOverview, getOverspendOverview, getOverspendStart, type BillingOverview, type OverspendOverview, type OverspendStart } from "./queries";
+import { overspendEligibility, paymentMethodSummary, retryOverspendPayment, type PaymentMethodSummary } from "./overspend";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { readMetaRequestContext, sendMetaEvent } from "@/lib/meta/capi";
 import { isMetaEventId } from "@/lib/meta/client";
 
@@ -166,4 +168,79 @@ export async function openBillingPortal(): Promise<Result<never>> {
     return { ok: false, error: "Could not open the billing portal. Please try again." };
   }
   redirect(url);
+}
+
+/* ----------------------------------------------------------------- overspend */
+
+export async function fetchOverspendOverview(): Promise<OverspendOverview> {
+  return getOverspendOverview(await requireSession());
+}
+
+export async function fetchOverspendStart(): Promise<OverspendStart> {
+  return getOverspendStart(await requireSession());
+}
+
+const OVERSPEND_INELIGIBLE: Record<string, string> = {
+  internal: "This workspace cannot use overspend.",
+  trial: "Overspend needs an active plan. Choose a plan first.",
+  no_subscription: "Overspend needs an active plan. Choose a plan first.",
+  no_payment_method: "Add a payment method under Manage billing first.",
+};
+
+/**
+ * Turn overspend on (after the confirmation dialog) or off. Enabling checks
+ * the plan and the card on file and records who confirmed the terms.
+ */
+export async function setOverspendEnabled(enabled: boolean): Promise<Result<{ card: PaymentMethodSummary | null }>> {
+  const session = await requireSession();
+  if (session.role === "member") return { ok: false, error: "Only owners and admins can change overspend." };
+  const ws = session.workspace;
+  const admin = createAdminClient();
+  if (!enabled) {
+    const { error } = await admin.from("workspaces").update({ overspend_enabled: false }).eq("id", ws.id);
+    if (error) return { ok: false, error: "Could not save. Please try again." };
+    return { ok: true, data: { card: null } };
+  }
+  const eligibility = overspendEligibility(ws);
+  if (!eligibility.eligible) return { ok: false, error: OVERSPEND_INELIGIBLE[eligibility.reason] };
+  let card: PaymentMethodSummary | null;
+  try {
+    card = await paymentMethodSummary(ws);
+  } catch {
+    return { ok: false, error: "Could not reach billing. Please try again." };
+  }
+  if (!card) return { ok: false, error: OVERSPEND_INELIGIBLE.no_payment_method };
+  const { error } = await admin
+    .from("workspaces")
+    .update({ overspend_enabled: true, overspend_enabled_at: new Date().toISOString(), overspend_enabled_by: session.userId })
+    .eq("id", ws.id);
+  if (error) return { ok: false, error: "Could not save. Please try again." };
+  return { ok: true, data: { card } };
+}
+
+/** Monthly limit in credits; null removes it. */
+export async function setOverspendLimit(limit: number | null): Promise<Result> {
+  const session = await requireSession();
+  if (session.role === "member") return { ok: false, error: "Only owners and admins can change overspend." };
+  const clean = limit == null ? null : Math.floor(Number(limit));
+  if (clean != null && (!Number.isFinite(clean) || clean <= 0)) return { ok: false, error: "The limit must be a positive number of credits." };
+  const { error } = await createAdminClient().from("workspaces").update({ overspend_monthly_limit: clean }).eq("id", session.workspace.id);
+  if (error) return { ok: false, error: "Could not save. Please try again." };
+  return { ok: true, data: undefined };
+}
+
+/** Charge the unpaid overspend invoice again with the card on file. */
+export async function retryOverspendPaymentAction(): Promise<Result<{ status: "paid" | "action_required"; url: string | null }>> {
+  const session = await requireSession();
+  if (session.role === "member") return { ok: false, error: "Only owners and admins can manage billing." };
+  try {
+    const outcome = await retryOverspendPayment(createAdminClient(), session.workspace.id);
+    if (outcome.status === "paid") return { ok: true, data: { status: "paid", url: null } };
+    if (outcome.status === "action_required") return { ok: true, data: { status: "action_required", url: outcome.url } };
+    if (outcome.status === "nothing") return { ok: false, error: "There is no unpaid overspend invoice." };
+    return { ok: false, error: "The payment was declined again. Update your card under Manage billing and retry." };
+  } catch (error) {
+    console.error(JSON.stringify({ scope: "billing", event: "overspend_retry.failed", error: error instanceof Error ? error.message : String(error) }));
+    return { ok: false, error: "Could not retry the payment. Please try again." };
+  }
 }

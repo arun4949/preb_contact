@@ -10,7 +10,7 @@ import { createRealtimeClient } from "@/utils/supabase/realtime";
 import { useColumnVisibility } from "./columns";
 import { ContactsTable } from "./contacts-table";
 import { ContactsToolbar } from "./contacts-toolbar";
-import { EnrichingPanel } from "./enriching-panel";
+import { EnrichingPanel, type EnrichingPanelOverspend } from "./enriching-panel";
 import { FilterChips } from "./filter-chips";
 import { ListDetailHeader } from "./list-detail-header";
 import { SummaryCards } from "./summary-cards";
@@ -26,6 +26,7 @@ export interface ListDetailProps {
   eta: ListEta;
   extras: string[];
   canDelete: boolean;
+  overspend: EnrichingPanelOverspend;
 }
 
 /**
@@ -33,7 +34,7 @@ export interface ListDetailProps {
  * while running (both just call `router.refresh()` so the server component
  * re-queries), summary cards, filter chips above the table, column visibility per user.
  */
-export function ListDetail({ list, contacts, insights, query, eta, extras, canDelete }: ListDetailProps) {
+export function ListDetail({ list, contacts, insights, query, eta, extras, canDelete, overspend }: ListDetailProps) {
   const router = useRouter();
   const running = LIST_STATUS_META[list.status].running;
   const paused = list.status === "paused_credits" || list.status === "paused_upstream" || list.status === "failed";
@@ -97,7 +98,7 @@ export function ListDetail({ list, contacts, insights, query, eta, extras, canDe
     <div className="flex flex-col gap-6 animate-page-enter">
       <ListDetailHeader list={list} canDelete={canDelete} />
 
-      {running || paused ? <EnrichingPanel list={list} eta={eta} /> : <SummaryCards list={list} insights={insights} query={liveQuery} onChange={set} />}
+      {running || paused ? <EnrichingPanel list={list} eta={eta} overspend={overspend} /> : <SummaryCards list={list} insights={insights} query={liveQuery} onChange={set} />}
 
       <ContactsToolbar
         total={list.total_rows}

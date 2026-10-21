@@ -1,5 +1,6 @@
 import "server-only";
 
+import { sweepOverspend } from "@/lib/billing/overspend";
 import { getAccountCredits } from "@/lib/fullenrich/client";
 import { CREDIT_MULTIPLIER } from "@/lib/fullenrich/mapping";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -42,6 +43,7 @@ export interface DailySummary {
   emailLogDeleted: number;
   optOutPurged: number;
   leadSharesDeleted: number;
+  overspend: { unstuck: number; invoiced: number; retried: number; alerted: number } | null;
   upstreamBalance: number | null;
   alerted: boolean;
   errors: string[];
@@ -50,7 +52,7 @@ export interface DailySummary {
 /** Housekeeping: expire grants, provider balance alert, cleanup of drafts, cache rows, tombstones, opt-out requests and old webhook payloads. */
 export async function runDaily(): Promise<DailySummary> {
   const admin = createAdminClient();
-  const summary: DailySummary = { expiredGrants: 0, holdsReleased: 0, draftsDeleted: 0, webhookEventsDeleted: 0, expiryWarnings: 0, notificationsDeleted: 0, cacheRowsDeleted: 0, tombstonesDeleted: 0, emailLogDeleted: 0, optOutPurged: 0, leadSharesDeleted: 0, upstreamBalance: null, alerted: false, errors: [] };
+  const summary: DailySummary = { expiredGrants: 0, holdsReleased: 0, draftsDeleted: 0, webhookEventsDeleted: 0, expiryWarnings: 0, notificationsDeleted: 0, cacheRowsDeleted: 0, tombstonesDeleted: 0, emailLogDeleted: 0, optOutPurged: 0, leadSharesDeleted: 0, overspend: null, upstreamBalance: null, alerted: false, errors: [] };
   const step = async (name: string, fn: () => Promise<void>) => {
     try {
       await fn();
@@ -93,6 +95,11 @@ export async function runDaily(): Promise<DailySummary> {
     const cutoff = new Date(Date.now() - NOTIFICATION_RETENTION_DAYS * 86_400_000).toISOString();
     const { count } = await admin.from("notifications").delete({ count: "exact" }).lt("created_at", cutoff);
     summary.notificationsDeleted = count ?? 0;
+  });
+
+  await step("overspend_sweep", async () => {
+    // Invoice overspend pending for more than a day, retry unpaid invoices, alert ops after a week.
+    summary.overspend = await sweepOverspend(admin);
   });
 
   await step("release_orphan_holds", async () => {

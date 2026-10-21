@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getOverspendStart } from "@/lib/billing/queries";
 import { getSessionContext } from "@/lib/supabase/queries";
 import { NewListWizard } from "@/components/application/new-list/new-list-wizard";
 
@@ -9,5 +10,6 @@ export default async function NewListPage() {
   const session = await getSessionContext();
   if (!session) redirect("/login");
   if (!session.profile.onboarded_at && session.role === "owner") redirect("/onboarding");
-  return <NewListWizard creditsAvailable={session.creditsAvailable} />;
+  const overspend = await getOverspendStart(session);
+  return <NewListWizard creditsAvailable={session.creditsAvailable} overspend={overspend} />;
 }

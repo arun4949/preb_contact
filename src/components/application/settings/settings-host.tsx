@@ -18,6 +18,7 @@ export interface SettingsHostProps {
  * Mounted once in the app shell. URL-driven so every entry point is a link:
  *   ?settings=profile|billing   opens the modal on that page
  *   &plan=1                     opens Billing on the plan picker (&short=N adds the shortfall line)
+ *   &overspend=1                opens Billing scrolled to the Overspend section
  *   &checkout=success|cancelled|switched   toast after returning from Stripe
  * Closing strips the params (history.replaceState: no history entry and no
  * server round trip, see `use-settings-url.ts`).
@@ -34,6 +35,7 @@ export function SettingsHost({ profile }: SettingsHostProps) {
   const shortBy = Number(params.get("short")) || 0;
   const planReason = shortBy > 0 ? `You need ${shortBy.toLocaleString("en-US")} more credits to start.` : undefined;
   const checkout = params.get("checkout");
+  const focusOverspend = params.get("overspend") === "1";
 
   const [refreshKey, setRefreshKey] = useState(0);
   const handledCheckout = useRef<string | null>(null);
@@ -79,6 +81,7 @@ export function SettingsHost({ profile }: SettingsHostProps) {
       onBillingViewChange={setBillingView}
       planReason={planReason}
       billingRefreshKey={refreshKey}
+      focusOverspend={focusOverspend}
     />
   );
 }

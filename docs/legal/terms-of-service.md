@@ -1,7 +1,7 @@
 # Terms of Service
 
 **Last updated:** [date of publication]
-**Version:** 1.2 (2026-10-17: email levels Valid, Probably valid and Catch-all; connect rate signals)
+**Version:** 1.3 (2026-10-21: Overspend, Section 6.6 and Section 7.3)
 
 These Terms of Service (the "Terms") are a contract between Kranz & Gupta, Indiepal GbR, Brunnenstr. 11, 53123 Bonn, Germany ("Preb", "we", "us") and the business that creates or uses a Preb workspace (the "Customer", "you"). They govern the use of the Preb website and application at preb.co and all related services (the "Service").
 
@@ -84,13 +84,15 @@ New Workspaces created with a work email address receive 50 Credits that expire 
 
 A Catch-all email address is charged, because the source has verified it as far as the receiving mail server allows, even though the domain accepts all addresses. A contact that your Workspace already enriched within the last 90 days with the same fields is served again free of charge.
 
-**6.2 Estimates and holds.** Before a List starts, the application shows a typical and a maximum cost. We reserve the typical amount from your balance while the List runs and release whatever is not used. If a running List exhausts your balance, it pauses and continues automatically once Credits are available. If you stop a List, contacts already in progress finish and are charged; nothing new is submitted.
+**6.2 Estimates and holds.** Before a List starts, the application shows a typical and a maximum cost. We reserve the typical amount from your balance while the List runs and release whatever is not used. If a running List exhausts your balance, it pauses and continues automatically once Credits are available, unless Overspend is switched on for the Workspace and the List, see Section 6.6. If you stop a List, contacts already in progress finish and are charged; nothing new is submitted.
 
 **6.3 Expiry.** Credits expire. Credits from a monthly Subscription expire 3 months after they are granted. Credits from an annual Subscription expire 12 months after they are granted. Trial Credits expire after 30 days. Credits are consumed oldest first. The balance and the expiry dates are shown in the application and in Settings, Billing.
 
 **6.4 Nature of Credits.** Credits are a unit of account for the use of the Service. They have no monetary value, cannot be exchanged for money, cannot be transferred to another Workspace or person, and are not refundable, including when they expire unused, when a List is deleted, or when the Workspace is deleted. Credits consumed by Results that you later find unsatisfactory are not refunded, because every Result is bought from our data providers at the moment it is found. If a Contact objects to the processing of their data, we may remove their Results from the Service without refunding the Credits used, see Section 9.5.
 
 **6.5 Changes to Credit costs.** We may change the Credits charged per Result type with at least 30 days notice by email or in the application. Changes apply to Lists started after the change takes effect.
+
+**6.6 Overspend.** An Owner or Admin of a Workspace with an active Subscription can switch on Overspend in Settings, Billing. With Overspend on, a List does not pause when the balance is empty. Credits used beyond the balance are counted exactly and invoiced in money at the price per Credit of your current plan, which is the plan price divided by the Credits it includes and is shown before you confirm. Each List is invoiced when it finishes or is stopped; Lists that run longer than a day are invoiced for the Credits used so far once a day, and amounts below USD 0.50 are carried over to the next invoice. Overspend invoices are charged automatically to the payment method on file. By switching on Overspend you authorise these charges. You can set a monthly limit in Credits, after which Lists pause until the next calendar month, a higher limit or new Credits, and you can switch Overspend off at any time; a batch already submitted to our providers finishes and is invoiced. Each List can be excluded from Overspend when it is started. If an Overspend invoice cannot be charged, Lists that need Credits beyond the balance pause, and Overspend stays blocked until the invoice is paid; Section 7.7 applies. Overspend Credits are used for Results like any other Credits and Section 6.4 applies to them.
 
 ---
 
@@ -100,7 +102,7 @@ A Catch-all email address is charged, because the source has verified it as far 
 
 **7.2 Automatic renewal.** A Subscription renews automatically for the same period, monthly or yearly, until you cancel it. At each renewal we charge the then-current price of your plan to your payment method and grant the plan's Credits to your Workspace. You can cancel at any time in Settings, Billing, Manage billing, and the Subscription then ends at the close of the current period. We send a receipt for every charge.
 
-**7.3 Payment.** Payments are processed by Stripe. You must provide a valid payment method and a billing address, and you may add a tax identification number. The first period is charged when you subscribe. Preb does not store card numbers. By subscribing you authorise us and Stripe to charge the fees for each period when they fall due. Promotion codes apply only as stated on the code and cannot be combined or converted to money.
+**7.3 Payment.** Payments are processed by Stripe. You must provide a valid payment method and a billing address, and you may add a tax identification number. The first period is charged when you subscribe. Preb does not store card numbers. By subscribing you authorise us and Stripe to charge the fees for each period when they fall due, and, if you switch on Overspend, the Overspend invoices described in Section 6.6. Promotion codes apply only as stated on the code and cannot be combined or converted to money.
 
 **7.4 Prices and taxes.** All prices are in US dollars and exclude taxes. Preb is a small business under § 19 of the German VAT Act and does not charge German VAT. You are responsible for any sales, use, withholding or similar tax that applies to your purchase under the law of your location, and you will pay the fees without deduction. Invoices are available in Settings, Billing, Manage billing.
 

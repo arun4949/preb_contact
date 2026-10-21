@@ -7,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database, Json, Tables, TablesInsert } from "@/lib/supabase/types";
 import { MAX_ROWS } from "@/lib/csv/parse";
 import type { NormalisedRow } from "@/lib/csv/normalize";
+import { workspaceOverspendState } from "@/lib/billing/overspend";
 import { estimateCredits, type EnrichmentField } from "@/lib/credits/estimate";
 import { cachedContactPatch } from "@/lib/jobs/results";
 import { profileName } from "@/lib/fullenrich/mapping";
@@ -179,6 +180,8 @@ export interface StartListInput {
   rowLimit?: number | null;
   /** Identify email-only rows via reverse email lookup (1 credit each when found). */
   reverseLookup?: boolean;
+  /** Per-list overspend switch (Configure step). Only effective when the workspace opted in; defaults to on. */
+  allowOverspend?: boolean;
 }
 
 export interface StartListError {
@@ -225,16 +228,24 @@ export async function queueList({ client: supabase, workspaceId, list, input, sk
   const estimate = estimateCredits(rows, fields, reverseWithinLimit);
 
   const admin = createAdminClient();
+  let overspendAllowed = false;
   if (!skipCredits) {
-    const { data: available } = await supabase.rpc("credits_available", { ws: workspaceId });
+    const [{ data: available }, overspend] = await Promise.all([
+      supabase.rpc("credits_available", { ws: workspaceId }),
+      workspaceOverspendState(admin, workspaceId),
+    ]);
     const balance = available ?? 0;
-    if (balance < estimate.typical) {
+    // Overspend: the workspace opted in (and is on a running plan) and the list did not opt out.
+    overspendAllowed = overspend?.active === true && input.allowOverspend !== false;
+    if (balance < estimate.typical && !overspendAllowed) {
       return { error: "Not enough credits to start this list.", shortBy: estimate.typical - balance };
     }
-    if (estimate.typical > 0) {
+    // Reserve what the balance can cover; anything beyond is overspend, invoiced when the list finishes.
+    const hold = Math.min(estimate.typical, Math.max(0, balance));
+    if (hold > 0) {
       const { error: holdErr } = await admin
         .from("credit_holds")
-        .insert({ workspace_id: workspaceId, list_id: list.id, amount: estimate.typical });
+        .insert({ workspace_id: workspaceId, list_id: list.id, amount: hold });
       if (holdErr) return { error: "Could not reserve credits. Please try again." };
     }
   }
@@ -263,6 +274,7 @@ export async function queueList({ client: supabase, workspaceId, list, input, sk
       row_limit: rowLimit,
       credits_estimated: estimate.typical,
       credits_max: estimate.max,
+      overspend_allowed: overspendAllowed,
       status: "queued",
       started_at: new Date().toISOString(),
     })

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useSettingsUrl } from "@/components/application/settings/use-settings-url";
-import { RiCoinLine, RiUserSearchLine } from "@remixicon/react";
+import { RiBankCardLine, RiCoinLine, RiUserSearchLine } from "@remixicon/react";
 import { Banner } from "@/components/base/banner/banner";
 import { LinkButton } from "@/components/base/buttons/link-button";
 import { Button } from "@/components/base/buttons/button";
@@ -10,7 +10,10 @@ import { CheckboxCard } from "@/components/base/checkbox/checkbox-card";
 import { Chip } from "@/components/base/badges/chip";
 import { Input } from "@/components/base/input/input";
 import { ProgressBar } from "@/components/base/progress-bar/progress-bar";
+import { SwitchCard } from "@/components/base/switch/switch-card";
 import { useToast } from "@/components/base/toast/toast";
+import type { OverspendStart } from "@/lib/billing/queries";
+import { formatUsdExact } from "@/lib/credits/money";
 import { estimateCredits, type EnrichmentField } from "@/lib/credits/estimate";
 import { docsPath } from "@/lib/site-links";
 import { FIELD_CARDS } from "@/lib/credits/fields";
@@ -27,11 +30,13 @@ export interface StepConfigureProps {
   defaultName: string;
   summary: ParseSummary;
   creditsAvailable: number;
+  /** Workspace overspend state (refreshed by the wizard when the settings modal closes). */
+  overspend: OverspendStart;
   onStarting: () => void;
 }
 
 /** Step 3 (Figma 1015:43): enrichment level cards, name, rows to enrich, estimate card, Start. */
-export function StepConfigure({ listId, defaultName, summary, creditsAvailable, onStarting }: StepConfigureProps) {
+export function StepConfigure({ listId, defaultName, summary, creditsAvailable, overspend, onStarting }: StepConfigureProps) {
   const toast = useToast();
   const { openSettings } = useSettingsUrl();
   const [pending, start] = useTransition();
@@ -40,6 +45,8 @@ export function StepConfigure({ listId, defaultName, summary, creditsAvailable, 
   // Reverse lookup is opt-in; a list made only of emails has nothing else to do, so it starts on.
   const [reverse, setReverse] = useState(summary.enrichable === 0 && summary.emailOnly > 0);
   const [rowsText, setRowsText] = useState(String(summary.enrichable + (summary.enrichable === 0 ? summary.emailOnly : 0)));
+  // Per-list overspend switch: on by default once the workspace opted in.
+  const [allowOverspend, setAllowOverspend] = useState(true);
 
   const reverseRowsAll = reverse ? summary.emailOnly : 0;
   const totalRows = summary.enrichable + reverseRowsAll;
@@ -51,11 +58,14 @@ export function StepConfigure({ listId, defaultName, summary, creditsAvailable, 
   const rows = Math.min(enrichRows, billable);
   const estimate = useMemo(() => estimateCredits(rows, fields, reverseRows), [rows, fields, reverseRows]);
   const short = Math.max(0, estimate.typical - creditsAvailable);
+  const overspending = overspend.active && allowOverspend;
+  const extraCents = overspend.centsPerCredit != null ? Math.ceil(short * overspend.centsPerCredit) : null;
+  const limitShort = overspend.remaining != null && short > overspend.remaining;
   const freeRows = summary.cached + summary.cachedReverse;
   // Every row was served from the cache: nothing to buy, the list completes on start.
   const allCached = totalRows === 0 && freeRows > 0;
   const hasWork = allCached || (summary.enrichable > 0 ? fields.length > 0 : reverse);
-  const canStart = hasWork && name.trim().length > 0 && (allCached || rowsWanted > 0) && short === 0 && !pending;
+  const canStart = hasWork && name.trim().length > 0 && (allCached || rowsWanted > 0) && (short === 0 || overspending) && !pending;
 
   const toggle = (key: EnrichmentField, on: boolean) => setFields((prev) => (on ? [...new Set([...prev, key])] : prev.filter((f) => f !== key)));
 
@@ -74,6 +84,7 @@ export function StepConfigure({ listId, defaultName, summary, creditsAvailable, 
         fields,
         rowLimit: rowsWanted < totalRows ? rowsWanted : null,
         reverseLookup: reverse,
+        allowOverspend,
       });
       if (res?.error) toast.error(res.error);
     });
@@ -197,18 +208,62 @@ export function StepConfigure({ listId, defaultName, summary, creditsAvailable, 
             How credits work
           </LinkButton>
         </p>
-        {short > 0 ? (
+        {overspend.active ? (
+          <SwitchCard
+            isSelected={allowOverspend}
+            onChange={setAllowOverspend}
+            icon={RiBankCardLine}
+            size="sm"
+            title="Continue beyond your balance"
+            description={
+              // SwitchCard truncates its description to one line; this one needs to wrap.
+              <span className="block whitespace-normal">
+                If this list needs more than your {fmt(creditsAvailable)} credits, the extra credits are charged to your card at {overspend.rate} per credit.
+                {overspend.remaining != null ? ` ${fmt(overspend.remaining)} credits left under your monthly limit.` : ""}
+              </span>
+            }
+            className={cx("items-start", allowOverspend && "border-accent-600")}
+          />
+        ) : null}
+        {short > 0 && overspending ? (
+          <Banner
+            tone={limitShort ? "warning" : "info"}
+            title={
+              limitShort
+                ? `Your monthly overspend limit covers ${fmt(overspend.remaining ?? 0)} of the ${fmt(short)} extra credits`
+                : `About ${fmt(short)} credits beyond your balance${extraCents != null ? `, roughly ${formatUsdExact(extraCents)}` : ""}`
+            }
+          >
+            {limitShort
+              ? "The list pauses when the limit is reached. Raise the limit under Settings, Billing, or add credits, and it continues on its own."
+              : "You only pay for what we find. The extra credits are invoiced when the list finishes."}
+          </Banner>
+        ) : null}
+        {short > 0 && !overspending ? (
           <Banner
             tone="warning"
             title={`You need ${fmt(short)} more credits to start`}
             actions={
-              <Button variant="secondary" size="small" onClick={() => openSettings("billing", { plan: true, short })}>
-                Buy credits
-              </Button>
+              <>
+                {!overspend.enabled && overspend.canManage ? (
+                  <Button variant="secondary" size="small" onClick={() => openSettings("billing", { overspend: true })}>
+                    Turn on overspend
+                  </Button>
+                ) : null}
+                <Button variant="secondary" size="small" onClick={() => openSettings("billing", { plan: true, short })}>
+                  Buy credits
+                </Button>
+              </>
             }
           >
-            Reduce the rows to enrich, choose fewer fields
-            {summary.emailOnly > 0 ? " or skip the reverse lookup" : ""} to start now. After checkout you will upload the file again.
+            {overspend.active
+              ? "Switch on Continue beyond your balance above, or reduce the rows to enrich"
+              : overspend.enabled
+                ? "Overspend is on but cannot be used right now. Check Settings, Billing, or reduce the rows to enrich"
+                : overspend.canManage
+                  ? "Turn on overspend to continue beyond your balance, or reduce the rows to enrich"
+                  : "Ask an owner or admin to turn on overspend, or reduce the rows to enrich"}
+            , choose fewer fields{summary.emailOnly > 0 ? " or skip the reverse lookup" : ""} to start now. After checkout you will upload the file again.
           </Banner>
         ) : null}
       </section>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { EnrichPage } from "@/components/application/enrich/enrich-page";
 import { getManualContacts, getManualRunState } from "@/lib/enrich/queries";
+import { getOverspendStart } from "@/lib/billing/queries";
 import { getSessionContext } from "@/lib/supabase/queries";
 
 export const metadata: Metadata = { title: "Enrich contacts" };
@@ -17,10 +18,11 @@ export default async function EnrichRoute({ searchParams }: PageProps<"/enrich">
   const page = Number(pick(params.page)) || 1;
   const q = pick(params.q);
 
-  const [history, runState] = await Promise.all([
+  const [history, runState, overspend] = await Promise.all([
     getManualContacts(session.workspace.id, { page, q }),
     getManualRunState(session.workspace.id),
+    getOverspendStart(session),
   ]);
 
-  return <EnrichPage creditsAvailable={session.creditsAvailable} history={history} runState={runState} q={q} workspaceId={session.workspace.id} />;
+  return <EnrichPage creditsAvailable={session.creditsAvailable} overspend={overspend} history={history} runState={runState} q={q} workspaceId={session.workspace.id} />;
 }

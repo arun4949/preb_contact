@@ -11,10 +11,11 @@ import { Skeleton } from "@/components/base/skeleton/skeleton";
 import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@/components/base/table/table";
 import { useToast } from "@/components/base/toast/toast";
 import { PlanPicker } from "@/components/application/billing/plan-picker";
-import { fetchBillingOverview, openBillingPortal } from "@/lib/billing/actions";
-import type { BillingOverview, LedgerEntry } from "@/lib/billing/queries";
+import { fetchBillingOverview, fetchOverspendOverview, openBillingPortal } from "@/lib/billing/actions";
+import type { BillingOverview, LedgerEntry, OverspendOverview } from "@/lib/billing/queries";
 import { formatUsd, formatUsdFine } from "@/lib/credits/money";
 import { cx } from "@/utils/cx";
+import { SettingsOverspend } from "./settings-overspend";
 import { SettingsCard, SettingsRow, SettingsSectionLabel } from "./settings-rows";
 
 const fmt = (n: number) => n.toLocaleString("en-US");
@@ -41,6 +42,8 @@ function describe(entry: LedgerEntry): string {
       return "Credits expired";
     case "adjust":
       return entry.note ?? "Adjustment";
+    case "overage":
+      return entry.listName ? `Overspend · ${entry.listName}` : "Overspend";
   }
 }
 
@@ -56,6 +59,10 @@ export interface SettingsBillingProps {
   planReason?: string;
   /** Bumped by the host after a Checkout return so the page reloads. */
   refreshKey?: number;
+  /** Scroll to the Overspend section and highlight it (URL `&overspend=1`). */
+  focusOverspend?: boolean;
+  /** "Saved" toast of the modal. */
+  onSaved?: () => void;
 }
 
 /**
@@ -63,16 +70,18 @@ export interface SettingsBillingProps {
  * schedule, Manage billing → Stripe portal, credit ledger. Data is loaded
  * on open through a server action so the modal can live in the app shell.
  */
-export function SettingsBilling({ view, onViewChange, onClose, planReason, refreshKey = 0 }: SettingsBillingProps) {
+export function SettingsBilling({ view, onViewChange, onClose, planReason, refreshKey = 0, focusOverspend = false, onSaved }: SettingsBillingProps) {
   const [data, setData] = useState<BillingOverview | null>(null);
+  const [overspend, setOverspend] = useState<OverspendOverview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [portalPending, startPortal] = useTransition();
   const toast = useToast();
 
   const load = useCallback(() => {
-    fetchBillingOverview()
-      .then((d) => {
+    Promise.all([fetchBillingOverview(), fetchOverspendOverview()])
+      .then(([d, o]) => {
         setData(d);
+        setOverspend(o);
         setError(null);
       })
       .catch(() => setError("Could not load billing details."));
@@ -96,7 +105,7 @@ export function SettingsBilling({ view, onViewChange, onClose, planReason, refre
       <EmptyState size="inline" icon={RiBankCardLine} title="Billing unavailable" description={error} actions={<Button variant="secondary" onClick={load}>Retry</Button>} />
     );
   }
-  if (!data) {
+  if (!data || !overspend) {
     return (
       <div className="flex flex-col gap-6">
         <Skeleton className="h-[132px] w-full rounded-2xl" />
@@ -166,6 +175,9 @@ export function SettingsBilling({ view, onViewChange, onClose, planReason, refre
         {!data.canManage ? <p className="text-body-2-regular text-text-tertiary">Only workspace owners and admins can change the plan or payment details.</p> : null}
       </div>
 
+      {/* Overspend */}
+      <SettingsOverspend data={overspend} onChanged={load} onSaved={onSaved} onOpenPortal={openPortal} portalPending={portalPending} focus={focusOverspend} />
+
       {/* Balance */}
       <div className="flex w-full flex-col gap-2">
         <SettingsSectionLabel>Credit balance</SettingsSectionLabel>
@@ -213,7 +225,7 @@ export function SettingsBilling({ view, onViewChange, onClose, planReason, refre
                 <TableRow key={entry.id}>
                   <TableCell className="whitespace-nowrap text-text-secondary">{date(entry.createdAt)}</TableCell>
                   <TableCell>
-                    {entry.listId && entry.kind === "consume" ? (
+                    {entry.listId && (entry.kind === "consume" || entry.kind === "overage") ? (
                       <Link href={`/lists/${entry.listId}`} className="text-text-primary underline-offset-2 hover:underline">
                         {describe(entry)}
                       </Link>
