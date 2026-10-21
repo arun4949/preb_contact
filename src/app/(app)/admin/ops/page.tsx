@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Chip } from "@/components/base/badges/chip";
+import { Banner } from "@/components/base/banner/banner";
 import { EmptyState } from "@/components/base/empty-state/empty-state";
 import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@/components/base/table/table";
 import { LIST_STATUS_META } from "@/components/application/list-card/list-status";
@@ -75,6 +76,20 @@ export default async function OpsPage() {
     // Overspend: unpaid invoices need a human when the daily retries run out.
     admin.from("credit_overages").select("status, credits, amount_cents, workspace_id, created_at").gte("created_at", minutesAgo(31 * 24 * 60)).limit(5000),
   ]);
+  // A failed query must never look like "nothing to report": list every error at the top.
+  const queryErrors = (
+    [
+      ["Stuck batches", stuck.error],
+      ["Webhook problems", webhooks.error],
+      ["Paused and failed lists", paused.error],
+      ["Provider rate limit", lastTick.error],
+      ["Emails sent", emails.error],
+      ["Lists running", running.error],
+      ["Recent signups", signups.error],
+      ["Help center feedback", docsVotes.error],
+      ["Overspend", overages.error],
+    ] as const
+  ).filter(([, error]) => error) as unknown as [string, { message: string; code?: string }][];
   const overspend = { pending: 0, unpaid: 0, unpaidCents: 0, paid: 0, paidCents: 0, workspaces: new Set<string>() };
   for (const o of overages.data ?? []) {
     if (o.status === "pending" || o.status === "invoicing") overspend.pending += o.credits;
@@ -133,7 +148,13 @@ export default async function OpsPage() {
         ))}
       </div>
 
-      <Section title={`Recent signups (last ${SIGNUP_DAYS} days)`}>
+      {queryErrors.length ? (
+        <Banner tone="error" title={`${queryErrors.length === 1 ? "One section" : `${queryErrors.length} sections`} could not be loaded`}>
+          {queryErrors.map(([label, error]) => `${label}: ${error.code ? `${error.code} ` : ""}${error.message}`).join(" · ")}
+        </Banner>
+      ) : null}
+
+      <Section title={`Recent signups (last ${SIGNUP_DAYS} days)`} error={signups.error}>
         {signups.data?.length ? (
           <Table aria-label="Recent signups" size="sm" containerClassName="rounded-2xl">
             <TableHeader>
@@ -188,7 +209,7 @@ export default async function OpsPage() {
         )}
       </Section>
 
-      <Section title={`Stuck batches (submitted > ${STUCK_BATCH_MINUTES} min, no result)`}>
+      <Section title={`Stuck batches (submitted > ${STUCK_BATCH_MINUTES} min, no result)`} error={stuck.error}>
         {stuck.data?.length ? (
           <Table aria-label="Stuck batches" size="sm" containerClassName="rounded-2xl">
             <TableHeader>
@@ -221,7 +242,7 @@ export default async function OpsPage() {
         )}
       </Section>
 
-      <Section title="Webhook problems (errored, or unprocessed for 10+ min)">
+      <Section title="Webhook problems (errored, or unprocessed for 10+ min)" error={webhooks.error}>
         {webhooks.data?.length ? (
           <Table aria-label="Webhook problems" size="sm" containerClassName="rounded-2xl">
             <TableHeader>
@@ -248,7 +269,7 @@ export default async function OpsPage() {
         )}
       </Section>
 
-      <Section title="Paused and failed lists">
+      <Section title="Paused and failed lists" error={paused.error}>
         {paused.data?.length ? (
           <Table aria-label="Paused lists" size="sm" containerClassName="rounded-2xl">
             <TableHeader>
@@ -284,7 +305,7 @@ export default async function OpsPage() {
         )}
       </Section>
 
-      <Section title={`Help center feedback (last ${DOCS_FEEDBACK_DAYS} days)`}>
+      <Section title={`Help center feedback (last ${DOCS_FEEDBACK_DAYS} days)`} error={docsVotes.error}>
         {docsRows.length ? (
           <Table aria-label="Help center feedback" size="sm" containerClassName="rounded-2xl">
             <TableHeader>
@@ -322,7 +343,7 @@ export default async function OpsPage() {
         )}
       </Section>
 
-      <Section title="Emails sent in the last 24 h">
+      <Section title="Emails sent in the last 24 h" error={emails.error}>
         <div className="flex flex-wrap gap-2">
           {Object.keys(emailCounts).length === 0 ? (
             <span className="text-body-2-regular text-text-tertiary">None.</span>
@@ -339,11 +360,18 @@ export default async function OpsPage() {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, error, children }: { title: string; error?: { message: string; code?: string } | null; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-headline-medium text-text-primary">{title}</h2>
-      {children}
+      {error ? (
+        <Banner tone="error" title="Could not load this section">
+          {error.code ? `${error.code}: ` : ""}
+          {error.message}
+        </Banner>
+      ) : (
+        children
+      )}
     </section>
   );
 }
