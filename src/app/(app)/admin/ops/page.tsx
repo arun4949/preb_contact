@@ -65,7 +65,8 @@ export default async function OpsPage() {
     // Who to call: phone + consent live in the own-row-only `profile_phones` table (service role here).
     admin
       .from("profiles")
-      .select("id, full_name, email, created_at, onboarded_at, phone:profile_phones(phone, country, calls_allowed), workspace:workspaces(name, plan_key, subscription_status, trial_granted_at)")
+      // Explicit relationship: workspaces.overspend_enabled_by (0027) is a second link between the two tables.
+      .select("id, full_name, email, created_at, onboarded_at, phone:profile_phones(phone, country, calls_allowed), workspace:workspaces!profiles_default_workspace_id_fkey(name, plan_key, subscription_status, trial_granted_at)")
       .gte("created_at", minutesAgo(SIGNUP_DAYS * 24 * 60))
       .order("created_at", { ascending: false })
       .limit(50),
