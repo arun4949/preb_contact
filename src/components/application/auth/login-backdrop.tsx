@@ -71,14 +71,14 @@ export function LoginBackdrop() {
       <div
         className={cx(
           "absolute top-0 left-1/2 w-full origin-top -translate-x-1/2 animate-page-enter blur-[5px]",
-          "sm:w-[1280px] sm:scale-[0.6] md:scale-[0.78] lg:scale-[0.92] xl:scale-100",
+          "sm:w-[1280px] sm:scale-[0.6] md:scale-[0.78] lg:scale-[0.92] xl:w-full xl:scale-100",
         )}
       >
         <FakeHeader />
-        <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-8 sm:px-10">
+        <div className="mx-auto flex w-full flex-col gap-6 px-4 py-8 sm:px-10">
           <FakeTitleRow />
           <FakeToolbar />
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 2xl:grid-cols-4">
             {LISTS.map((list) => (
               <FakeListCard key={list.name} list={list} />
             ))}
@@ -94,7 +94,7 @@ export function LoginBackdrop() {
 function FakeHeader() {
   return (
     <div className="border-b border-separator-border bg-background-primary-default">
-      <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-10">
+      <div className="mx-auto flex h-16 w-full items-center justify-between gap-4 px-4 sm:px-10">
         <div className="flex items-center gap-4 sm:gap-6">
           <span className="hidden sm:flex">
             <LogoName height={24} />
