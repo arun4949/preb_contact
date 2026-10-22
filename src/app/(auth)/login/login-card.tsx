@@ -38,7 +38,7 @@ export function LoginCard({ next, error, notice, prefillEmail }: { next: string;
     if (prefillEmail) clearPrefillEmailCookie();
   }, [prefillEmail]);
 
-  const card = "flex w-full max-w-[400px] flex-col rounded-3xl border border-border-button-default bg-background-primary-default p-6 shadow-xs sm:p-8";
+  const card = "flex w-full max-w-[400px] flex-col rounded-3xl border border-border-button-default bg-background-primary-default p-6 shadow-lg sm:p-8";
 
   if (state.status === "sent") {
     return (

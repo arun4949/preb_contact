@@ -2,6 +2,24 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Sign-in backdrop — 2026-10-22 · blurred dummy dashboard behind the sign-in card (complete, walked in a browser)
+
+### Decisions (CTO)
+- Apollo-style: the sign-in card stays as it is (wordmark above, Help · Terms · Privacy · Cookie preferences below), a blurred, unreadable replica of the lists dashboard sits behind it to show what signing in unlocks. Phones show the real mobile layout of the app (first cut scaled the desktop grid down, which looked wrong on a phone), tablets and desktops the scaled grid. Only `/login` gets it; onboarding and the opt-out form keep the plain surface.
+
+### Done
+- ✅ `components/application/auth/login-backdrop.tsx`: server component, no state, no controls, `inert` + `aria-hidden` + `pointer-events-none`. Replicates `AppHeader`, the lists title row, `ListsToolbar` and `ListCard` with a static copy of the `ContactGauge` arc geometry, 15 fictional lists (names, owners and numbers invented), semantic tokens only. Below `sm` drawn at 1:1 in the phone layout (`Logo` mark, icon-only New list, icon-only credits, stacked toolbar, `grid-cols-1`); from `sm` drawn at 1280px with `scale` 0.6 / 0.78 / 0.92 / 1 per breakpoint, `blur-[5px]` on the canvas (no viewport `backdrop-filter`) under a `background-full` 70/40/90 gradient scrim, fades in with `animate-page-enter`.
+- ✅ `components/application/auth/login-backdrop-gate.tsx` (client, `usePathname() === "/login"`): the auth layout mounts the backdrop next to `<main>`, not inside the page. Reason: `main` carries the page-enter transform, and a transformed ancestor turns a fixed element into a box inside the card column (the first walk showed the dashboard rendered inside the card).
+- ✅ `(auth)/layout.tsx`: wrapper `relative`, logo link / `main` / footer `relative z-10`. `login-card.tsx`: `shadow-xs` → `shadow-lg` (dark override already mapped in globals).
+- ✅ Docs: `docs/screens.md` § 7 `/login`. Help article "How to sign in" re-read, the steps are unchanged, no edit. Legal texts unchanged (no new data processing).
+- ✅ `npm run typecheck` ✓ · `npm run lint` ✓ (2 pre-existing TanStack warnings) · `npm test` ✓ (190).
+
+### Browser walk (Playwright headless, first against an own dev server on :3200 (stopped), the mobile re-walk against the CTO's server on :3000; Termly, Featurebase and Meta requests aborted; no sign-in needed)
+- ✅ `/login` at 1440×900, 820×1180 and 390×844, light and dark (65/65 checks): theme applied, no horizontal scroll, backdrop fills the viewport and the canvas covers its height, zero focusable elements inside the backdrop, `elementFromPoint` on the Google button and the email field hits the real controls, card has the shadow and is fully in view without scrolling, tab order logo → Google → email → Continue → Terms → Privacy → Help → Terms, console clean.
+- ✅ Screenshots reviewed: no backdrop text readable at any size, dark mode flips through the tokens, the card reads as a floating modal. `?error=link` and `?notice=account_deleted` banners render; `someone@gmail.com` shows the inline work-email error; signed-out `/onboarding` redirects to `/login?next=%2Fonboarding`; `/opt-out` has no backdrop.
+- Next dev overlay shows "1 Issue" in the walk: the Featurebase organisation fetch my script aborts, not app code.
+
+
 ## Overspend — 2026-10-21 · opt-in to keep enriching when credits run out, exact shortfall invoiced per list and charged to the card (complete, walked in a browser)
 
 ### Decisions (CTO)
