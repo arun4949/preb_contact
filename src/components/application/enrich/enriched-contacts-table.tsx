@@ -38,7 +38,8 @@ import {
   StatusCell,
 } from "@/components/application/list-detail/contacts-table";
 import { SEARCH_SHORTCUT_ATTR } from "@/components/application/header/use-shortcuts";
-import type { ManualHistory, ManualRunState } from "@/lib/enrich/queries";
+import { Chip } from "@/components/base/badges/chip";
+import type { HistoryRow, ManualHistory, ManualRunState } from "@/lib/enrich/queries";
 import type { ContactRow } from "@/lib/lists/segments";
 import { createRealtimeClient } from "@/utils/supabase/realtime";
 import { cx } from "@/utils/cx";
@@ -306,6 +307,11 @@ export function EnrichedContactsTable({
                         <span className="truncate text-body-medium text-text-primary">
                           {name}
                         </span>
+                        {(c as HistoryRow).via ? (
+                          <Chip variant="caption" color="purple" className="shrink-0" title={`Enriched from ${(c as HistoryRow).via}`}>
+                            via {(c as HistoryRow).via}
+                          </Chip>
+                        ) : null}
                         {c.linkedin_url ? (
                           <a
                             href={c.linkedin_url}

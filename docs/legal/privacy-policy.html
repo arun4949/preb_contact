@@ -19,7 +19,7 @@
 <div class="preb-legal">
 <h1>Privacy Policy</h1>
 
-<p><strong>Last updated:</strong> October 15, 2026<br><strong>Version:</strong> 1.2</p>
+<p><strong>Last updated:</strong> November 2, 2026<br><strong>Version:</strong> 1.3</p>
 
 <p>Preb is a contact data enrichment service for recruiting teams. This Privacy Policy explains how Kranz &amp; Gupta, Indiepal GbR ("Preb", "we", "us") collects, uses, shares and protects personal data when you visit preb.co, create an account, use the Preb application, receive our emails or contact our support.</p>
 
@@ -99,6 +99,9 @@
 </ul>
 
 <p>Customer Content is only processed as described in Section 2 and in the DPA. Each workspace can see only its own Customer Content.</p>
+<h3>3.8 AI assistant connections</h3>
+<p>You can connect an AI assistant you use, such as Claude or ChatGPT, to Preb so that you can start enrichments and read results from inside that assistant. The connection uses the OAuth standard: you sign in to Preb in your browser and approve the connection, and the assistant receives an access token that it stores. We never see your password for the assistant and the assistant never receives a Preb password or API key. For each connection we store the assistant's technical client identifier and name, the workspace you chose, when the connection was made, when it was last used and how many requests it made. We do not store the content of your conversations with the assistant.</p>
+<p>When the assistant calls Preb, it sends us the names, companies, LinkedIn URLs or email addresses you asked it to look up, and we return the results to it. From that moment the assistant's provider (for example Anthropic for Claude or OpenAI for ChatGPT) processes that data under its own terms and privacy policy, on your instruction. The provider is not a sub-processor of Preb. You can end a connection at any time under Integrations in the application; the assistant then loses access immediately.</p>
 
 <h2>4. Why we process your data and on what legal basis</h2>
 
@@ -107,6 +110,7 @@
 <ul>
   <li><strong>Creating and running your account and workspace, signing you in, inviting team members.</strong> Data: account, sign-in and session data. Legal basis: performance of our contract with you (Art. 6 (1) (b) GDPR).</li>
   <li><strong>Providing the enrichment service, showing progress, delivering exports.</strong> Data: account data, usage data; Customer Content as processor. Legal basis: performance of our contract (Art. 6 (1) (b) GDPR); for Customer Content, the Customer's instructions under the DPA.</li>
+  <li><strong>Connecting an AI assistant you chose to your account and answering its requests on your behalf.</strong> Data: connection data (Section 3.8), account data; Customer Content as processor. Legal basis: performance of our contract (Art. 6 (1) (b) GDPR); for Customer Content, the Customer's instructions under the DPA.</li>
   <li><strong>Billing, invoicing, credit accounting, preventing double charges.</strong> Data: billing data, usage data. Legal basis: performance of our contract (Art. 6 (1) (b) GDPR) and our legal obligations under German tax and commercial law (Art. 6 (1) (c) GDPR, § 147 AO, § 14b UStG, § 257 HGB).</li>
   <li><strong>Sending transactional emails: magic links, invitations, welcome message, enrichment finished, paused or stopped, low credits, trial ending.</strong> Data: account and communication data. Legal basis: performance of our contract (Art. 6 (1) (b) GDPR).</li>
   <li><strong>Sending product news and tips about Preb to existing Customers.</strong> Data: email address, name. Legal basis: our legitimate interest in keeping Customers informed about the product they use (Art. 6 (1) (f) GDPR, § 7 (3) UWG). You can opt out at any time, see Section 15.</li>
@@ -165,6 +169,7 @@
 
 <p>Our enrichment data providers process Contact data only on our instructions and only to deliver the result our Customer requested. They are named, together with their own sub-processors and locations, in our Sub-processor List, which forms part of the DPA.</p>
 
+<p><strong>AI assistants you connect.</strong> When you connect an AI assistant (Section 3.8), the assistant's provider receives the data you ask it to look up and the results Preb returns. It acts on your instruction and under its own privacy terms, not as our service provider.</p>
 <p><strong>Company logos.</strong> The application displays company logos by loading them from the URL our data provider returns. Your browser requests the image directly from the hosting server, which therefore sees your IP address. We send no referrer information with these requests.</p>
 
 <p><strong>Other recipients.</strong> We may disclose personal data to courts, authorities and law enforcement when we are legally required to do so, to our lawyers, accountants and auditors under confidentiality obligations, and to a buyer or successor if Preb or its assets are sold, merged or reorganised. In that case we will inform you before your data becomes subject to a different privacy policy.</p>
@@ -196,6 +201,7 @@
   <li><strong>Account and profile data:</strong> for as long as your account exists. Deleted within 30 days after you ask us to delete your account or workspace.</li>
   <li><strong>Phone number and your choice about calls:</strong> until you remove the number in your profile settings or delete your account. The time of your last change to the call setting is kept with the number as a record of your choice.</li>
   <li><strong>Workspace invitations:</strong> 7 days, then the invitation expires and is removed.</li>
+  <li><strong>AI assistant connections:</strong> until you disconnect the assistant under Integrations or delete your account. The assistant's access token expires on its own and is renewed only while the connection exists.</li>
   <li><strong>Session and sign-in tokens:</strong> magic links expire after a short time. Sessions end when you sign out or after the session lifetime.</li>
   <li><strong>Draft lists and uploaded files not yet enriched:</strong> deleted after 24 hours.</li>
   <li><strong>Lists, Contact data, enrichment results and uploaded files (Customer Content):</strong> until the Customer deletes the list or the workspace is deleted. Deleting a list permanently removes its contacts, results and the uploaded file.</li>

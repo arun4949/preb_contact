@@ -5,13 +5,14 @@ import type { DocsArticle, DocsArticleRef, DocsCollection, DocsCollectionSlug, D
 import { gettingStarted } from "./content/getting-started";
 import { lists } from "./content/lists";
 import { enrich } from "./content/enrich";
+import { integrations } from "./content/integrations";
 import { data } from "./content/data";
 import { billing } from "./content/billing";
 import { workspace } from "./content/workspace";
 import { troubleshooting } from "./content/troubleshooting";
 
 /** Sidebar and home page order. */
-export const DOCS_COLLECTIONS: readonly DocsCollection[] = [gettingStarted, lists, enrich, data, billing, workspace, troubleshooting];
+export const DOCS_COLLECTIONS: readonly DocsCollection[] = [gettingStarted, lists, enrich, integrations, data, billing, workspace, troubleshooting];
 
 export const CONTACT_PATH = `${docsPath()}/contact`;
 

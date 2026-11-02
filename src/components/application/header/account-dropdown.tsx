@@ -2,17 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import {
-  RiBankCardLine,
-  RiBookOpenLine,
-  RiCustomerService2Line,
-  RiShieldCheckLine,
-  RiLogoutBoxRLine,
-  RiMegaphoneLine,
-  RiPulseLine,
-  RiUserForbidLine,
-  RiUserStarLine,
-  RiSettings3Line, RiTeamLine } from "@remixicon/react";
+import { RiBankCardLine, RiBookOpenLine, RiCustomerService2Line, RiLogoutBoxRLine, RiMegaphoneLine, RiPlugLine, RiPulseLine, RiSettings3Line, RiShieldCheckLine, RiTeamLine, RiUserForbidLine, RiUserStarLine } from "@remixicon/react";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Dropdown, DropdownDivider, DropdownGroup, DropdownItem, DropdownPopover, DropdownTrigger } from "@/components/base/dropdown/dropdown";
 import { openCookiePreferences } from "@/components/foundations/termly/termly-cmp";
@@ -73,6 +63,15 @@ export function AccountDropdown({ name, email, avatarUrl, workspaceName, isAdmin
           <DropdownItem onSelect={() => go("billing")}>
             <RiBankCardLine className="size-5 text-foreground-icon-secondary" aria-hidden />
             <span className="text-body-medium">Billing</span>
+          </DropdownItem>
+          <DropdownItem
+            onSelect={() => {
+              setOpen(false);
+              router.push("/integrations");
+            }}
+          >
+            <RiPlugLine className="size-5 text-foreground-icon-secondary" aria-hidden />
+            <span className="text-body-medium">Integrations</span>
           </DropdownItem>
         </DropdownGroup>
         <DropdownDivider />

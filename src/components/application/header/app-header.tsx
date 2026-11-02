@@ -4,6 +4,7 @@ import { startTransition, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { RiAddLine } from "@remixicon/react";
+import { Chip } from "@/components/base/badges/chip";
 import { Button, ButtonLink } from "@/components/base/buttons/button";
 import { Kbd } from "@/components/base/kbd/kbd";
 import { Tab, TabList, Tabs } from "@/components/base/tabs/tabs";
@@ -15,6 +16,7 @@ import { AccountDropdown, type AccountDropdownProps } from "./account-dropdown";
 import { CreditsDropdown } from "./credits-dropdown";
 import { NotificationsDropdown } from "./notifications-dropdown";
 import { useGlobalShortcuts } from "./use-shortcuts";
+import { cx } from "@/utils/cx";
 
 export interface AppHeaderProps extends AccountDropdownProps {
   credits: CreditSummary;
@@ -26,13 +28,16 @@ export interface AppHeaderProps extends AccountDropdownProps {
 const NO_TAB = "__none__";
 
 const NAV = [
-  { id: "lists", label: "Lists", href: "/lists" },
-  { id: "enrich", label: "Enrich", href: "/enrich" },
+  { id: "lists", label: "Lists", href: "/lists", isNew: false },
+  { id: "enrich", label: "Enrich", href: "/enrich", isNew: false },
+  // Phones have no room for a third tab next to the header actions: the
+  // account menu carries Integrations there.
+  { id: "integrations", label: "Integrations", href: "/integrations", isNew: true },
 ] as const;
 
 /**
  * Sticky app bar (Figma 1015:30): logo + wordmark, underline tabs (Lists,
- * Enrich), New list, notification bell, credits dropdown, account dropdown.
+ * Enrich, Integrations), New list, notification bell, credits dropdown, account dropdown.
  * Mobile keeps the logo mark, both tabs, an icon-only New list, the bell and
  * the avatar.
  */
@@ -75,9 +80,13 @@ export function AppHeader({ credits, userId, notifications, unreadCount, ...acco
                 <Link
                   key={t.id}
                   href={t.href}
-                  className="relative inline-flex h-full items-center px-2.5 py-2 whitespace-nowrap text-body-regular text-text-primary outline-none transition-colors duration-150 ease focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-border-focus-ring"
+                  className={cx(
+                    "relative inline-flex h-full items-center px-2.5 py-2 whitespace-nowrap text-body-regular text-text-primary outline-none transition-colors duration-150 ease focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-border-focus-ring",
+                    t.isNew && "max-sm:hidden",
+                  )}
                 >
                   {t.label}
+                  {t.isNew ? <Chip variant="caption" color="purple" className="ms-1.5 hidden sm:inline-flex">New</Chip> : null}
                 </Link>
               ))}
             </nav>
@@ -94,8 +103,9 @@ export function AppHeader({ credits, userId, notifications, unreadCount, ...acco
             >
               <TabList aria-label="Main navigation" className="h-16 border-b-0">
                 {NAV.map((t) => (
-                  <Tab key={t.id} id={t.id} className="h-full">
+                  <Tab key={t.id} id={t.id} className={cx("h-full", t.isNew && "max-sm:hidden")}>
                     {t.label}
+                    {t.isNew ? <Chip variant="caption" color="purple" className="hidden sm:inline-flex">New</Chip> : null}
                   </Tab>
                 ))}
               </TabList>

@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { MANUAL_SOURCES } from "@/lib/enrich/queries";
 import { getSessionContext } from "@/lib/supabase/queries";
 import { CSV_BOM, csvLine } from "@/lib/csv/export";
 import { PREB_COLUMNS, rowCells } from "@/lib/lists/export-columns";
@@ -29,7 +30,7 @@ export async function GET() {
         .from("list_contacts")
         .select("*, lists!inner(source)")
         .eq("workspace_id", session.workspace.id)
-        .eq("lists.source", "manual")
+        .in("lists.source", MANUAL_SOURCES)
         .order("created_at", { ascending: false })
         .order("row_index", { ascending: true })
         .range(cursor, cursor + PAGE - 1);

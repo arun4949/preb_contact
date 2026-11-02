@@ -32,6 +32,7 @@ export const gettingStarted: DocsCollection = {
           "Credits. Every new workspace starts with a free trial, see [The free trial](/docs/getting-started/free-trial).",
         ] },
         { type: "callout", tone: "tip", text: "No spreadsheet yet? Use the **Enrich** tab to look up a handful of people one by one. See [Find one person without a spreadsheet](/docs/enrich/enrich-a-single-contact)." },
+        { type: "paragraph", text: "You can also use Preb from inside Claude or ChatGPT and ask for emails and numbers in plain words. See [Use Preb inside your AI assistant](/docs/integrations/use-preb-in-your-ai-tool)." },
       ],
     },
     {

@@ -5,8 +5,14 @@ import type { ContactRow } from "@/lib/lists/segments";
 
 export const HISTORY_PAGE_SIZE = 25;
 
+/** Runs the Enrich tab shows: typed by hand, or started from an AI assistant (MCP). */
+export const MANUAL_SOURCES = ["manual", "mcp"] as const;
+
+/** A history row plus the assistant badge ("via Claude") when an AI assistant started the run. */
+export type HistoryRow = ContactRow & { via: string | null };
+
 export interface ManualHistory {
-  rows: ContactRow[];
+  rows: HistoryRow[];
   total: number;
   page: number;
   totalPages: number;
@@ -25,16 +31,16 @@ function escapeLike(value: string) {
   return value.replace(/[%_\\]/g, "\\$&");
 }
 
-/** Every contact from manual runs in the workspace, newest first. RLS limits this to members. */
+/** Every contact from manual runs and AI assistant runs in the workspace, newest first. RLS limits this to members. */
 export async function getManualContacts(workspaceId: string, opts: { page?: number; q?: string } = {}): Promise<ManualHistory> {
   const supabase = await createClient();
   const page = Math.max(1, Math.floor(opts.page ?? 1));
   const from = (page - 1) * HISTORY_PAGE_SIZE;
   let query = supabase
     .from("list_contacts")
-    .select("*, lists!inner(source)", { count: "exact" })
+    .select("*, lists!inner(source, source_detail)", { count: "exact" })
     .eq("workspace_id", workspaceId)
-    .eq("lists.source", "manual")
+    .in("lists.source", MANUAL_SOURCES)
     .order("created_at", { ascending: false })
     .order("row_index", { ascending: true })
     .range(from, from + HISTORY_PAGE_SIZE - 1);
@@ -49,11 +55,10 @@ export async function getManualContacts(workspaceId: string, opts: { page?: numb
   }
   const { data, count } = await query;
   const total = count ?? 0;
-  // Drop the joined `lists` column so rows match `ContactRow`.
-  const rows = (data ?? []).map((r) => {
+  // Drop the joined `lists` column so rows match `ContactRow`; keep the assistant name as the badge.
+  const rows: HistoryRow[] = (data ?? []).map((r) => {
     const { lists, ...row } = r;
-    void lists;
-    return row as ContactRow;
+    return { ...(row as ContactRow), via: lists.source === "mcp" ? (lists.source_detail ?? "AI assistant") : null };
   });
   return { rows, total, page, totalPages: Math.max(1, Math.ceil(total / HISTORY_PAGE_SIZE)) };
 }
@@ -64,7 +69,7 @@ export async function getManualRunState(workspaceId: string): Promise<ManualRunS
     .from("lists")
     .select("status, pause_reason")
     .eq("workspace_id", workspaceId)
-    .eq("source", "manual")
+    .in("source", MANUAL_SOURCES)
     .in("status", ["queued", "enriching", "stopping", "paused_credits", "paused_upstream"]);
   const statuses = new Set((data ?? []).map((l) => l.status));
   const pausedRow = (data ?? []).find((l) => l.status === "paused_credits");

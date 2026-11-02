@@ -1,5 +1,3 @@
-// Generated from the Supabase project via MCP `generate_typescript_types`
-// after migration 0027 (overspend). Regenerate after every migration.
 export type Json =
   | string
   | number
@@ -831,6 +829,7 @@ export type Database = {
           risky_email: number
           row_limit: number | null
           source: string
+          source_detail: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["list_status"]
           submitted_rows: number
@@ -870,6 +869,7 @@ export type Database = {
           risky_email?: number
           row_limit?: number | null
           source?: string
+          source_detail?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["list_status"]
           submitted_rows?: number
@@ -909,6 +909,7 @@ export type Database = {
           risky_email?: number
           row_limit?: number | null
           source?: string
+          source_detail?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["list_status"]
           submitted_rows?: number
@@ -919,6 +920,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "lists_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mcp_connections: {
+        Row: {
+          client_id: string
+          client_name: string
+          created_at: string
+          last_used_at: string | null
+          tool_calls: number
+          updated_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          client_id: string
+          client_name?: string
+          created_at?: string
+          last_used_at?: string | null
+          tool_calls?: number
+          updated_at?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          client_id?: string
+          client_name?: string
+          created_at?: string
+          last_used_at?: string | null
+          tool_calls?: number
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcp_connections_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   alternates: { canonical: docsPath() },
 };
 
-const POPULAR = ["first-list-in-five-minutes", "how-credits-work", "email-statuses", "prepare-your-spreadsheet", "invite-your-team", "download-your-list"];
+const POPULAR = ["first-list-in-five-minutes", "how-credits-work", "use-preb-in-your-ai-tool", "email-statuses", "prepare-your-spreadsheet", "invite-your-team"];
 
 export default function DocsHomePage() {
   const popular = POPULAR.map(findArticle).filter((a): a is NonNullable<typeof a> => a !== undefined);

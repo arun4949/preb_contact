@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Last updated:** [date of publication]
-**Version:** 1.2 (2026-10-15: advertising measurement with Meta)
+**Version:** 1.3 (2026-11-02: AI assistant connections, Section 3.8)
 
 Preb is a contact data enrichment service for recruiting teams. This Privacy Policy explains how Kranz & Gupta, Indiepal GbR ("Preb", "we", "us") collects, uses, shares and protects personal data when you visit preb.co, create an account, use the Preb application, receive our emails or contact our support.
 
@@ -90,6 +90,12 @@ Customer Content is the Contact data our Customers upload and the results we ret
 
 Customer Content is only processed as described in Section 2 and in the DPA. Each workspace can see only its own Customer Content.
 
+### 3.8 AI assistant connections
+
+You can connect an AI assistant you use, such as Claude or ChatGPT, to Preb so that you can start enrichments and read results from inside that assistant. The connection uses the OAuth standard: you sign in to Preb in your browser and approve the connection, and the assistant receives an access token that it stores. We never see your password for the assistant and the assistant never receives a Preb password or API key. For each connection we store the assistant's technical client identifier and name, the workspace you chose, when the connection was made, when it was last used and how many requests it made. We do not store the content of your conversations with the assistant.
+
+When the assistant calls Preb, it sends us the names, companies, LinkedIn URLs or email addresses you asked it to look up, and we return the results to it. From that moment the assistant's provider (for example Anthropic for Claude or OpenAI for ChatGPT) processes that data under its own terms and privacy policy, on your instruction. The provider is not a sub-processor of Preb. You can end a connection at any time under Integrations in the application; the assistant then loses access immediately.
+
 ---
 
 ## 4. Why we process your data and on what legal basis
@@ -100,6 +106,7 @@ The GDPR requires us to name a legal basis for every purpose. The table below ap
 |---|---|---|
 | Creating and running your account and workspace, signing you in, inviting team members | Account, sign-in and session data | Performance of our contract with you (Art. 6 (1) (b) GDPR) |
 | Providing the enrichment service, showing progress, delivering exports | Account data, usage data; Customer Content as processor | Performance of our contract (Art. 6 (1) (b) GDPR); for Customer Content, the Customer's instructions under the DPA |
+| Connecting an AI assistant you chose to your account and answering its requests on your behalf | Connection data (Section 3.8), account data; Customer Content as processor | Performance of our contract (Art. 6 (1) (b) GDPR); for Customer Content, the Customer's instructions under the DPA |
 | Billing, invoicing, credit accounting, preventing double charges | Billing data, usage data | Performance of our contract (Art. 6 (1) (b) GDPR) and our legal obligations under German tax and commercial law (Art. 6 (1) (c) GDPR, § 147 AO, § 14b UStG, § 257 HGB) |
 | Sending transactional emails: magic links, invitations, welcome message, enrichment finished, paused or stopped, low credits, trial ending | Account and communication data | Performance of our contract (Art. 6 (1) (b) GDPR) |
 | Sending product news and tips about Preb to existing Customers | Email address, name | Our legitimate interest in keeping Customers informed about the product they use (Art. 6 (1) (f) GDPR, § 7 (3) UWG). You can opt out at any time, see Section 15 |
@@ -160,6 +167,8 @@ We share personal data only with service providers that help us run Preb, and on
 
 Our enrichment data providers process Contact data only on our instructions and only to deliver the result our Customer requested. They are named, together with their own sub-processors and locations, in our Sub-processor List, which forms part of the DPA.
 
+**AI assistants you connect.** When you connect an AI assistant (Section 3.8), the assistant's provider receives the data you ask it to look up and the results Preb returns. It acts on your instruction and under its own privacy terms, not as our service provider.
+
 **Company logos.** The application displays company logos by loading them from the URL our data provider returns. Your browser requests the image directly from the hosting server, which therefore sees your IP address. We send no referrer information with these requests.
 
 **Other recipients.** We may disclose personal data to courts, authorities and law enforcement when we are legally required to do so, to our lawyers, accountants and auditors under confidentiality obligations, and to a buyer or successor if Preb or its assets are sold, merged or reorganised. In that case we will inform you before your data becomes subject to a different privacy policy.
@@ -196,6 +205,7 @@ We keep personal data only as long as we need it for the purposes above or as th
 | Account and profile data | For as long as your account exists. Deleted within 30 days after you ask us to delete your account or workspace |
 | Phone number and your choice about calls | Until you remove the number in your profile settings or delete your account. The time of your last change to the call setting is kept with the number as a record of your choice |
 | Workspace invitations | 7 days, then the invitation expires and is removed |
+| AI assistant connections | Until you disconnect the assistant under Integrations or delete your account. The assistant's access token expires on its own and is renewed only while the connection exists |
 | Session and sign-in tokens | Magic links expire after a short time. Sessions end when you sign out or after the session lifetime |
 | Draft lists and uploaded files not yet enriched | Deleted after 24 hours |
 | Lists, Contact data, enrichment results and uploaded files (Customer Content) | Until the Customer deletes the list or the workspace is deleted. Deleting a list permanently removes its contacts, results and the uploaded file |

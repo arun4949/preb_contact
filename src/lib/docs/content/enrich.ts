@@ -28,6 +28,8 @@ export const enrich: DocsCollection = {
         { type: "heading", text: "The results table" },
         { type: "paragraph", text: "The table keeps everything you looked up in this workspace, newest first, so you can come back to it later. Search it with the field above the table, copy an email or a phone with the copy button, and use **Download CSV** to get the whole table as a file." },
         { type: "callout", tone: "note", text: "The same rules as for lists apply: you only pay for results we find, and a person enriched in the last 90 days in your workspace is free again." },
+        { type: "heading", text: "Runs started from an AI assistant" },
+        { type: "paragraph", text: "When you enrich people from Claude or ChatGPT, those runs land in the same table, marked with a badge such as **via Claude**. See [Use Preb inside your AI assistant](/docs/integrations/use-preb-in-your-ai-tool)." },
       ],
     },
     {

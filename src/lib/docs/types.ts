@@ -11,6 +11,7 @@ export type DocsCollectionSlug =
   | "getting-started"
   | "lists"
   | "enrich"
+  | "integrations"
   | "data"
   | "billing"
   | "workspace"

@@ -39,7 +39,7 @@ export default async function OpsPage() {
   if (!isAdminEmail(session.email)) notFound();
 
   const admin = createAdminClient();
-  const [balance, stuck, webhooks, paused, lastTick, emails, running, signups, docsVotes, overages] = await Promise.all([
+  const [balance, stuck, webhooks, paused, lastTick, emails, running, signups, docsVotes, overages, mcpConnections, mcpRuns] = await Promise.all([
     getAccountCredits().then((r) => r.balance).catch((e: unknown) => (e instanceof Error ? e.message : "unavailable")),
     admin
       .from("enrichment_batches")
@@ -75,6 +75,9 @@ export default async function OpsPage() {
     admin.from("docs_feedback").select("article_slug, helpful").gte("created_at", minutesAgo(DOCS_FEEDBACK_DAYS * 24 * 60)).limit(5000),
     // Overspend: unpaid invoices need a human when the daily retries run out.
     admin.from("credit_overages").select("status, credits, amount_cents, workspace_id, created_at").gte("created_at", minutesAgo(31 * 24 * 60)).limit(5000),
+    // AI assistants (MCP): connections and the runs they started in the last day.
+    admin.from("mcp_connections").select("client_name, tool_calls, last_used_at").limit(5000),
+    admin.from("lists").select("id", { count: "exact", head: true }).eq("source", "mcp").gte("created_at", minutesAgo(24 * 60)),
   ]);
   // A failed query must never look like "nothing to report": list every error at the top.
   const queryErrors = (
@@ -88,6 +91,7 @@ export default async function OpsPage() {
       ["Recent signups", signups.error],
       ["Help center feedback", docsVotes.error],
       ["Overspend", overages.error],
+      ["AI assistants", mcpConnections.error ?? mcpRuns.error],
     ] as const
   ).filter(([, error]) => error) as unknown as [string, { message: string; code?: string }][];
   const overspend = { pending: 0, unpaid: 0, unpaidCents: 0, paid: 0, paidCents: 0, workspaces: new Set<string>() };
@@ -115,6 +119,12 @@ export default async function OpsPage() {
   const docsYes = docsRows.reduce((n, r) => n + r.yes, 0);
   const docsShare = docsTotal ? Math.round((docsYes / docsTotal) * 100) : null;
 
+  const mcp = {
+    connections: mcpConnections.data?.length ?? 0,
+    activeToday: (mcpConnections.data ?? []).filter((c) => c.last_used_at && c.last_used_at > minutesAgo(24 * 60)).length,
+    runsToday: mcpRuns.count ?? 0,
+  };
+
   const emailCounts = (emails.data ?? []).reduce<Record<string, number>>((acc, e) => ({ ...acc, [e.kind]: (acc[e.kind] ?? 0) + 1 }), {});
   const stats: { label: string; value: string; tone?: "warn" | "bad" }[] = [
     { label: "Provider balance (provider credits)", value: typeof balance === "number" ? balance.toLocaleString("en-US") : balance, tone: typeof balance === "number" ? (balance < 200 ? "warn" : undefined) : "bad" },
@@ -125,6 +135,7 @@ export default async function OpsPage() {
     { label: "Last provider call", value: lastTick.data?.window_start ? when(lastTick.data.window_start) : "never" },
     { label: `Signups (${SIGNUP_DAYS} d)`, value: String(signups.data?.length ?? 0) },
     { label: `Docs votes (${DOCS_FEEDBACK_DAYS} d)`, value: docsShare === null ? "0" : `${docsTotal} · ${docsShare}% helpful`, tone: docsShare !== null && docsTotal >= 10 && docsShare < 60 ? "warn" : undefined },
+    { label: "AI assistants", value: `${mcp.connections} connected · ${mcp.activeToday} active (24 h) · ${mcp.runsToday} ${mcp.runsToday === 1 ? "run" : "runs"} (24 h)` },
     {
       label: "Overspend (31 d)",
       value: `${formatUsd(overspend.paidCents)} paid · ${overspend.pending.toLocaleString("en-US")} cr pending · ${overspend.unpaid ? `${formatUsd(overspend.unpaidCents)} unpaid (${overspend.workspaces.size})` : "none unpaid"}`,

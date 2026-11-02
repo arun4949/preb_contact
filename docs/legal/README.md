@@ -8,8 +8,8 @@ Copy rules: no em dashes, en dashes or " - " as punctuation (AGENTS.md). The enr
 
 | Document | File | Status |
 |---|---|---|
-| Privacy Policy | `privacy-policy.md` | v1.2 (2026-10-15): § 4 purpose row, § 5 "Advertising measurement (Meta)", § 6 recipient row and § 7 transfer row for the Meta Pixel and Conversions API. Re-paste `/privacy` in Framer |
-| Terms of Service (B2B only, incl. acceptable use, credits, refunds) | `terms-of-service.md` | v1.3 (2026-10-21): new § 6.6 Overspend (opt-in, plan rate per credit, invoice per list, automatic charge, monthly limit, failed payment), § 6.2 and § 7.3 reference it. Re-paste `/terms` in Framer |
+| Privacy Policy | `privacy-policy.md` | v1.3 (2026-11-02): new § 3.8 "AI assistant connections", § 4 purpose row, § 6 "AI assistants you connect" paragraph, § 8 retention row. Re-paste `/privacy` in Framer |
+| Terms of Service (B2B only, incl. acceptable use, credits, refunds) | `terms-of-service.md` | v1.4 (2026-11-02): § 2.5 limits (100 contacts per assistant request) and new § 2.6 AI assistants (MCP connections count as use by the Customer, provider is not a party). Re-paste `/terms` in Framer |
 | Data Processing Agreement (Art. 28 GDPR, SCCs by reference, CCPA service provider terms) | `dpa.md` | Draft v1.0, awaiting founder review |
 | Sub-processor List (names the enrichment provider and its sub-processors) | `sub-processors.md` | Draft v1.0, awaiting founder review |
 | Cookie Policy | Termly | Covered by Termly (CTO decision 2026-10-09), no markdown file |

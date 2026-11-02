@@ -48,19 +48,24 @@ export async function purgeCacheRows(admin: ReturnType<typeof createAdminClient>
  * shared by the file wizard and manual entry. Replaces any previous rows of
  * the list, so a re-parse is idempotent.
  */
-export async function insertContacts(
-  admin: ReturnType<typeof createAdminClient>,
-  workspaceId: string,
-  listId: string,
-  rows: NormalisedRow[],
-): Promise<Result<{ cached: number; cachedReverse: number; suppressedEnrich: number; suppressedEmailOnly: number }>> {
-  // Cache lookup (same workspace, < 90 days) → free, pre-filled rows. Enrichable
-  // rows reuse enrich records; email-only rows reuse reverse-lookup records
-  // (cached under the "reverse" field tag), so a repeat email list costs nothing.
+export interface CacheLookup {
+  /** dedupKey → input hash, for every enrichable or email-only row. */
+  hashes: Map<string, string>;
+  /** input hash → cached record (same workspace, < 90 days). */
+  hits: Map<string, { record: EnrichmentRecord; reverse: boolean }>;
+}
+
+/**
+ * Cache lookup (same workspace, < 90 days) → free, pre-filled rows. Enrichable
+ * rows reuse enrich records; email-only rows reuse reverse-lookup records
+ * (cached under the "reverse" field tag), so a repeat email list costs nothing.
+ * Shared with the MCP estimate tool, which reports cache hits without inserting.
+ */
+export async function lookupCache(admin: ReturnType<typeof createAdminClient>, workspaceId: string, rows: readonly NormalisedRow[]): Promise<CacheLookup> {
   const hashes = new Map<string, string>();
   for (const r of rows) if ((r.enrichable || r.skipReason === "email_only") && r.dedupKey) hashes.set(r.dedupKey, inputHash(r.dedupKey));
   const since = new Date(Date.now() - CACHE_TTL_DAYS * 86_400_000).toISOString();
-  const cacheHits = new Map<string, { record: EnrichmentRecord; reverse: boolean }>();
+  const hits = new Map<string, { record: EnrichmentRecord; reverse: boolean }>();
   const hashList = [...hashes.values()];
   for (let i = 0; i < hashList.length; i += INSERT_BATCH) {
     const { data } = await admin
@@ -70,9 +75,33 @@ export async function insertContacts(
       .eq("workspace_id", workspaceId)
       .gte("fetched_at", since);
     for (const hit of data ?? []) {
-      cacheHits.set(hit.input_hash, { record: hit.result as unknown as EnrichmentRecord, reverse: hit.fields.includes("reverse") });
+      hits.set(hit.input_hash, { record: hit.result as unknown as EnrichmentRecord, reverse: hit.fields.includes("reverse") });
     }
   }
+  return { hashes, hits };
+}
+
+/** Rows a cache lookup would serve for free: enrich hits and reverse hits counted separately. */
+export function countCacheHits(rows: readonly NormalisedRow[], lookup: CacheLookup): { cached: number; cachedReverse: number } {
+  let cached = 0;
+  let cachedReverse = 0;
+  for (const r of rows) {
+    const hash = r.dedupKey ? lookup.hashes.get(r.dedupKey) : undefined;
+    const hit = hash ? lookup.hits.get(hash) : undefined;
+    if (!hit) continue;
+    if (r.enrichable && !hit.reverse) cached += 1;
+    else if (r.skipReason === "email_only" && hit.reverse) cachedReverse += 1;
+  }
+  return { cached, cachedReverse };
+}
+
+export async function insertContacts(
+  admin: ReturnType<typeof createAdminClient>,
+  workspaceId: string,
+  listId: string,
+  rows: NormalisedRow[],
+): Promise<Result<{ cached: number; cachedReverse: number; suppressedEnrich: number; suppressedEmailOnly: number }>> {
+  const { hashes, hits: cacheHits } = await lookupCache(admin, workspaceId, rows);
 
   // Suppression list (privacy policy § 12): people who objected are never
   // enriched again. A cache hit is checked on its output too (the emails and

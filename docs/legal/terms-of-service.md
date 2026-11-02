@@ -1,7 +1,7 @@
 # Terms of Service
 
 **Last updated:** [date of publication]
-**Version:** 1.3 (2026-10-21: Overspend, Section 6.6 and Section 7.3)
+**Version:** 1.4 (2026-11-02: AI assistants, Section 2.6)
 
 These Terms of Service (the "Terms") are a contract between Kranz & Gupta, Indiepal GbR, Brunnenstr. 11, 53123 Bonn, Germany ("Preb", "we", "us") and the business that creates or uses a Preb workspace (the "Customer", "you"). They govern the use of the Preb website and application at preb.co and all related services (the "Service").
 
@@ -36,7 +36,9 @@ The Data Processing Agreement (the "DPA") and the Privacy Policy form part of th
 
 **2.4 Changes to the Service.** We develop the Service continuously. We may add, change or remove features, limits and data providers. We will not remove a core feature you pay for during a paid period without offering you the choice to cancel with a pro-rated refund of the fees for the remaining period.
 
-**2.5 Limits.** The current limits are 10,000 rows and 20 MB per uploaded file, 25 contacts per manual entry, and reasonable rate limits on invitations and sign-in emails. We may change limits with notice in the application.
+**2.5 Limits.** The current limits are 10,000 rows and 20 MB per uploaded file, 25 contacts per manual entry, 100 contacts per request from an AI assistant, and reasonable rate limits on invitations, sign-in emails and assistant requests. We may change limits with notice in the application.
+
+**2.6 AI assistants.** Users may connect an AI assistant of their choice (for example Claude or ChatGPT) to the Service through the open MCP standard. The assistant then acts on the User's instructions within the Workspace the User chose when approving the connection. Everything an assistant does counts as use of the Service by the Customer: Credits are consumed, limits apply and these Terms apply as if the User had acted in the application. The Customer is responsible for choosing an assistant whose terms allow the processing of Customer Data and Results, for the instructions given to it and for reviewing what it does. Preb is not a party to the Customer's contract with the assistant's provider and gives no warranty for the assistant's behaviour, availability or output. A connection can be ended at any time under Integrations.
 
 ---
 
