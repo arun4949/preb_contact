@@ -68,7 +68,7 @@ export default async function IntegrationsPage() {
       <section className="flex flex-col gap-4">
         <div className="flex flex-col">
           <h2 className="text-headline-medium text-text-primary">AI assistants</h2>
-          <p className="text-body-2-regular text-text-secondary">Pick your assistant. Each card leads to a short, step-by-step setup.</p>
+          <p className="text-body-2-regular text-text-secondary">Pick your assistant. Connect opens the step-by-step guide; the address and example prompts are under Set up.</p>
         </div>
         <AssistantCards connections={connections} mode="overview" />
       </section>

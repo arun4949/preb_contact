@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { RiArrowRightLine, RiExternalLinkLine, RiPlugLine } from "@remixicon/react";
+import { RiExternalLinkLine, RiPlugLine } from "@remixicon/react";
 import { Chip } from "@/components/base/badges/chip";
 import { Button, ButtonLink } from "@/components/base/buttons/button";
 import { ConfirmDialog } from "@/components/base/dialog/dialog";
@@ -31,7 +31,7 @@ const relative = (iso: string) => {
 
 export interface AssistantCardsProps {
   connections: AssistantConnection[];
-  /** `overview`: Connect goes to the setup page. `detail`: Setup guide opens the help article. */
+  /** Only the button label differs: both modes open the assistant's help article in a new tab. */
   mode: "overview" | "detail";
 }
 
@@ -98,15 +98,10 @@ export function AssistantCards({ connections, mode }: AssistantCardsProps) {
                 </ul>
               ) : null}
               <div className="mt-auto flex flex-wrap gap-2">
-                {mode === "overview" ? (
-                  <ButtonLink href={`/integrations/ai-assistants#${card.id}`} variant="secondary" size="small" trailingIcon={RiArrowRightLine} className="flex-1">
-                    {mine.length ? "Add another" : "Connect"}
-                  </ButtonLink>
-                ) : (
-                  <ButtonLink href={guide} target="_blank" rel="noopener noreferrer" variant="secondary" size="small" trailingIcon={RiExternalLinkLine} className="flex-1">
-                    Setup guide
-                  </ButtonLink>
-                )}
+                {/* One click, one tab: the guide opens directly (like FullEnrich), no detour through the setup page. */}
+                <ButtonLink href={guide} target="_blank" rel="noopener noreferrer" variant="secondary" size="small" trailingIcon={RiExternalLinkLine} className="flex-1">
+                  {mode === "overview" ? (mine.length ? "Add another" : "Connect") : "Setup guide"}
+                </ButtonLink>
               </div>
             </div>
           );
