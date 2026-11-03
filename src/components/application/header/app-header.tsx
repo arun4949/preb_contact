@@ -49,9 +49,15 @@ export function AppHeader({ credits, userId, notifications, unreadCount, ...acco
   // first tab when the key is null, so "no tab" is a key that matches no tab.
   const routeTab: string = NAV.find((t) => pathname.startsWith(t.href))?.id ?? NO_TAB;
   // The underline moves on click, not when the server answers. The optimistic
-  // pick is tied to the pathname it was made on, so it expires by itself once
-  // the route changes (derived state, no effect).
+  // pick only applies on the pathname it was made on, and is dropped as soon
+  // as the pathname changes: otherwise returning to that pathname later (logo
+  // link, browser back) would resurrect the stale pick.
   const [optimistic, setOptimistic] = useState<{ tab: string; from: string } | null>(null);
+  const [seenPath, setSeenPath] = useState(pathname);
+  if (seenPath !== pathname) {
+    setSeenPath(pathname);
+    setOptimistic(null);
+  }
   const selected = optimistic && optimistic.from === pathname ? optimistic.tab : routeTab;
   useEffect(() => {
     NAV.forEach((t) => router.prefetch(t.href));
