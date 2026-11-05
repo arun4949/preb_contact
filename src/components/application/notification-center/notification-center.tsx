@@ -97,7 +97,7 @@ const inTab = (item: NotificationItem, tab: NotificationCenterTab) =>
 export function NotificationVisual({ item, className }: { item: Pick<NotificationItem, "kind" | "status">; className?: string }) {
   if (item.kind === "admin") {
     return (
-      <span className={cx("flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-50 ring-1 ring-accent-100 ring-inset", className)}>
+      <span className={cx("flex size-10 shrink-0 items-center justify-center rounded-full bg-background-secondary-default ring-1 ring-border-button-default ring-inset", className)}>
         <Logo size={22} />
       </span>
     );

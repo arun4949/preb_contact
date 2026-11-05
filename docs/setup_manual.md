@@ -78,7 +78,7 @@ Decision (go-live session, 2026-10-08): the app ran on the apex `preb.co`. **Sup
 
 ## M7b · Brand assets for emails · done on day 2, repeat after a logo change
 
-- [x] `npx tsx --env-file=.env.local scripts/upload-brand-assets.ts` uploads `public/logoName.png` and `public/logo.png` to the public Storage bucket `brand`; emails load the logo from there. Set `EMAIL_ASSET_BASE_URL` only if the assets move elsewhere (e.g. the Framer site).
+- [x] `npx tsx --env-file=.env.local scripts/upload-brand-assets.ts` uploads `public/logoName.png` and `public/logo.png` to the public Storage bucket `brand` under versioned names (`logoName-2026-11.png`, cached for a year, so new artwork gets a new name); emails load the logo from there. Set `EMAIL_ASSET_BASE_URL` only if the assets move elsewhere (e.g. the Framer site).
 - Sign‑up requires a work email. Founders/testers with personal addresses go into `ADMIN_EMAILS` (locally and in Vercel, M5 step 4).
 
 

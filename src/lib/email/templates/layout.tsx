@@ -24,6 +24,13 @@ export function appUrl(path = "") {
 }
 
 /** Public URL for brand assets (uploaded by `scripts/upload-brand-assets.ts`). */
+/**
+ * Dark lockup (emails have light surfaces). Versioned name: the bucket serves
+ * with a one-year cache, so a rebrand uploads a new object instead of
+ * overwriting (see scripts/upload-brand-assets.ts).
+ */
+const EMAIL_LOGO = "logoName-2026-11.png";
+
 export function brandAssetUrl(name: string) {
   const explicit = process.env.EMAIL_ASSET_BASE_URL?.replace(/\/$/, "");
   if (explicit) return `${explicit}/${name}`;
@@ -82,7 +89,7 @@ export function EmailLayout({
               padding: 32,
             }}
           >
-            <Img src={brandAssetUrl("logoName.png")} alt="Preb" width={79} height={24} style={{ width: 79, height: 24, marginBottom: 24 }} />
+            <Img src={brandAssetUrl(EMAIL_LOGO)} alt="Preb" width={77} height={24} style={{ width: 77, height: 24, marginBottom: 24 }} />
             {children}
             {signed ? <FounderSignOff /> : null}
           </Section>

@@ -2,6 +2,16 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Rebrand, new logos — 2026-11-05
+
+### Done
+- ✅ New monochrome artwork from the CTO: `logo.svg` / `logoName.svg` (#1B1B1B, light surfaces) and `logo_light.svg` / `logoName_light.svg` (white, dark surfaces), plus the blue favicon tile in `src/app/favicon.ico`.
+- ✅ `foundations/brand/logo.tsx`: the square `Logo` now swaps dark/white with the theme like `LogoName` (wrapped in a span so `sm:hidden` still wins over `.dark .theme-logo-dark`); lockup ratio updated to the new unpadded 2398×750 artwork (`height` is now the rendered height, 24 → 77×24).
+- ✅ Root metadata no longer sets `icons: /logo.svg` (a dark mark, invisible on dark browser tabs); the blue `favicon.ico` is the only browser icon. `public/icon-256.png` (MCP server icon) regenerated from it.
+- ✅ Admin notification avatar: `bg-accent-50` (fixed light blue in both themes) replaced with `bg-background-secondary-default` so the white mark reads in dark mode.
+- ✅ Emails: new dark lockup uploaded as versioned `brand/logoName-2026-11.png` (bucket caches for a year, so no overwrite); `EmailLayout` shows it at 77×24.
+- ✅ Walked `/login` (incl. dashboard backdrop) and `/docs` in light and dark, desktop and mobile (Playwright): correct mark per theme, never both.
+
 ## MCP server, AI assistants — 2026-11-02 · Preb inside Claude, ChatGPT and any MCP client (complete locally, waits for the Supabase OAuth toggles and the deploy)
 
 ### Decisions (CTO)

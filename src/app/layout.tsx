@@ -17,7 +17,6 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://app.preb.co"),
   title: { default: "Preb", template: "%s · Preb" },
   description: "Upload a spreadsheet and we find verified emails and phones.",
-  icons: { icon: "/logo.svg" },
 };
 
 export const viewport: Viewport = {
