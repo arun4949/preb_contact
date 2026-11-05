@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Framer code components, compiled inside Framer, not by this app.
+    "framer-mockups/**",
   ]),
   {
     // BoardUI-installed sources that sync state inside effects by design
