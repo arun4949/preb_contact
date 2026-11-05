@@ -1237,6 +1237,160 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_codes: {
+        Row: {
+          click_count: number
+          code: string
+          created_at: string
+          created_by: string | null
+          id: string
+          revoked_at: string | null
+          workspace_id: string
+        }
+        Insert: {
+          click_count?: number
+          code: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          revoked_at?: string | null
+          workspace_id: string
+        }
+        Update: {
+          click_count?: number
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          revoked_at?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_codes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_codes_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          code_id: string
+          created_at: string
+          expires_at: string
+          grant_id: string | null
+          id: string
+          referred_email_hash: string
+          referred_email_masked: string
+          referred_user_id: string | null
+          referred_workspace_id: string | null
+          referrer_workspace_id: string
+          rejected_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          reward_credits: number | null
+          rewarded_at: string | null
+          signed_up_at: string
+          source: string
+          status: string
+          stripe_invoice_id: string | null
+        }
+        Insert: {
+          code_id: string
+          created_at?: string
+          expires_at: string
+          grant_id?: string | null
+          id?: string
+          referred_email_hash: string
+          referred_email_masked: string
+          referred_user_id?: string | null
+          referred_workspace_id?: string | null
+          referrer_workspace_id: string
+          rejected_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          reward_credits?: number | null
+          rewarded_at?: string | null
+          signed_up_at?: string
+          source: string
+          status?: string
+          stripe_invoice_id?: string | null
+        }
+        Update: {
+          code_id?: string
+          created_at?: string
+          expires_at?: string
+          grant_id?: string | null
+          id?: string
+          referred_email_hash?: string
+          referred_email_masked?: string
+          referred_user_id?: string | null
+          referred_workspace_id?: string | null
+          referrer_workspace_id?: string
+          rejected_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          reward_credits?: number | null
+          rewarded_at?: string | null
+          signed_up_at?: string
+          source?: string
+          status?: string
+          stripe_invoice_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "referral_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_grant_id_fkey"
+            columns: ["grant_id"]
+            isOneToOne: true
+            referencedRelation: "credit_grants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referred_user_id_fkey"
+            columns: ["referred_user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referred_workspace_id_fkey"
+            columns: ["referred_workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_workspace_id_fkey"
+            columns: ["referrer_workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       webhook_events: {
         Row: {
           error: string | null
@@ -1513,6 +1667,25 @@ export type Database = {
         Args: { p_list_id: string }
         Returns: undefined
       }
+      revoke_referral_reward: {
+        Args: { p_actor: string; p_referral_id: string }
+        Returns: number
+      }
+      reward_referral: {
+        Args: {
+          p_amount: number
+          p_expires_at: string
+          p_monthly_cap: number
+          p_referred_workspace_id: string
+          p_stripe_invoice_id: string
+        }
+        Returns: {
+          grant_id: string
+          outcome: string
+          referral_id: string
+          referrer_workspace_id: string
+        }[]
+      }
       send_admin_notification: {
         Args: {
           p_audience: string
@@ -1564,7 +1737,8 @@ export type Database = {
         | "opt_out_done"
         | "overspend_charged"
         | "overspend_failed"
-      grant_source: "trial" | "subscription" | "manual"
+        | "referral_rewarded"
+      grant_source: "trial" | "subscription" | "manual" | "referral"
       ledger_kind: "grant" | "consume" | "expire" | "adjust" | "overage"
       list_mode: "enrich" | "reverse"
       list_status:
@@ -1733,8 +1907,9 @@ export const Constants = {
         "opt_out_done",
         "overspend_charged",
         "overspend_failed",
+        "referral_rewarded",
       ],
-      grant_source: ["trial", "subscription", "manual"],
+      grant_source: ["trial", "subscription", "manual", "referral"],
       ledger_kind: ["grant", "consume", "expire", "adjust", "overage"],
       list_mode: ["enrich", "reverse"],
       list_status: [

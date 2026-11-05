@@ -3,6 +3,7 @@ import type { DocsCollection } from "../types";
 
 const UPDATED = "2026-10-12";
 const OVERSPEND_UPDATED = "2026-10-21";
+const REFERRAL_UPDATED = "2026-11-05";
 
 export const billing: DocsCollection = {
   slug: "billing",
@@ -15,9 +16,9 @@ export const billing: DocsCollection = {
       summary: "Credits pay for results. One pool per workspace, nothing found costs nothing.",
       keywords: ["credits", "balance", "cost", "price per result", "hold", "reserved", "credit history"],
       updated: UPDATED,
-      related: ["plans-and-pricing", "credit-expiry", "running-out-of-credits", "overspend"],
+      related: ["plans-and-pricing", "credit-expiry", "running-out-of-credits", "overspend", "referral-program"],
       blocks: [
-        { type: "paragraph", text: "Credits are the currency inside Preb. Your workspace has one balance that every teammate uses. Credits come from your plan, or from the free trial, and are spent on results." },
+        { type: "paragraph", text: "Credits are the currency inside Preb. Your workspace has one balance that every teammate uses. Credits come from your plan, from the free trial, or from [inviting friends](/docs/billing/referral-program), and are spent on results." },
         { type: "heading", text: "What a result costs" },
         { type: "table", columns: ["Result", "Credits"], rows: [
           ["Work email, valid, probably valid or catch-all", String(CREDIT_COST.work_email)],
@@ -69,15 +70,16 @@ export const billing: DocsCollection = {
       slug: "credit-expiry",
       title: "When credits expire",
       summary: "Monthly credits last 3 months, annual credits 12 months, trial credits 30 days.",
-      keywords: ["expire", "expiry", "rollover", "roll over", "unused credits", "validity"],
-      updated: UPDATED,
-      related: ["how-credits-work", "plans-and-pricing", "free-trial"],
+      keywords: ["expire", "expiry", "rollover", "roll over", "unused credits", "validity", "referral credits"],
+      updated: REFERRAL_UPDATED,
+      related: ["how-credits-work", "plans-and-pricing", "free-trial", "referral-program"],
       blocks: [
         { type: "table", columns: ["Credits from", "Valid for"], rows: [
           ["A monthly plan", "3 months from the day they are added"],
           ["An annual plan", "12 months from the day they are added"],
           ["The free trial", "30 days from sign-up"],
           ["An upgrade", "Same as the plan they belong to"],
+          ["Inviting a friend", "12 months from the day they are added"],
         ] },
         { type: "paragraph", text: "Credits do not disappear at the end of a billing month. Unused monthly credits roll over for up to 3 months, unused annual credits for up to 12 months. Preb always spends the credits that expire first." },
         { type: "heading", text: "Seeing what expires when" },
@@ -167,6 +169,42 @@ export const billing: DocsCollection = {
           "The credits menu in the top bar says **Overspend is on** instead of warning about a low balance.",
         ] },
         { type: "callout", tone: "important", text: "Overspend authorises automatic charges to the card on file. The exact terms are in the [Terms of Service](https://preb.co/terms), section 6. You can turn it off at any time; lists already running under overspend finish the batch in progress and are invoiced for it." },
+      ],
+    },
+    {
+      slug: "referral-program",
+      title: "Invite friends and earn credits",
+      summary: "Share your invite link. When a friend starts a paid plan within 90 days, your workspace earns free credits.",
+      keywords: ["invite friends", "referral", "refer", "recommend", "affiliate", "free credits", "invite link", "referral code", "reward", "earn credits"],
+      updated: REFERRAL_UPDATED,
+      related: ["how-credits-work", "credit-expiry", "free-trial", "invite-your-team"],
+      blocks: [
+        { type: "paragraph", text: "Every workspace has a personal invite link. Share it with people at other companies who could use verified contact data for recruiting. When someone creates an account through your link and their workspace pays for its first plan within 90 days, your workspace receives 500 credits. There is no limit on how many friends you can invite." },
+        { type: "heading", text: "Find your link" },
+        { type: "steps", items: [
+          "Open the account menu in the top bar and click **Invite friends**, or open the credits menu and click **Earn 500 credits per friend you invite**.",
+          "Click **Copy link** and paste it into a chat, a LinkedIn message or your own email. **Share by email** opens a ready-made message in your mail app.",
+          "Your friend opens the link, sees who invited them and creates a free account with their work email. They start with the usual 50 free trial credits.",
+        ] },
+        { type: "callout", tone: "note", text: "Preb never sends emails to the people you invite. You share the link yourself, so you stay in control of who hears from you." },
+        { type: "heading", text: "When you earn credits" },
+        { type: "list", items: [
+          "Your friend must create a **new** account through your link. Someone who already has a Preb account does not count.",
+          "Their workspace must pay its first subscription invoice within **90 days** of signing up. Trials, invoices paid with a 100 percent promotion code and overspend charges do not count.",
+          "Each person can be referred **once**. If they delete their account and come back, no second reward is paid.",
+          "The credits land in the workspace that owns the link, usually within a minute of the payment. The owner gets an email and everyone in the workspace sees the notification.",
+        ] },
+        { type: "heading", text: "What you get" },
+        { type: "paragraph", text: "500 credits per rewarded friend, valid for 12 months from the day they are added. They show in Settings, Billing, **Credit balance** as **Referral reward** and are spent after any credits that expire sooner, so nothing goes to waste. Referral credits follow the same rules as all other credits: they cannot be paid out or transferred." },
+        { type: "heading", text: "Keep track" },
+        { type: "paragraph", text: "The **Invite friends** page shows how often your link was opened, how many people signed up, how many started a plan and the credits you earned. Each referral is listed with a shortened email address (first letter and domain only, the rest is hidden) and its status: **Signed up**, **Rewarded**, **Expired** after the 90 days, or **Revoked**." },
+        { type: "heading", text: "Fair use" },
+        { type: "list", items: [
+          "Teammates from your own company belong in your workspace as members, see [Invite your team](/docs/workspace/invite-your-team). A second account on your own email domain does not count as a referral.",
+          "Inviting yourself, accounts you control, or a ring of accounts that refer each other is not a referral. Such rewards are withdrawn and may lead to the account being closed.",
+          "We may cap the number of rewards a workspace can earn in a month and may change or end the programme. Credits already earned stay valid.",
+        ] },
+        { type: "callout", tone: "important", text: "The exact conditions are in the [Terms of Service](https://preb.co/terms), section 5. What we record about a referral is described in the [Privacy Policy](https://preb.co/privacy)." },
       ],
     },
     {

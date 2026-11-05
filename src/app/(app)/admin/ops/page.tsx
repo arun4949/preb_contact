@@ -39,7 +39,7 @@ export default async function OpsPage() {
   if (!isAdminEmail(session.email)) notFound();
 
   const admin = createAdminClient();
-  const [balance, stuck, webhooks, paused, lastTick, emails, running, signups, docsVotes, overages, mcpConnections, mcpRuns] = await Promise.all([
+  const [balance, stuck, webhooks, paused, lastTick, emails, running, signups, docsVotes, overages, mcpConnections, mcpRuns, referrals] = await Promise.all([
     getAccountCredits().then((r) => r.balance).catch((e: unknown) => (e instanceof Error ? e.message : "unavailable")),
     admin
       .from("enrichment_batches")
@@ -78,6 +78,8 @@ export default async function OpsPage() {
     // AI assistants (MCP): connections and the runs they started in the last day.
     admin.from("mcp_connections").select("client_name, tool_calls, last_used_at").limit(5000),
     admin.from("lists").select("id", { count: "exact", head: true }).eq("source", "mcp").gte("created_at", minutesAgo(24 * 60)),
+    // Invite friends: signups through a referral link and rewards paid out in the last month.
+    admin.from("referrals").select("status, reward_credits").gte("created_at", minutesAgo(31 * 24 * 60)).limit(5000),
   ]);
   // A failed query must never look like "nothing to report": list every error at the top.
   const queryErrors = (
@@ -92,6 +94,7 @@ export default async function OpsPage() {
       ["Help center feedback", docsVotes.error],
       ["Overspend", overages.error],
       ["AI assistants", mcpConnections.error ?? mcpRuns.error],
+      ["Referrals", referrals.error],
     ] as const
   ).filter(([, error]) => error) as unknown as [string, { message: string; code?: string }][];
   const overspend = { pending: 0, unpaid: 0, unpaidCents: 0, paid: 0, paidCents: 0, workspaces: new Set<string>() };
@@ -125,6 +128,12 @@ export default async function OpsPage() {
     runsToday: mcpRuns.count ?? 0,
   };
 
+  const referral = {
+    signups: (referrals.data ?? []).filter((r) => r.status !== "rejected").length,
+    rewarded: (referrals.data ?? []).filter((r) => r.status === "rewarded").length,
+    credits: (referrals.data ?? []).reduce((n, r) => n + (r.status === "rewarded" ? (r.reward_credits ?? 0) : 0), 0),
+  };
+
   const emailCounts = (emails.data ?? []).reduce<Record<string, number>>((acc, e) => ({ ...acc, [e.kind]: (acc[e.kind] ?? 0) + 1 }), {});
   const stats: { label: string; value: string; tone?: "warn" | "bad" }[] = [
     { label: "Provider balance (provider credits)", value: typeof balance === "number" ? balance.toLocaleString("en-US") : balance, tone: typeof balance === "number" ? (balance < 200 ? "warn" : undefined) : "bad" },
@@ -136,6 +145,7 @@ export default async function OpsPage() {
     { label: `Signups (${SIGNUP_DAYS} d)`, value: String(signups.data?.length ?? 0) },
     { label: `Docs votes (${DOCS_FEEDBACK_DAYS} d)`, value: docsShare === null ? "0" : `${docsTotal} · ${docsShare}% helpful`, tone: docsShare !== null && docsTotal >= 10 && docsShare < 60 ? "warn" : undefined },
     { label: "AI assistants", value: `${mcp.connections} connected · ${mcp.activeToday} active (24 h) · ${mcp.runsToday} ${mcp.runsToday === 1 ? "run" : "runs"} (24 h)` },
+    { label: "Referrals (31 d)", value: `${referral.signups} ${referral.signups === 1 ? "signup" : "signups"} · ${referral.rewarded} rewarded · ${referral.credits.toLocaleString("en-US")} cr` },
     {
       label: "Overspend (31 d)",
       value: `${formatUsd(overspend.paidCents)} paid · ${overspend.pending.toLocaleString("en-US")} cr pending · ${overspend.unpaid ? `${formatUsd(overspend.unpaidCents)} unpaid (${overspend.workspaces.size})` : "none unpaid"}`,

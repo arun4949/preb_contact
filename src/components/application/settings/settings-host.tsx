@@ -8,7 +8,7 @@ import type { BillingView } from "./settings-billing";
 import { useSettingsUrl } from "./use-settings-url";
 import type { SettingsProfileProps } from "./settings-profile";
 
-const PAGES: SettingsPage[] = ["profile", "workspace", "billing"];
+const PAGES: SettingsPage[] = ["profile", "workspace", "billing", "referrals"];
 
 export interface SettingsHostProps {
   profile: Omit<SettingsProfileProps, "onSaved">;
@@ -16,7 +16,7 @@ export interface SettingsHostProps {
 
 /**
  * Mounted once in the app shell. URL-driven so every entry point is a link:
- *   ?settings=profile|billing   opens the modal on that page
+ *   ?settings=profile|workspace|billing|referrals   opens the modal on that page
  *   &plan=1                     opens Billing on the plan picker (&short=N adds the shortfall line)
  *   &overspend=1                opens Billing scrolled to the Overspend section
  *   &checkout=success|cancelled|switched   toast after returning from Stripe

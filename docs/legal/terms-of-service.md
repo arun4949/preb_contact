@@ -1,7 +1,7 @@
 # Terms of Service
 
 **Last updated:** [date of publication]
-**Version:** 1.4 (2026-11-02: AI assistants, Section 2.6)
+**Version:** 1.5 (2026-11-05: Referral programme, Sections 5, 6.3 and 6.4)
 
 These Terms of Service (the "Terms") are a contract between Kranz & Gupta, Indiepal GbR, Brunnenstr. 11, 53123 Bonn, Germany ("Preb", "we", "us") and the business that creates or uses a Preb workspace (the "Customer", "you"). They govern the use of the Preb website and application at preb.co and all related services (the "Service").
 
@@ -68,6 +68,8 @@ New Workspaces created with a work email address receive 50 Credits that expire 
 
 **Sample lists.** We may, at our discretion, enrich a small number of profiles you name as a free sample and show you the result behind a private link and an access code, without an account. The link and the code are personal to you and must not be passed on. Sample Results are provided as they are, without any warranty, and count as Results under Sections 9 and 10 once you download them: you may use them for recruiting and hiring only and you are responsible for your own lawful basis towards the people in the list. We can close a sample link at any time and delete samples 12 months after they were last opened.
 
+**Referral programme.** Every Workspace has a personal invite link and code (Settings, Invite friends) that its members may share with people at other companies. When a person who has no Preb account creates one through the link and their Workspace pays its first Subscription invoice within 90 days of signing up, the inviting Workspace receives Referral Credits in the amount shown in the application when the reward is granted (currently 500). Referral Credits are granted once per referred person and never for Trials, invoices paid entirely with a promotion code or Overspend invoices. The following do not count and may lead to the withdrawal of Referral Credits and to termination under Section 15: inviting yourself or accounts you control, a second account on your own email domain, members of your own Workspace, re-created accounts, and groups of accounts referring each other. We may cap the number of rewards per Workspace and period, and may change or end the programme at any time; Referral Credits already granted stay valid. The invite link must be shared personally; mass mailings, paid advertising or placing the link where its recipients did not ask for it is not allowed. We never send invitations on your behalf. Referral Credits are Credits under Section 6.
+
 ---
 
 ## 6. Credits
@@ -88,9 +90,9 @@ A Catch-all email address is charged, because the source has verified it as far 
 
 **6.2 Estimates and holds.** Before a List starts, the application shows a typical and a maximum cost. We reserve the typical amount from your balance while the List runs and release whatever is not used. If a running List exhausts your balance, it pauses and continues automatically once Credits are available, unless Overspend is switched on for the Workspace and the List, see Section 6.6. If you stop a List, contacts already in progress finish and are charged; nothing new is submitted.
 
-**6.3 Expiry.** Credits expire. Credits from a monthly Subscription expire 3 months after they are granted. Credits from an annual Subscription expire 12 months after they are granted. Trial Credits expire after 30 days. Credits are consumed oldest first. The balance and the expiry dates are shown in the application and in Settings, Billing.
+**6.3 Expiry.** Credits expire. Credits from a monthly Subscription expire 3 months after they are granted. Credits from an annual Subscription expire 12 months after they are granted. Trial Credits expire after 30 days. Referral Credits expire 12 months after they are granted. Credits are consumed oldest first. The balance and the expiry dates are shown in the application and in Settings, Billing.
 
-**6.4 Nature of Credits.** Credits are a unit of account for the use of the Service. They have no monetary value, cannot be exchanged for money, cannot be transferred to another Workspace or person, and are not refundable, including when they expire unused, when a List is deleted, or when the Workspace is deleted. Credits consumed by Results that you later find unsatisfactory are not refunded, because every Result is bought from our data providers at the moment it is found. If a Contact objects to the processing of their data, we may remove their Results from the Service without refunding the Credits used, see Section 9.5.
+**6.4 Nature of Credits.** Credits are a unit of account for the use of the Service. They have no monetary value, cannot be exchanged for money, cannot be transferred to another Workspace or person, and are not refundable, including when they expire unused, when a List is deleted, or when the Workspace is deleted. Credits consumed by Results that you later find unsatisfactory are not refunded, because every Result is bought from our data providers at the moment it is found. If a Contact objects to the processing of their data, we may remove their Results from the Service without refunding the Credits used, see Section 9.5. Referral Credits granted for a referral that did not meet the conditions of Section 5 may be withdrawn to the extent they are unused.
 
 **6.5 Changes to Credit costs.** We may change the Credits charged per Result type with at least 30 days notice by email or in the application. Changes apply to Lists started after the change takes effect.
 

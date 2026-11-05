@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Last updated:** [date of publication]
-**Version:** 1.3 (2026-11-02: AI assistant connections, Section 3.8)
+**Version:** 1.4 (2026-11-05: Referral programme, Sections 3.1, 4, 5, 8 and 15)
 
 Preb is a contact data enrichment service for recruiting teams. This Privacy Policy explains how Kranz & Gupta, Indiepal GbR ("Preb", "we", "us") collects, uses, shares and protects personal data when you visit preb.co, create an account, use the Preb application, receive our emails or contact our support.
 
@@ -53,6 +53,8 @@ We collect only what we need to run the service. The data falls into the followi
 When you sign up we collect your email address, your full name, the name of your workspace and the role you hold in it (owner, admin or member). You can also give us a phone number during onboarding or later in your profile settings. It is optional, it is never shown to your teammates, and you can change or remove it at any time. We use it to help you set up your trial and to reach you about support requests you raise or urgent issues with your account. If you sign in with Google, we also receive your Google profile picture and your Google account identifier. We record when you created your account, when you completed onboarding and when you were invited to a workspace.
 
 Preb is a business tool. During sign-up we check the domain of your email address and do not accept addresses from free webmail providers or disposable email services, unless you were invited by an existing workspace. Invitations contain the invitee's email address and the role assigned by the inviter.
+
+If you create your account through another Customer's invite link, we record the invite code it came from, the time of sign-up and whether and when your workspace later paid for its first plan, so that we can grant the inviting workspace its reward. We keep a hashed form (SHA-256) of your email address with that record so that nobody can be rewarded twice for the same person, also after an account is deleted. The inviting workspace sees only the first letter and the domain of your email address, the date you signed up and the status of the referral, never your name or your full address. If you share your own invite link, we count how often it was opened; we store no data about the visitors.
 
 ### 3.2 Sign-in and session data
 
@@ -108,10 +110,11 @@ The GDPR requires us to name a legal basis for every purpose. The table below ap
 | Providing the enrichment service, showing progress, delivering exports | Account data, usage data; Customer Content as processor | Performance of our contract (Art. 6 (1) (b) GDPR); for Customer Content, the Customer's instructions under the DPA |
 | Connecting an AI assistant you chose to your account and answering its requests on your behalf | Connection data (Section 3.8), account data; Customer Content as processor | Performance of our contract (Art. 6 (1) (b) GDPR); for Customer Content, the Customer's instructions under the DPA |
 | Billing, invoicing, credit accounting, preventing double charges | Billing data, usage data | Performance of our contract (Art. 6 (1) (b) GDPR) and our legal obligations under German tax and commercial law (Art. 6 (1) (c) GDPR, § 147 AO, § 14b UStG, § 257 HGB) |
-| Sending transactional emails: magic links, invitations, welcome message, enrichment finished, paused or stopped, low credits, trial ending | Account and communication data | Performance of our contract (Art. 6 (1) (b) GDPR) |
+| Sending transactional emails: magic links, invitations, welcome message, enrichment finished, paused or stopped, low credits, trial ending, referral reward | Account and communication data | Performance of our contract (Art. 6 (1) (b) GDPR) |
 | Sending product news and tips about Preb to existing Customers | Email address, name | Our legitimate interest in keeping Customers informed about the product they use (Art. 6 (1) (f) GDPR, § 7 (3) UWG). You can opt out at any time, see Section 15 |
 | Reaching you by phone about a support request you raised or an urgent issue with your account (for example a failed payment or an enrichment run that needs your decision) | Phone number, name, workspace | Performance of our contract with you (Art. 6 (1) (b) GDPR) |
 | Calling a new Customer once to help them get started with their trial | Phone number, name, workspace | Our legitimate interest in helping business customers succeed with the product they signed up for (Art. 6 (1) (f) GDPR) and the presumed consent of a business that gave us its number for this purpose (§ 7 (2) no. 1 UWG). You can opt out at any time in your profile settings, see Section 15 |
+| Running the referral programme: recording that an account was created through an invite link, checking the conditions, granting and where necessary withdrawing the reward, preventing abuse | Invite code, time of sign-up, hashed email address of the referred person, the referred workspace's first payment, the inviting workspace | Performance of our contract with both Customers (Art. 6 (1) (b) GDPR) and our legitimate interest in running the programme fairly and preventing abuse (Art. 6 (1) (f) GDPR) |
 | Keeping the service secure: preventing fraud, account takeover, trial abuse and automated attacks, rate limiting, blocking free webmail domains | Sign-in, session, usage and log data | Our legitimate interest in protecting the service and our Customers (Art. 6 (1) (f) GDPR) |
 | Finding and fixing errors, monitoring availability and performance | Usage and log data | Our legitimate interest in running a reliable service (Art. 6 (1) (f) GDPR) |
 | Answering support requests and collecting product feedback | Support and feedback data | Performance of our contract (Art. 6 (1) (b) GDPR) and our legitimate interest in improving Preb (Art. 6 (1) (f) GDPR) |
@@ -136,6 +139,7 @@ We use a small number of cookies and browser storage entries.
 - Session cookies set by our authentication provider (names beginning with `sb-`) that keep you signed in and refresh your session.
 - The consent cookie set by our consent manager, Termly, which remembers your cookie choices.
 - A short-lived cookie (`preb_prefill_email`) that carries the email address you enter in the sign-up form on our website to the sign-in page, so you do not have to type it again. It expires after 10 minutes and is deleted as soon as the sign-in page has read it.
+- A cookie (`preb_ref`) set when you open an invite link and click Sign up or Sign in. It carries the invite code to the sign-up so that the inviting workspace can be credited. It expires after 30 days and is deleted once your workspace is set up.
 - Browser storage used by the support widget to keep your conversation open.
 - Local storage entries that remember your light or dark mode choice and the columns you show in a table. These never leave your browser.
 
@@ -216,6 +220,7 @@ We keep personal data only as long as we need it for the purposes above or as th
 | In-app notifications | 90 days |
 | Email send log | 12 months, or deleted at once with the account |
 | Hashed email address and Google account identifier of a deleted account, used only to prevent repeated free trials | 12 months after deletion |
+| Referral records (invite code, time of sign-up, status, hashed email address of the referred person) | For the life of the inviting workspace. The hashed email address of a referred person is kept so that no second reward is paid for the same person |
 | Server request logs at our hosting provider | Up to 30 days |
 | Support conversations and feedback | For as long as your account exists, unless you ask us to delete them earlier |
 | Credit grants and ledger entries | For the life of the workspace, then as part of billing records |
@@ -365,7 +370,7 @@ Preb is a business service for adults. We do not knowingly collect personal data
 
 ## 15. Emails we send, calls we make, and how to opt out
 
-**Transactional emails** are part of the service and cannot be switched off while you have an account: sign-in links, invitations, your welcome message, notices that an enrichment run has finished, paused or been stopped, low credit warnings, trial expiry notices and billing information.
+**Transactional emails** are part of the service and cannot be switched off while you have an account: sign-in links, invitations, your welcome message, notices that an enrichment run has finished, paused or been stopped, low credit warnings, trial expiry notices, billing information and notices that a friend you invited earned you credits.
 
 **Product news** are occasional emails to existing Customers about new features, changes to the service and tips for getting better results. We send them under our legitimate interest and under the German rule for existing customers (§ 7 (3) UWG). Every such email contains an unsubscribe link. You can also write to hello@preb.co to opt out. Opting out does not affect transactional emails.
 

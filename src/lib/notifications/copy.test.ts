@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { creditsExpiringCopy, creditsLowCopy, listFinishedCopy, listPausedCreditsCopy, planCopy, roleChangedCopy } from "./copy";
+import { creditsExpiringCopy, creditsLowCopy, listFinishedCopy, listPausedCreditsCopy, planCopy, referralRewardedCopy, roleChangedCopy } from "./copy";
 
 const list = { id: "l1", name: "Q4 hires", source: "csv", processed_rows: 120, found_work_email: 90, found_personal_email: 0, found_phone: 12, identified_rows: 0, credits_used: 420 };
 
@@ -50,9 +50,19 @@ describe("notification copy", () => {
       creditsLowCopy({ workspaceName: "Acme", available: 1, planCredits: 10, canBuy: true }),
       planCopy("plan_cancel_scheduled", { planName: "Preb 1k", periodEnd: "2026-11-08T00:00:00Z" }),
       roleChangedCopy("Acme", "admin"),
+      referralRewardedCopy({ credits: 500, expiresAt: "2027-11-05T00:00:00Z" }),
     ]) {
       noDashes(c.title);
       noDashes(c.body);
     }
+  });
+  it("tells the referrer what they earned and where to find it", () => {
+    const c = referralRewardedCopy({ credits: 500, expiresAt: "2027-11-05T12:00:00Z" });
+    expect(c.kind).toBe("referral_rewarded");
+    expect(c.title).toBe("You earned 500 credits");
+    expect(c.body).toContain("500 credits were added to your balance");
+    expect(c.body).toContain("Nov 5, 2027");
+    expect(c.href).toBe("/lists?settings=referrals");
+    expect(c.status).toBe("success");
   });
 });

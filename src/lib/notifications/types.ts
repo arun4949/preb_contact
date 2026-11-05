@@ -26,6 +26,7 @@ export const NOTIFICATION_KINDS = [
   "plan_canceled",
   "overspend_charged",
   "overspend_failed",
+  "referral_rewarded",
 ] as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];

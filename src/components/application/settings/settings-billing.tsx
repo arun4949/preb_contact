@@ -196,7 +196,7 @@ export function SettingsBilling({ view, onViewChange, onClose, planReason, refre
           </div>
           {data.grants.length > 0 ? (
             data.grants.map((g) => (
-              <SettingsRow key={g.id} label={`${fmt(g.remaining)} credits expire on ${date(g.expiresAt)}`} description={g.note ?? (g.source === "trial" ? "Welcome trial" : g.source === "subscription" ? "Subscription" : "Manual grant")}>
+              <SettingsRow key={g.id} label={`${fmt(g.remaining)} credits expire on ${date(g.expiresAt)}`} description={g.note ?? (g.source === "trial" ? "Welcome trial" : g.source === "subscription" ? "Subscription" : g.source === "referral" ? "Referral reward" : "Manual grant")}>
                 <span className="text-body-2-regular text-text-tertiary tabular-nums">{fmt(g.remaining)} of {fmt(g.amount)} left</span>
               </SettingsRow>
             ))

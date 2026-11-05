@@ -3,16 +3,17 @@
 import { useDirection } from "@/components/foundations/direction/direction";
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import { createPortal } from "react-dom";
-import { RiArrowLeftLine, RiBankCardLine, RiCheckboxCircleFill, RiCloseLine, RiTeamLine, RiUser3Line } from "@remixicon/react";
+import { RiArrowLeftLine, RiBankCardLine, RiCheckboxCircleFill, RiCloseLine, RiGiftLine, RiTeamLine, RiUser3Line } from "@remixicon/react";
 import { cx } from "@/utils/cx";
 import { SettingsBilling, type BillingView } from "./settings-billing";
 import { SettingsMembers } from "./settings-members";
 import { SettingsProfile, type SettingsProfileProps } from "./settings-profile";
+import { SettingsReferrals } from "./settings-referrals";
 
 /**
  * Preb fork of the BoardUI settings modal (Figma "Settings/Profile" 4081:13943
  * shell; Billing content per Preb 1015:37 / plan § 6). Pages: Profile ·
- * Members · Billing. Opened from the account menu, the credits
+ * Members · Billing · Invite friends. Opened from the account menu, the credits
  * dropdown and every "Buy credits" CTA via `?settings=<page>`.
  *
  * Shell (1:1 with Figma):
@@ -30,7 +31,7 @@ import { SettingsProfile, type SettingsProfileProps } from "./settings-profile";
  * and the modal unmounts only after the exit transition finishes.
  */
 
-export type SettingsPage = "profile" | "workspace" | "billing";
+export type SettingsPage = "profile" | "workspace" | "billing" | "referrals";
 
 export interface SettingsModalProps {
   /** Controlled open state, owned by the host page, sidebar, or menu. */
@@ -75,6 +76,7 @@ const NAV_GROUPS: { label: string; items: NavEntry[] }[] = [
     items: [
       { label: "Members", icon: RiTeamLine, page: "workspace" },
       { label: "Billing", icon: RiBankCardLine, page: "billing" },
+      { label: "Invite friends", icon: RiGiftLine, page: "referrals" },
     ],
   },
 ];
@@ -83,6 +85,7 @@ const PAGE_TITLES: Record<SettingsPage, { title: string; subtitle: string }> = {
   profile: { title: "Profile", subtitle: "Your name, sign-in address and phone number." },
   workspace: { title: "Members", subtitle: "Invite teammates and manage roles." },
   billing: { title: "Billing", subtitle: "Plan, credits, invoices and payment method." },
+  referrals: { title: "Invite friends", subtitle: "Share your link and earn credits when a friend starts a paid plan." },
 };
 
 export function SettingsModal({
@@ -318,6 +321,8 @@ export function SettingsModal({
                 <SettingsBilling view={billingView} onViewChange={onBillingViewChange} onClose={onClose} planReason={planReason} refreshKey={billingRefreshKey} focusOverspend={focusOverspend} onSaved={showSavedToast} />
               ) : page === "workspace" ? (
                 <SettingsMembers />
+              ) : page === "referrals" ? (
+                <SettingsReferrals />
               ) : (
                 <SettingsProfile {...profile} onSaved={showSavedToast} />
               )}

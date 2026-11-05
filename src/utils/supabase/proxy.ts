@@ -11,12 +11,14 @@ import type { Database } from "@/lib/supabase/types";
  * matches and prefixes are separate lists so "/docs" never opens "/docsomething".
  * Lead share pages (/l/<token>, their CTA redirect and CSV export) are public
  * behind their own access code; they still read the session, because a
- * signed-in Preb admin skips the code gate. The MCP server (/mcp) and the
+ * signed-in Preb admin skips the code gate. Referral landing pages (/r/<code>)
+ * are public too and read the session to greet a signed-in member of the
+ * referring workspace. The MCP server (/mcp) and the
  * OAuth metadata under /.well-known are called by AI assistants with a bearer
  * token, so they are public and never touch the cookie session.
  */
 const PUBLIC_EXACT = ["/login", "/terms", "/privacy", "/robots.txt", "/sitemap.xml", "/docs", "/opt-out", "/mcp"];
-const PUBLIC_PREFIXES = ["/auth/", "/invite/", "/api/webhooks/", "/api/jobs/", "/samples/", "/docs/", "/opt-out/", "/l/", "/api/l/", "/mcp/", "/.well-known/"];
+const PUBLIC_PREFIXES = ["/auth/", "/invite/", "/api/webhooks/", "/api/jobs/", "/samples/", "/docs/", "/opt-out/", "/l/", "/api/l/", "/r/", "/mcp/", "/.well-known/"];
 
 export function isPublic(pathname: string) {
   return PUBLIC_EXACT.includes(pathname) || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));

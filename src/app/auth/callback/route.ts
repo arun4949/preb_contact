@@ -5,6 +5,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdminEmail, isFreeEmailDomain } from "@/lib/auth/work-email";
 import { finishInviteeSignup } from "@/lib/auth/first-login";
 import { deleteUserCompletely } from "@/lib/account/deletion";
+import { attributeReferralSignup } from "@/lib/referrals/attribution";
+import { REFERRAL_COOKIE } from "@/lib/referrals/constants";
+import { FRESH_ACCOUNT_MS } from "@/lib/referrals/eligibility";
 
 /** OAuth (PKCE) return: exchange the code for a session, then continue to `next`. */
 export async function GET(request: NextRequest) {
@@ -48,7 +51,14 @@ export async function GET(request: NextRequest) {
           return NextResponse.redirect(`${origin}/login?error=work_email`);
         }
       }
-      if (user) await finishInviteeSignup(user.id);
+      if (user) {
+        // Invite friends: a brand-new Google account on the device that holds the referral cookie.
+        if (Date.now() - new Date(user.created_at).getTime() < FRESH_ACCOUNT_MS) {
+          const ref = request.cookies.get(REFERRAL_COOKIE)?.value;
+          if (ref) await attributeReferralSignup(createAdminClient(), user.id, ref, "oauth");
+        }
+        await finishInviteeSignup(user.id);
+      }
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

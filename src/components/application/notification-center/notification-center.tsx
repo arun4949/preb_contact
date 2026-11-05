@@ -7,6 +7,7 @@ import {
   RiCoinLine,
   RiErrorWarningFill,
   RiFileList3Line,
+  RiGiftLine,
   RiInformationFill,
   RiMegaphoneLine,
   RiNotification3Fill,
@@ -71,6 +72,7 @@ const KIND_ICON: Partial<Record<NotificationKind, IconComponent>> = {
   plan_cancel_scheduled: RiBankCardLine,
   plan_cancel_reverted: RiBankCardLine,
   plan_canceled: RiBankCardLine,
+  referral_rewarded: RiGiftLine,
 };
 
 const styles = sortCx({

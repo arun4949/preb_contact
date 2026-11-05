@@ -9,6 +9,7 @@ import { isRateLimited, sendEmail } from "@/lib/email/resend";
 import { MagicLinkEmail } from "@/lib/email/templates/magic-link";
 import { isAdminEmail, isFreeEmailDomain, WORK_EMAIL_MESSAGE } from "@/lib/auth/work-email";
 import { sendMetaEvent } from "@/lib/meta/capi";
+import { attributeReferralSignup, readReferralCookie } from "@/lib/referrals/attribution";
 
 /**
  * Origin for auth redirects (magic link, OAuth return). Sign-in should return
@@ -73,6 +74,13 @@ export async function sendMagicLink(_prev: MagicLinkState, formData: FormData): 
   // A first-time address gets a `signup` token, not a `magiclink` one; verifyOtp
   // rejects a mismatched type as "invalid or expired", so pass Supabase's own.
   const type = data.properties.verification_type ?? "magiclink";
+  // Invite friends: the account was created just now, on the device that holds
+  // the referral cookie. Attributing here (not on the confirm click) keeps the
+  // referral when the link is opened on another device.
+  if (type === "signup" && data.user) {
+    const ref = await readReferralCookie();
+    if (ref) await attributeReferralSignup(admin, data.user.id, ref, "magic_link");
+  }
   const url = `${origin}/auth/confirm?token_hash=${encodeURIComponent(data.properties.hashed_token)}&type=${type}&next=${encodeURIComponent(next)}`;
 
   try {

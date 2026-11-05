@@ -144,6 +144,18 @@ export function creditsGrantedCopy(input: { credits: number; note: string; expir
   };
 }
 
+/** The referrer's workspace earned credits because a friend started a paid plan (Invite friends). */
+export function referralRewardedCopy(input: { credits: number; expiresAt: string | Date }): NotificationCopy {
+  return {
+    kind: "referral_rewarded",
+    title: `You earned ${n(input.credits)} credits`,
+    // A year ahead: the date needs its year, unlike the near-term dates elsewhere.
+    body: `A friend you invited started a paid plan. ${n(input.credits)} credits were added to your balance and are valid until ${new Date(input.expiresAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}.`,
+    href: "/lists?settings=referrals",
+    status: "success",
+  };
+}
+
 export function creditsExpiringCopy(input: { amount: number; expiresAt: string | Date; days: number; trial: boolean }): NotificationCopy {
   const when = input.days <= 0 ? "today" : input.days === 1 ? "tomorrow" : `in ${input.days} days`;
   return input.trial

@@ -43,6 +43,7 @@ export interface DailySummary {
   emailLogDeleted: number;
   optOutPurged: number;
   leadSharesDeleted: number;
+  referralsExpired: number;
   overspend: { unstuck: number; invoiced: number; retried: number; alerted: number } | null;
   upstreamBalance: number | null;
   alerted: boolean;
@@ -52,7 +53,7 @@ export interface DailySummary {
 /** Housekeeping: expire grants, provider balance alert, cleanup of drafts, cache rows, tombstones, opt-out requests and old webhook payloads. */
 export async function runDaily(): Promise<DailySummary> {
   const admin = createAdminClient();
-  const summary: DailySummary = { expiredGrants: 0, holdsReleased: 0, draftsDeleted: 0, webhookEventsDeleted: 0, expiryWarnings: 0, notificationsDeleted: 0, cacheRowsDeleted: 0, tombstonesDeleted: 0, emailLogDeleted: 0, optOutPurged: 0, leadSharesDeleted: 0, overspend: null, upstreamBalance: null, alerted: false, errors: [] };
+  const summary: DailySummary = { expiredGrants: 0, holdsReleased: 0, draftsDeleted: 0, webhookEventsDeleted: 0, expiryWarnings: 0, notificationsDeleted: 0, cacheRowsDeleted: 0, tombstonesDeleted: 0, emailLogDeleted: 0, optOutPurged: 0, leadSharesDeleted: 0, referralsExpired: 0, overspend: null, upstreamBalance: null, alerted: false, errors: [] };
   const step = async (name: string, fn: () => Promise<void>) => {
     try {
       await fn();
@@ -184,6 +185,13 @@ export async function runDaily(): Promise<DailySummary> {
     const { error: logErr } = await admin.from("email_sends").delete().in("kind", ["opt_out_verify", "opt_out_done"]).lt("sent_at", logCutoff);
     if (logErr) throw new Error(logErr.message);
     summary.optOutPurged = (expired ?? 0) + (old ?? 0);
+  });
+
+  await step("expire_referrals", async () => {
+    // Invite friends: a referred workspace that did not pay within the window can no longer earn a reward.
+    const { data, error } = await admin.from("referrals").update({ status: "expired" }).eq("status", "pending").lt("expires_at", new Date().toISOString()).select("id");
+    if (error) throw new Error(error.message);
+    summary.referralsExpired = data?.length ?? 0;
   });
 
   await step("cleanup_lead_shares", async () => {

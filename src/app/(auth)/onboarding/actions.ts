@@ -11,6 +11,8 @@ import { firstNameFor } from "@/lib/email/name";
 import { normalizePhone } from "@/lib/phone/phone";
 import { WelcomeEmail } from "@/lib/email/templates/welcome";
 import { attributeLeadSignup } from "@/lib/leads/attribution";
+import { attributeReferralSignup, clearReferralCookie, readReferralCookie } from "@/lib/referrals/attribution";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { sendMetaEvent } from "@/lib/meta/capi";
 import { isMetaEventId } from "@/lib/meta/client";
 
@@ -111,6 +113,12 @@ export async function completeOnboarding(_prev: OnboardingState, formData: FormD
     await Promise.all([welcome(), subscribeContact({ email: profile.email, fullName })]);
     // Lead magnet: credit the share this signup came from (cookie set by /l/<token>/go).
     await attributeLeadSignup(profile.id);
+    // Invite friends: belt and braces for the magic-link and Google paths (idempotent), then the cookie goes.
+    if (session?.role === "owner") {
+      const ref = await readReferralCookie();
+      if (ref) await attributeReferralSignup(createAdminClient(), profile.id, ref, "onboarding");
+    }
+    await clearReferralCookie();
     // Meta Ads: the signup conversion, once per new owner. Same event id as the
     // browser pixel event fired by the form, so Meta deduplicates the pair.
     const metaEventId = formData.get("meta_event_id");

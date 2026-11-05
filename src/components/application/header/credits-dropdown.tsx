@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { RiBankCardLine, RiCoinLine } from "@remixicon/react";
+import { RiBankCardLine, RiCoinLine, RiGiftLine } from "@remixicon/react";
 import { Chip } from "@/components/base/badges/chip";
 import { Dropdown, DropdownPopover, DropdownTrigger } from "@/components/base/dropdown/dropdown";
 import { ProgressBar } from "@/components/base/progress-bar/progress-bar";
@@ -70,6 +70,23 @@ export function CreditsDropdown({ summary }: { summary: CreditSummary }) {
               <RiBankCardLine className="size-4 shrink-0 text-foreground-icon-secondary" aria-hidden />
               Overspend is on, your lists keep running.
             </p>
+          ) : null}
+          {summary.referralReward ? (
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                openSettings("referrals");
+              }}
+              className={cx(
+                "flex w-full cursor-pointer items-center gap-2 rounded-xl bg-background-secondary-default px-3 py-2 text-start",
+                "transition-colors duration-150 ease hover:bg-background-secondary-hover",
+                "outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
+              )}
+            >
+              <RiGiftLine className="size-4 shrink-0 text-foreground-icon-secondary" aria-hidden />
+              <span className="text-body-2-medium text-text-primary">Earn {fmt(summary.referralReward)} credits per friend you invite</span>
+            </button>
           ) : null}
         </div>
         <div className="flex items-center gap-2 border-t border-separator-border px-3 py-3">

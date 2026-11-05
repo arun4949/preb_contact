@@ -4,6 +4,7 @@ import { cache } from "react";
 import { createClient } from "@/utils/supabase/server";
 import type { Tables } from "@/lib/supabase/types";
 import { getPlan } from "@/lib/credits/plans";
+import { rewardCredits } from "@/lib/referrals/config";
 
 export type Profile = Tables<"profiles">;
 export type ProfilePhone = Tables<"profile_phones">;
@@ -146,6 +147,8 @@ export interface CreditSummary {
   isTrial: boolean;
   /** Overspend opted in and on a running plan: an empty balance does not stop lists. */
   overspendOn: boolean;
+  /** Credits a rewarded referral earns (Invite friends); null for the internal workspace, which cannot refer. */
+  referralReward: number | null;
 }
 
 /** Balance + next expiry for the credits dropdown. `available` comes from the session context (same request, no second RPC). */
@@ -170,5 +173,6 @@ export const getCreditSummary = cache(async (workspace: Workspace, available: nu
     nextExpiry: next ? { amount: next.remaining, at: next.expires_at } : null,
     isTrial,
     overspendOn: workspace.overspend_enabled && !isTrial && !workspace.overspend_blocked_reason && ["active", "trialing"].includes(workspace.subscription_status ?? ""),
+    referralReward: workspace.kind === "customer" ? rewardCredits() : null,
   };
 });

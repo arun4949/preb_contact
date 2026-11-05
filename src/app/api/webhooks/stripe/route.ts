@@ -17,6 +17,7 @@ import { getPlan } from "@/lib/credits/plans";
 import { markOverspendInvoiceFailed, markOverspendInvoicePaid } from "@/lib/billing/overspend";
 import { creditsGrantedCopy, planCopy } from "@/lib/notifications/copy";
 import { notifyWorkspace } from "@/lib/notifications/emit";
+import { rewardReferral, shouldAttemptReward } from "@/lib/referrals/reward";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/types";
 import { log, logError, type Admin } from "@/lib/jobs/shared";
@@ -125,6 +126,10 @@ async function onInvoicePaid(admin: Admin, invoice: Stripe.Invoice) {
     log("stripe.invoice_unknown_workspace", { invoiceId: invoice.id });
     return;
   }
+  // Invite friends: the first paid subscription invoice of a referred workspace
+  // rewards the referrer, once. Runs before the grant decision so a paid invoice
+  // without plan credits (nothing to grant) still counts as the purchase.
+  if (shouldAttemptReward(invoice)) await rewardReferral(admin, wsId, invoice);
   const lines = invoiceLines(invoice);
   const plans = new Map<string, Awaited<ReturnType<typeof planForPriceId>>>();
   for (const l of lines) if (l.priceId && !plans.has(l.priceId)) plans.set(l.priceId, await planForPriceId(l.priceId));

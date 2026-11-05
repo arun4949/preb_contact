@@ -137,3 +137,13 @@ Do the steps in this order so sign-in, billing and webhooks never point at a hos
 - [ ] 13. Framer must publish `/terms`, `/privacy` and `/imprint` (the app login, the Stripe portal, the Google consent screen and Termly link there). Recommended Framer redirects for old bookmarks and emails sent before the switch: `/login`, `/lists`, `/enrich`, `/invite/*` → the same path on `https://app.preb.co`.
 - [ ] 14. Enrichments started before step 12 send their provider webhook to `preb.co`; if any are running at the switch, the 15-minute reconciler recovers them, so no action is needed. Best to switch when no list is enriching.
 
+## M12 · Invite friends, referral programme · 2026-11-05
+
+Everything runs with defaults; these steps only tune or publish.
+
+- [ ] 1. Optional **Vercel → Settings → Environment Variables (Production)**: `REFERRAL_REWARD_CREDITS` (default 500), `REFERRAL_WINDOW_DAYS` (default 90), `REFERRAL_MAX_REWARDS_PER_MONTH` (default 10 rewarded referrals per workspace in a rolling 30 days). Unset or invalid values fall back to the defaults. `.env.local` lists them with the defaults.
+- [ ] 2. **Framer**: re-paste `docs/legal/terms-of-service.html` (v1.5) on `/terms` and `docs/legal/privacy-policy.html` (v1.4) on `/privacy`.
+- [ ] 3. **Termly**: add the cookie `preb_ref` (Essential, 30 days, "carries the invite code from an invite link to the sign-up") to the cookie list, or run a new scan.
+- [ ] 4. After the deploy, open **Admin → Referrals** once as a founder (the walk could not sign in as an admin) and check the empty table renders; the first real reward shows there with its Stripe invoice link, and `/admin/ops` counts it.
+- [ ] 5. No Stripe change: the reward rides the existing `invoice.paid` subscription of the live Preb webhook.
+

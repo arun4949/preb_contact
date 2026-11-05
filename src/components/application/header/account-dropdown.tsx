@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { RiBankCardLine, RiBookOpenLine, RiCustomerService2Line, RiLogoutBoxRLine, RiMegaphoneLine, RiPlugLine, RiPulseLine, RiSettings3Line, RiShieldCheckLine, RiTeamLine, RiUserForbidLine, RiUserStarLine } from "@remixicon/react";
+import { RiBankCardLine, RiBookOpenLine, RiCustomerService2Line, RiGiftLine, RiLogoutBoxRLine, RiMegaphoneLine, RiPlugLine, RiPulseLine, RiSettings3Line, RiShieldCheckLine, RiTeamLine, RiUserForbidLine, RiUserStarLine } from "@remixicon/react";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Dropdown, DropdownDivider, DropdownGroup, DropdownItem, DropdownPopover, DropdownTrigger } from "@/components/base/dropdown/dropdown";
 import { openCookiePreferences } from "@/components/foundations/termly/termly-cmp";
@@ -11,6 +11,7 @@ import { useSupportChat } from "@/components/foundations/featurebase/featurebase
 import { signOut } from "@/lib/auth/actions";
 import { DOCS_PATH } from "@/lib/site-links";
 import { useSettingsUrl } from "@/components/application/settings/use-settings-url";
+import type { SettingsPage } from "@/components/application/settings/settings-modal";
 import { initialsOf } from "@/utils/initials";
 
 
@@ -31,7 +32,7 @@ export function AccountDropdown({ name, email, avatarUrl, workspaceName, isAdmin
   const { openSettings } = useSettingsUrl();
   const chat = useSupportChat();
   // Opens the settings modal on the current page without a server round trip.
-  const go = (page: "profile" | "workspace" | "billing") => {
+  const go = (page: SettingsPage) => {
     setOpen(false);
     openSettings(page);
   };
@@ -63,6 +64,10 @@ export function AccountDropdown({ name, email, avatarUrl, workspaceName, isAdmin
           <DropdownItem onSelect={() => go("billing")}>
             <RiBankCardLine className="size-5 text-foreground-icon-secondary" aria-hidden />
             <span className="text-body-medium">Billing</span>
+          </DropdownItem>
+          <DropdownItem onSelect={() => go("referrals")}>
+            <RiGiftLine className="size-5 text-foreground-icon-secondary" aria-hidden />
+            <span className="text-body-medium">Invite friends</span>
           </DropdownItem>
           <DropdownItem
             onSelect={() => {
@@ -134,6 +139,15 @@ export function AccountDropdown({ name, email, avatarUrl, workspaceName, isAdmin
               >
                 <RiUserStarLine className="size-5 text-foreground-icon-secondary" aria-hidden />
                 <span className="text-body-medium">Leads</span>
+              </DropdownItem>
+              <DropdownItem
+                onSelect={() => {
+                  setOpen(false);
+                  router.push("/admin/referrals");
+                }}
+              >
+                <RiGiftLine className="size-5 text-foreground-icon-secondary" aria-hidden />
+                <span className="text-body-medium">Referrals</span>
               </DropdownItem>
               <DropdownItem
                 onSelect={() => {
