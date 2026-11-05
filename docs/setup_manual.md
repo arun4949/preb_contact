@@ -141,9 +141,9 @@ Do the steps in this order so sign-in, billing and webhooks never point at a hos
 
 Everything runs with defaults; these steps only tune or publish.
 
-- [ ] 1. Optional **Vercel → Settings → Environment Variables (Production)**: `REFERRAL_REWARD_CREDITS` (default 500), `REFERRAL_WINDOW_DAYS` (default 90), `REFERRAL_MAX_REWARDS_PER_MONTH` (default 10 rewarded referrals per workspace in a rolling 30 days). Unset or invalid values fall back to the defaults. `.env.local` lists them with the defaults.
-- [ ] 2. **Framer**: re-paste `docs/legal/terms-of-service.html` (v1.5) on `/terms` and `docs/legal/privacy-policy.html` (v1.4) on `/privacy`.
-- [ ] 3. **Termly**: add the cookie `preb_ref` (Essential, 30 days, "carries the invite code from an invite link to the sign-up") to the cookie list, or run a new scan.
-- [ ] 4. After the deploy, open **Admin → Referrals** once as a founder (the walk could not sign in as an admin) and check the empty table renders; the first real reward shows there with its Stripe invoice link, and `/admin/ops` counts it.
+- [x] 1. Optional **Vercel → Settings → Environment Variables (Production)**: `REFERRAL_REWARD_CREDITS` (default 500), `REFERRAL_WINDOW_DAYS` (default 90), `REFERRAL_MAX_REWARDS_PER_MONTH` (default 10 rewarded referrals per workspace in a rolling 30 days). Unset or invalid values fall back to the defaults. `.env.local` lists them with the defaults.
+- [x] 2. **Framer**: re-paste (done 2026-11-05) `docs/legal/terms-of-service.html` (v1.5) on `/terms` and `docs/legal/privacy-policy.html` (v1.4) on `/privacy`.
+- [x] 3. **Termly**: add (done 2026-11-05) the cookie `preb_ref` (Essential, 30 days, "carries the invite code from an invite link to the sign-up") to the cookie list, or run a new scan.
+- [x] 4. (done 2026-11-05, empty table rendered on production) After the deploy, open **Admin → Referrals** once as a founder (the walk could not sign in as an admin) and check the empty table renders; the first real reward shows there with its Stripe invoice link, and `/admin/ops` counts it.
 - [ ] 5. No Stripe change: the reward rides the existing `invoice.paid` subscription of the live Preb webhook.
 
