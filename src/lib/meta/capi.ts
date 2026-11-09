@@ -3,6 +3,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { cookies, headers } from "next/headers";
 import { log, logError } from "@/lib/jobs/shared";
+import { hasConsent, mergeClickContext, type StoredClickContext } from "./click-context";
 import { ADS_CONSENT_COOKIE, isAdsConsentValue } from "./consent";
 import { META_GRAPH_VERSION, metaAccessToken, metaPixelId, metaTestEventCode } from "./config";
 
@@ -146,24 +147,37 @@ export async function readMetaRequestContext(): Promise<{ consent: boolean; fbp:
   };
 }
 
+export interface SendMetaEventOptions {
+  /**
+   * Click context captured at account creation (see `click-context.ts`).
+   * Fills the browser identifiers the current request lacks and counts as
+   * consent, for events after a browser switch (magic link opened elsewhere).
+   */
+  stored?: StoredClickContext | null;
+}
+
 /**
- * Sends an event for the current request: consent cookie required, browser
- * identifiers merged in. Call from inside `after()` in a server action or
- * route handler (request APIs are available there).
+ * Sends an event for the current request: consent cookie (or a stored
+ * context) required, browser identifiers merged in. Call from inside
+ * `after()` in a server action or route handler (request APIs are available
+ * there).
  */
-export async function sendMetaEvent(input: MetaEventInput): Promise<void> {
+export async function sendMetaEvent(input: MetaEventInput, options: SendMetaEventOptions = {}): Promise<void> {
   if (!metaPixelId() || !metaAccessToken()) return;
   try {
     const ctx = await readMetaRequestContext();
-    if (!ctx.consent) {
+    const stored = options.stored ?? null;
+    if (!hasConsent(ctx, stored)) {
       log("meta.skipped", { metaEvent: input.eventName, reason: "no_consent" });
       return;
     }
+    const browser = mergeClickContext(ctx, stored);
     const merged: MetaEventInput = {
       ...input,
       sourceUrl: input.sourceUrl ?? ctx.sourceUrl,
-      userData: { fbp: ctx.fbp, fbc: ctx.fbc, clientIp: ctx.clientIp, userAgent: ctx.userAgent, ...(input.userData ?? {}) },
+      userData: { ...browser, ...(input.userData ?? {}) },
     };
+    if (stored && !ctx.consent) log("meta.stored_context_used", { metaEvent: input.eventName, hasFbc: Boolean(browser.fbc), hasFbp: Boolean(browser.fbp) });
     const ok = await postMetaPayload(buildMetaPayload(merged, { testEventCode: metaTestEventCode() }));
     if (ok) log("meta.sent", { metaEvent: input.eventName, eventId: input.eventId });
   } catch (error) {

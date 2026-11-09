@@ -65,13 +65,13 @@ export const workspace: DocsCollection = {
         ] },
         { type: "heading", text: "Emails and calls" },
         { type: "list", items: [
-          "**Product news**, occasional updates about new features and tips. Switch it off if you prefer. Sign-in links and notices about your lists are always sent.",
+          "**Product news**, occasional updates about new features and tips. Switch it off if you prefer. Sign-in emails and notices about your lists are always sent.",
           "**Onboarding call**, whether one of the founders may call you once to help with your setup. Only available when a phone number is stored.",
         ] },
         { type: "heading", text: "Emails Preb sends about your work" },
         { type: "list", items: [
           "A welcome email after you create a workspace.",
-          "A sign-in link whenever you ask for one.",
+          "A sign-in code and link whenever you ask for one.",
           "An invite when a teammate adds you.",
           "A notice when a list is finished, and one when a list pauses because the credits ran out.",
           "A warning to the workspace owner when the balance drops under 10 percent of the plan.",

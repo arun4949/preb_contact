@@ -1,15 +1,17 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { RiMailCheckLine } from "@remixicon/react";
 import { Banner } from "@/components/base/banner/banner";
 import { Button } from "@/components/base/buttons/button";
 import { LinkButton } from "@/components/base/buttons/link-button";
 import { Divider } from "@/components/base/divider/divider";
 import { Input } from "@/components/base/input/input";
+import { InputOtp } from "@/components/base/input-otp/input-otp";
 import { SocialButton } from "@/components/base/social-button/social-button";
-import { sendMagicLink, signInWithGoogle, type MagicLinkState } from "@/lib/auth/actions";
+import { sendMagicLink, signInWithGoogle, verifyEmailCode, type MagicLinkState } from "@/lib/auth/actions";
 import { clearPrefillEmailCookie } from "@/lib/auth/prefill-email";
+import { SIGN_IN_CODE_DEFAULT_LENGTH, signInCodeGroup } from "@/lib/auth/sign-in-code";
 import { LEGAL_URLS } from "@/lib/site-links";
 import { cx } from "@/utils/cx";
 
@@ -40,31 +42,8 @@ export function LoginCard({ next, error, notice, prefillEmail }: { next: string;
 
   const card = "flex w-full max-w-[400px] flex-col rounded-3xl border border-border-button-default bg-background-primary-default p-6 shadow-lg sm:p-8";
 
-  if (state.status === "sent") {
-    return (
-      <div className={cx(card, "animate-page-enter")}>
-        <div className="mb-5 flex">
-          <span className="flex size-12 items-center justify-center rounded-full bg-background-secondary-default">
-            <RiMailCheckLine className="size-6 text-foreground-icon-primary" aria-hidden />
-          </span>
-        </div>
-        <h1 className="text-title-2-medium text-text-primary">Check your inbox</h1>
-        <p className="mt-1.5 text-body-regular text-text-secondary">
-          We sent a sign-in link to <span className="text-body-medium text-text-primary" dir="ltr">{state.email}</span>. It expires in one
-          hour.
-        </p>
-        <form action={action} className="mt-6">
-          <input type="hidden" name="email" value={state.email} />
-          <input type="hidden" name="next" value={next} />
-          <p className="text-body-regular text-text-secondary">
-            Didn&apos;t get it?{" "}
-            <LinkButton type="submit" disabled={pending}>
-              Send a new link
-            </LinkButton>
-          </p>
-        </form>
-      </div>
-    );
+  if (state.status === "sent" && state.email) {
+    return <CheckInboxCard card={card} email={state.email} codeLength={state.codeLength ?? SIGN_IN_CODE_DEFAULT_LENGTH} next={next} resend={action} resending={pending} />;
   }
 
   return (
@@ -125,6 +104,88 @@ export function LoginCard({ next, error, notice, prefillEmail }: { next: string;
         </a>
         .
       </p>
+    </div>
+  );
+}
+
+/**
+ * After the email went out: the code from the email (auto-submits when
+ * complete, so a phone user never leaves this browser) and the resend link.
+ */
+function CheckInboxCard({ card, email, codeLength, next, resend, resending }: { card: string; email: string; codeLength: number; next: string; resend: (formData: FormData) => void; resending: boolean }) {
+  const [code, setCode] = useState("");
+  // A wrong code clears the boxes, so the next attempt starts fresh.
+  const submit = async (previous: MagicLinkState, formData: FormData): Promise<MagicLinkState> => {
+    const result = await verifyEmailCode(previous, formData);
+    if (result.status !== "verified") setCode("");
+    return result;
+  };
+  const [state, verify, verifying] = useActionState<MagicLinkState, FormData>(submit, { status: "sent", email, codeLength });
+  const formRef = useRef<HTMLFormElement>(null);
+  const navigated = useRef(false);
+  const verified = state.status === "verified";
+  const invalid = state.status === "sent" && Boolean(state.message);
+
+  // Submit as soon as the sixth digit is in (typed, pasted or autofilled from the email).
+  const onComplete = () => {
+    if (verifying || verified) return;
+    // Let React commit the controlled value before the form reads it.
+    queueMicrotask(() => formRef.current?.requestSubmit());
+  };
+
+  // Full navigation, not router.push: `next` lives in another layout group (see verifyEmailCode).
+  useEffect(() => {
+    if (!verified || navigated.current) return;
+    navigated.current = true;
+    window.location.assign(state.next ?? "/lists");
+  }, [verified, state.next]);
+
+  return (
+    <div className={cx(card, "animate-page-enter")}>
+      <div className="mb-5 flex">
+        <span className="flex size-12 items-center justify-center rounded-full bg-background-secondary-default">
+          <RiMailCheckLine className="size-6 text-foreground-icon-primary" aria-hidden />
+        </span>
+      </div>
+      <h1 className="text-title-2-medium text-text-primary">Check your inbox</h1>
+      <p className="mt-1.5 text-body-regular text-text-secondary">
+        We sent a {codeLength}-digit code and a sign-in link to <span className="text-body-medium text-text-primary" dir="ltr">{email}</span>. Enter the
+        code here or click the link. Both expire in one hour.
+      </p>
+
+      <form ref={formRef} action={verify} className="mt-6 flex flex-col gap-3" aria-live="polite">
+        <input type="hidden" name="email" value={email} />
+        <input type="hidden" name="next" value={next} />
+        <input type="hidden" name="code" value={code} />
+        <InputOtp
+          length={codeLength}
+          groupEvery={signInCodeGroup(codeLength)}
+          value={code}
+          onChange={setCode}
+          onComplete={onComplete}
+          isDisabled={verifying || verified}
+          isInvalid={invalid}
+          aria-label="Sign-in code from the email"
+        />
+        {verified ? (
+          <p className="text-body-regular text-text-secondary">Signed in, taking you to Preb…</p>
+        ) : verifying ? (
+          <p className="text-body-regular text-text-secondary">Checking the code…</p>
+        ) : invalid ? (
+          <p className="text-body-regular text-text-error-primary">{state.message}</p>
+        ) : null}
+      </form>
+
+      <form action={resend} className="mt-6">
+        <input type="hidden" name="email" value={email} />
+        <input type="hidden" name="next" value={next} />
+        <p className="text-body-regular text-text-secondary">
+          Didn&apos;t get it?{" "}
+          <LinkButton type="submit" disabled={resending || verifying || verified}>
+            Send a new code
+          </LinkButton>
+        </p>
+      </form>
     </div>
   );
 }

@@ -9,6 +9,10 @@ import { isRateLimited, sendEmail } from "@/lib/email/resend";
 import { MagicLinkEmail } from "@/lib/email/templates/magic-link";
 import { isAdminEmail, isFreeEmailDomain, WORK_EMAIL_MESSAGE } from "@/lib/auth/work-email";
 import { sendMetaEvent } from "@/lib/meta/capi";
+import { captureMetaClickContext } from "@/lib/meta/click-context";
+import { finishInviteeSignup } from "@/lib/auth/first-login";
+import { isThrottled, throttleKey } from "@/lib/opt-out/throttle";
+import { isSignInCode } from "@/lib/auth/sign-in-code";
 import { attributeReferralSignup, readReferralCookie } from "@/lib/referrals/attribution";
 
 /**
@@ -42,10 +46,18 @@ function safeNext(next: unknown): string {
 }
 
 export interface MagicLinkState {
-  status: "idle" | "sent" | "error";
+  /** `verified` → the card performs a full navigation to `next` (see login-card.tsx). */
+  status: "idle" | "sent" | "error" | "verified";
   email?: string;
   message?: string;
+  /** Digits in the code the email carries (a Supabase project setting), set with `sent`. */
+  codeLength?: number;
+  /** Post-login target, set with `verified`. */
+  next?: string;
 }
+
+/** Wrong codes per address before we stop checking for a while (best effort per instance; Supabase limits too). */
+const CODE_ATTEMPT_LIMITS = { windowMs: 15 * 60 * 1000, max: 8 };
 
 export async function sendMagicLink(_prev: MagicLinkState, formData: FormData): Promise<MagicLinkState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
@@ -80,11 +92,18 @@ export async function sendMagicLink(_prev: MagicLinkState, formData: FormData): 
   if (type === "signup" && data.user) {
     const ref = await readReferralCookie();
     if (ref) await attributeReferralSignup(admin, data.user.id, ref, "magic_link");
+    // Meta Ads: remember the click id while we are still in the browser that
+    // clicked the ad (the link or code may be used in another one). Consent-gated.
+    await captureMetaClickContext(admin, data.user.id, "magic_link");
   }
   const url = `${origin}/auth/confirm?token_hash=${encodeURIComponent(data.properties.hashed_token)}&type=${type}&next=${encodeURIComponent(next)}`;
 
+  // The same token backs the link and the code: using one invalidates the
+  // other. The code lets a phone user stay in the browser that opened the ad
+  // (the Meta in-app browser would hand the link to Safari).
+  const code = data.properties.email_otp;
   try {
-    await sendEmail({ to: email, subject: "Your sign-in link for Preb", kind: "magic_link", react: MagicLinkEmail({ url }) });
+    await sendEmail({ to: email, subject: "Your sign-in code for Preb", kind: "magic_link", react: MagicLinkEmail({ url, code }) });
   } catch (error) {
     console.error("[sendMagicLink] send failed", error instanceof Error ? error.message : error);
     return { status: "error", email, message: "We couldn't send the link right now. Please try again." };
@@ -96,7 +115,39 @@ export async function sendMagicLink(_prev: MagicLinkState, formData: FormData): 
     // external_id = the new user's id, hashed like CompleteRegistration's, so Meta links the two.
     after(() => sendMetaEvent({ eventName: "Lead", eventId, userData: { email, externalId: data.user?.id ?? null } }));
   }
-  return { status: "sent", email };
+  return { status: "sent", email, codeLength: code.length };
+}
+
+/**
+ * Signs in with the one-time code from the sign-in email, in the browser the
+ * code is typed into. Supabase verifies the code against the token that
+ * `sendMagicLink` created, so the usual rules apply: one hour, single use,
+ * only the newest code. Everything that follows a link click (invitee
+ * finish, redirect to `next`) happens here too, see auth/confirm/route.ts.
+ */
+export async function verifyEmailCode(_prev: MagicLinkState, formData: FormData): Promise<MagicLinkState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const code = String(formData.get("code") ?? "").replace(/\s+/g, "");
+  const next = safeNext(formData.get("next"));
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { status: "error", message: "Enter a valid email address." };
+  }
+  const sent: MagicLinkState = { status: "sent", email, codeLength: _prev.codeLength };
+  if (!isSignInCode(code)) return { ...sent, message: "Enter the code from the email, digits only." };
+  if (isThrottled(throttleKey(email, "code"), Date.now(), CODE_ATTEMPT_LIMITS)) {
+    return { ...sent, message: "Too many attempts. Request a new code and try again." };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.verifyOtp({ email, token: code, type: "email" });
+  if (error || !data.user) {
+    return { ...sent, message: "That code is not right. Check the digits or request a new code." };
+  }
+  await finishInviteeSignup(data.user.id);
+  // No `redirect()`: the card lives under the (auth) layout and `next` under
+  // the (app) layout; a cross-group server-action redirect looped on prod
+  // (see onboarding/actions.ts). The card navigates with a full page load.
+  return { status: "verified", email, next };
 }
 
 /**

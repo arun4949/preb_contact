@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Last updated:** [date of publication]
-**Version:** 1.4 (2026-11-05: Referral programme, Sections 3.1, 4, 5, 8 and 15)
+**Version:** 1.5 (2026-11-09: Sign-in code, stored Meta click identifiers, Sections 3.2, 5 and 8)
 
 Preb is a contact data enrichment service for recruiting teams. This Privacy Policy explains how Kranz & Gupta, Indiepal GbR ("Preb", "we", "us") collects, uses, shares and protects personal data when you visit preb.co, create an account, use the Preb application, receive our emails or contact our support.
 
@@ -58,7 +58,7 @@ If you create your account through another Customer's invite link, we record the
 
 ### 3.2 Sign-in and session data
 
-Preb has no passwords. You sign in with a one-time magic link that we send to your email address, or with your Google account. We process the sign-in token, the time of sign-in and a session cookie that keeps you signed in. We limit the number of magic links per email address to protect against abuse.
+Preb has no passwords. You sign in with a one-time code and link that we send to your email address, or with your Google account. We process the sign-in token, the time of sign-in and a session cookie that keeps you signed in. We limit the number of sign-in emails per email address and the number of code attempts to protect against abuse.
 
 If you use Google sign-in, Google shares your name, email address and profile picture with us. Our use of information received from Google APIs follows the Google API Services User Data Policy, including its Limited Use requirements. We use this information only to create and secure your account.
 
@@ -110,7 +110,7 @@ The GDPR requires us to name a legal basis for every purpose. The table below ap
 | Providing the enrichment service, showing progress, delivering exports | Account data, usage data; Customer Content as processor | Performance of our contract (Art. 6 (1) (b) GDPR); for Customer Content, the Customer's instructions under the DPA |
 | Connecting an AI assistant you chose to your account and answering its requests on your behalf | Connection data (Section 3.8), account data; Customer Content as processor | Performance of our contract (Art. 6 (1) (b) GDPR); for Customer Content, the Customer's instructions under the DPA |
 | Billing, invoicing, credit accounting, preventing double charges | Billing data, usage data | Performance of our contract (Art. 6 (1) (b) GDPR) and our legal obligations under German tax and commercial law (Art. 6 (1) (c) GDPR, § 147 AO, § 14b UStG, § 257 HGB) |
-| Sending transactional emails: magic links, invitations, welcome message, enrichment finished, paused or stopped, low credits, trial ending, referral reward | Account and communication data | Performance of our contract (Art. 6 (1) (b) GDPR) |
+| Sending transactional emails: sign-in codes and links, invitations, welcome message, enrichment finished, paused or stopped, low credits, trial ending, referral reward | Account and communication data | Performance of our contract (Art. 6 (1) (b) GDPR) |
 | Sending product news and tips about Preb to existing Customers | Email address, name | Our legitimate interest in keeping Customers informed about the product they use (Art. 6 (1) (f) GDPR, § 7 (3) UWG). You can opt out at any time, see Section 15 |
 | Reaching you by phone about a support request you raised or an urgent issue with your account (for example a failed payment or an enrichment run that needs your decision) | Phone number, name, workspace | Performance of our contract with you (Art. 6 (1) (b) GDPR) |
 | Calling a new Customer once to help them get started with their trial | Phone number, name, workspace | Our legitimate interest in helping business customers succeed with the product they signed up for (Art. 6 (1) (f) GDPR) and the presumed consent of a business that gave us its number for this purpose (§ 7 (2) no. 1 UWG). You can opt out at any time in your profile settings, see Section 15 |
@@ -145,7 +145,7 @@ We use a small number of cookies and browser storage entries.
 
 **Consent-based.** Analytics, measurement or marketing cookies are only set after you accept them in the consent banner. Our consent manager blocks such scripts until you decide. You can change or withdraw your choice at any time through the "Cookie preferences" link in the account menu and in the website footer. We honour the Global Privacy Control (GPC) browser signal as an opt-out from non-essential cookies.
 
-**Advertising measurement (Meta).** If you accept advertising cookies, we use the Meta Pixel and the Meta Conversions API of Meta Platforms Ireland Limited, Merrion Road, Dublin 4, Ireland ("Meta") on preb.co and app.preb.co. The pixel sets the cookies `_fbp` (identifies your browser, 90 days) and `_fbc` (stores the click identifier of a Meta ad you clicked, 90 days) and reports page views to Meta. When you request a sign-in link for a new account, finish creating your workspace, open the checkout or pay for your first subscription, we additionally send Meta a server-side event with the event type, the time, the page, your IP address and browser details, the `_fbp` and `_fbc` values, the plan and amount where applicable, and your email address and user ID in hashed form (SHA-256) so that Meta can match the event to an ad click. We use this data only to measure and improve our advertising on Meta platforms. Meta is a joint controller with us for the collection and transmission of this data under Art. 26 GDPR, based on Meta's Controller Addendum, and sole controller for its further processing, which is described in Meta's privacy policy at facebook.com/privacy/policy. Meta is certified under the EU-US Data Privacy Framework. Nothing is sent to Meta, in the browser or from our servers, until you accept advertising cookies in the consent banner, and you can withdraw your consent at any time through "Cookie preferences", which stops all further transmission.
+**Advertising measurement (Meta).** If you accept advertising cookies, we use the Meta Pixel and the Meta Conversions API of Meta Platforms Ireland Limited, Merrion Road, Dublin 4, Ireland ("Meta") on preb.co and app.preb.co. The pixel sets the cookies `_fbp` (identifies your browser, 90 days) and `_fbc` (stores the click identifier of a Meta ad you clicked, 90 days) and reports page views to Meta. When you request a sign-in email for a new account, finish creating your workspace, open the checkout or pay for your first subscription, we additionally send Meta a server-side event with the event type, the time, the page, your IP address and browser details, the `_fbp` and `_fbc` values, the plan and amount where applicable, and your email address and user ID in hashed form (SHA-256) so that Meta can match the event to an ad click. Because you may finish creating your account in a different browser than the one in which you clicked the ad (for example when you open the sign-in email on another device), we store the `_fbp` and `_fbc` values, your IP address and browser details from the moment your account was created together with your account for up to 90 days, and attach them to the workspace-created and first-purchase events only. This stored record is created only if you had accepted advertising cookies at that moment and is deleted with your account. We use this data only to measure and improve our advertising on Meta platforms. Meta is a joint controller with us for the collection and transmission of this data under Art. 26 GDPR, based on Meta's Controller Addendum, and sole controller for its further processing, which is described in Meta's privacy policy at facebook.com/privacy/policy. Meta is certified under the EU-US Data Privacy Framework. Nothing is sent to Meta, in the browser or from our servers, until you accept advertising cookies in the consent banner, and you can withdraw your consent at any time through "Cookie preferences", which stops all further transmission.
 
 We use no other analytics or marketing cookies. If we introduce any, we will list them in the Cookie Policy and set them only after your consent.
 
@@ -210,7 +210,7 @@ We keep personal data only as long as we need it for the purposes above or as th
 | Phone number and your choice about calls | Until you remove the number in your profile settings or delete your account. The time of your last change to the call setting is kept with the number as a record of your choice |
 | Workspace invitations | 7 days, then the invitation expires and is removed |
 | AI assistant connections | Until you disconnect the assistant under Integrations or delete your account. The assistant's access token expires on its own and is renewed only while the connection exists |
-| Session and sign-in tokens | Magic links expire after a short time. Sessions end when you sign out or after the session lifetime |
+| Session and sign-in tokens | Sign-in codes and links expire after one hour. Sessions end when you sign out or after the session lifetime |
 | Draft lists and uploaded files not yet enriched | Deleted after 24 hours |
 | Lists, Contact data, enrichment results and uploaded files (Customer Content) | Until the Customer deletes the list or the workspace is deleted. Deleting a list permanently removes its contacts, results and the uploaded file |
 | Sample lists we prepare for prospective customers, the prospect's details and the engagement record | Until our founder closes and deletes the sample, at the latest 12 months after the link was last opened. The prospect's workspace, if they sign up, follows the account retention above |
@@ -218,6 +218,7 @@ We keep personal data only as long as we need it for the purposes above or as th
 | Enrichment results at our data provider | 3 months, then deleted automatically by the provider |
 | Raw notifications from our data provider and from Stripe (webhook payloads) | 30 days after processing |
 | In-app notifications | 90 days |
+| Meta click and browser identifiers stored with your account for advertising measurement (Section 5) | 90 days after your account was created, or deleted at once with the account |
 | Email send log | 12 months, or deleted at once with the account |
 | Hashed email address and Google account identifier of a deleted account, used only to prevent repeated free trials | 12 months after deletion |
 | Referral records (invite code, time of sign-up, status, hashed email address of the referred person) | For the life of the inviting workspace. The hashed email address of a referred person is kept so that no second reward is paid for the same person |
@@ -239,7 +240,7 @@ We apply technical and organisational measures appropriate to the risk:
 - All traffic between your browser, our application and our providers is encrypted with TLS. Data is encrypted at rest at our database and storage provider.
 - Each workspace's data is isolated by database-level row security. A user can only read data of workspaces they are a member of.
 - Access within a workspace is role based. Only owners and admins can manage members, billing and delete lists.
-- We use passwordless sign-in with expiring magic links or Google sign-in, so there are no passwords to steal.
+- We use passwordless sign-in with expiring one-time email codes and links or Google sign-in, so there are no passwords to steal.
 - Incoming notifications from our data provider and from Stripe are checked with cryptographic signatures before we act on them.
 - Uploaded files are stored in a private bucket and are only reachable through signed, time-limited links.
 - Card data is handled by Stripe, a PCI DSS Level 1 certified provider, and never touches our systems.
@@ -322,7 +323,7 @@ In the past 12 months we have collected the following categories of personal inf
 | Geolocation data | Approximate location derived from IP address in logs | Yes (coarse only) |
 | Professional or employment information | Workspace name, role; for Contacts: job title, employer, LinkedIn profile | Yes |
 | Inferences | None | No |
-| Sensitive personal information | Account sign-in credentials (magic link tokens) | Yes, only as needed to sign you in |
+| Sensitive personal information | Account sign-in credentials (one-time sign-in tokens) | Yes, only as needed to sign you in |
 | Protected classifications, biometric, health, precise geolocation, audio or visual data | None | No |
 
 Sources: directly from you, automatically from your device and browser, from Google if you use Google sign-in, from Stripe for payment status, and, for Contacts, from our Customers and our data providers.

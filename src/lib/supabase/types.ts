@@ -968,6 +968,44 @@ export type Database = {
           },
         ]
       }
+      meta_click_contexts: {
+        Row: {
+          captured_at: string
+          client_ip: string | null
+          fbc: string | null
+          fbp: string | null
+          source: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          captured_at?: string
+          client_ip?: string | null
+          fbc?: string | null
+          fbp?: string | null
+          source: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          captured_at?: string
+          client_ip?: string | null
+          fbc?: string | null
+          fbp?: string | null
+          source?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meta_click_contexts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           admin_notification_id: string | null

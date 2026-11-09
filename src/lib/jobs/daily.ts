@@ -8,6 +8,7 @@ import { creditsExpiringCopy } from "@/lib/notifications/copy";
 import { notifyWorkspace } from "@/lib/notifications/emit";
 import { notifyOps } from "./notify";
 import { LEAD_SHARE_RETENTION_MONTHS } from "@/lib/leads/constants";
+import { META_CLICK_CONTEXT_DAYS } from "@/lib/meta/click-context";
 import { purgeCacheRows } from "@/lib/lists/insert-contacts";
 import { CACHE_TTL_DAYS, log, logError, releaseHolds } from "./shared";
 
@@ -38,6 +39,8 @@ export interface DailySummary {
   webhookEventsDeleted: number;
   expiryWarnings: number;
   notificationsDeleted: number;
+  /** Meta click contexts past their 90-day window (privacy policy § 8). */
+  metaClickContextsDeleted: number;
   cacheRowsDeleted: number;
   tombstonesDeleted: number;
   emailLogDeleted: number;
@@ -53,7 +56,7 @@ export interface DailySummary {
 /** Housekeeping: expire grants, provider balance alert, cleanup of drafts, cache rows, tombstones, opt-out requests and old webhook payloads. */
 export async function runDaily(): Promise<DailySummary> {
   const admin = createAdminClient();
-  const summary: DailySummary = { expiredGrants: 0, holdsReleased: 0, draftsDeleted: 0, webhookEventsDeleted: 0, expiryWarnings: 0, notificationsDeleted: 0, cacheRowsDeleted: 0, tombstonesDeleted: 0, emailLogDeleted: 0, optOutPurged: 0, leadSharesDeleted: 0, referralsExpired: 0, overspend: null, upstreamBalance: null, alerted: false, errors: [] };
+  const summary: DailySummary = { expiredGrants: 0, holdsReleased: 0, draftsDeleted: 0, webhookEventsDeleted: 0, expiryWarnings: 0, notificationsDeleted: 0, metaClickContextsDeleted: 0, cacheRowsDeleted: 0, tombstonesDeleted: 0, emailLogDeleted: 0, optOutPurged: 0, leadSharesDeleted: 0, referralsExpired: 0, overspend: null, upstreamBalance: null, alerted: false, errors: [] };
   const step = async (name: string, fn: () => Promise<void>) => {
     try {
       await fn();
@@ -96,6 +99,12 @@ export async function runDaily(): Promise<DailySummary> {
     const cutoff = new Date(Date.now() - NOTIFICATION_RETENTION_DAYS * 86_400_000).toISOString();
     const { count } = await admin.from("notifications").delete({ count: "exact" }).lt("created_at", cutoff);
     summary.notificationsDeleted = count ?? 0;
+  });
+
+  await step("cleanup_meta_click_contexts", async () => {
+    const cutoff = new Date(Date.now() - META_CLICK_CONTEXT_DAYS * 86_400_000).toISOString();
+    const { count } = await admin.from("meta_click_contexts").delete({ count: "exact" }).lt("captured_at", cutoff);
+    summary.metaClickContextsDeleted = count ?? 0;
   });
 
   await step("overspend_sweep", async () => {

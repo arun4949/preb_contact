@@ -6,6 +6,7 @@ import { isAdminEmail, isFreeEmailDomain } from "@/lib/auth/work-email";
 import { finishInviteeSignup } from "@/lib/auth/first-login";
 import { deleteUserCompletely } from "@/lib/account/deletion";
 import { attributeReferralSignup } from "@/lib/referrals/attribution";
+import { captureMetaClickContext } from "@/lib/meta/click-context";
 import { REFERRAL_COOKIE } from "@/lib/referrals/constants";
 import { FRESH_ACCOUNT_MS } from "@/lib/referrals/eligibility";
 
@@ -56,6 +57,8 @@ export async function GET(request: NextRequest) {
         if (Date.now() - new Date(user.created_at).getTime() < FRESH_ACCOUNT_MS) {
           const ref = request.cookies.get(REFERRAL_COOKIE)?.value;
           if (ref) await attributeReferralSignup(createAdminClient(), user.id, ref, "oauth");
+          // Meta Ads: keep the click id of a brand-new account for the later server events (consent-gated).
+          await captureMetaClickContext(createAdminClient(), user.id, "oauth");
         }
         await finishInviteeSignup(user.id);
       }

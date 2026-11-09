@@ -22,6 +22,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/types";
 import { log, logError, type Admin } from "@/lib/jobs/shared";
 import { sendMetaEventDetached } from "@/lib/meta/capi";
+import { hasConsent, mergeClickContext, readMetaClickContext } from "@/lib/meta/click-context";
 import { isAdsConsentValue, META_CONSENT_METADATA_KEY } from "@/lib/meta/consent";
 
 export const maxDuration = 60;
@@ -159,14 +160,17 @@ async function onInvoicePaid(admin: Admin, invoice: Stripe.Invoice) {
 /**
  * Meta Ads: the first paid invoice of a subscription is the Purchase
  * conversion. Consent and browser ids were stored in the subscription
- * metadata at checkout; without the consent flag nothing is sent. The event id
- * is derived from the invoice so Stripe retries never double count.
+ * metadata at checkout; the click context captured at account creation fills
+ * in what checkout did not have (and counts as consent). Without either
+ * nothing is sent. The event id is derived from the invoice so Stripe retries
+ * never double count.
  */
 async function sendPurchaseEvent(admin: Admin, wsId: string, invoice: Stripe.Invoice, planKey: string) {
   const metadata = invoice.parent?.subscription_details?.metadata ?? {};
-  const consent = isAdsConsentValue(metadata[META_CONSENT_METADATA_KEY]);
   const { data: ws } = await admin.from("workspaces").select("owner_id").eq("id", wsId).maybeSingle();
   const { data: owner } = ws ? await admin.from("profiles").select("email").eq("id", ws.owner_id).maybeSingle() : { data: null };
+  const stored = ws ? await readMetaClickContext(admin, ws.owner_id) : null;
+  const checkout = { consent: isAdsConsentValue(metadata[META_CONSENT_METADATA_KEY]), fbp: metadata.meta_fbp ?? null, fbc: metadata.meta_fbc ?? null, clientIp: null, userAgent: null };
   await sendMetaEventDetached(
     {
       eventName: "Purchase",
@@ -174,9 +178,9 @@ async function sendPurchaseEvent(admin: Admin, wsId: string, invoice: Stripe.Inv
       value: invoice.amount_paid / 100,
       currency: invoice.currency,
       customData: { content_name: planKey },
-      userData: { email: owner?.email ?? null, externalId: ws?.owner_id ?? null, fbp: metadata.meta_fbp ?? null, fbc: metadata.meta_fbc ?? null },
+      userData: { ...mergeClickContext(checkout, stored), email: owner?.email ?? null, externalId: ws?.owner_id ?? null },
     },
-    consent,
+    hasConsent(checkout, stored),
   );
 }
 

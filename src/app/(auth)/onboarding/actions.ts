@@ -14,6 +14,7 @@ import { attributeLeadSignup } from "@/lib/leads/attribution";
 import { attributeReferralSignup, clearReferralCookie, readReferralCookie } from "@/lib/referrals/attribution";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendMetaEvent } from "@/lib/meta/capi";
+import { readMetaClickContext } from "@/lib/meta/click-context";
 import { isMetaEventId } from "@/lib/meta/client";
 
 export interface OnboardingState {
@@ -121,9 +122,15 @@ export async function completeOnboarding(_prev: OnboardingState, formData: FormD
     await clearReferralCookie();
     // Meta Ads: the signup conversion, once per new owner. Same event id as the
     // browser pixel event fired by the form, so Meta deduplicates the pair.
+    // The click context stored at account creation covers the case where the
+    // sign-in link or code was used in a browser other than the one that
+    // clicked the ad (no `_fbc`/`_fbp` and no consent cookie here).
     const metaEventId = formData.get("meta_event_id");
     if (session && isMetaEventId(metaEventId)) {
-      after(() => sendMetaEvent({ eventName: "CompleteRegistration", eventId: metaEventId, userData: { email: profile.email, externalId: profile.id } }));
+      after(async () => {
+        const stored = await readMetaClickContext(createAdminClient(), profile.id);
+        await sendMetaEvent({ eventName: "CompleteRegistration", eventId: metaEventId, userData: { email: profile.email, externalId: profile.id } }, { stored });
+      });
     }
   }
 
