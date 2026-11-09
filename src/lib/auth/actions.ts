@@ -93,7 +93,8 @@ export async function sendMagicLink(_prev: MagicLinkState, formData: FormData): 
   // whether the email already had an account). Runs after the response, consent-gated.
   if (type === "signup") {
     const eventId = `lead:${data.properties.hashed_token.slice(0, 40)}`;
-    after(() => sendMetaEvent({ eventName: "Lead", eventId, userData: { email } }));
+    // external_id = the new user's id, hashed like CompleteRegistration's, so Meta links the two.
+    after(() => sendMetaEvent({ eventName: "Lead", eventId, userData: { email, externalId: data.user?.id ?? null } }));
   }
   return { status: "sent", email };
 }

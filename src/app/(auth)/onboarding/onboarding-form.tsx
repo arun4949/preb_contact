@@ -1,12 +1,12 @@
 "use client";
 
-import { useActionState, useEffect, useState, type FormEvent } from "react";
+import { useActionState, useEffect, useRef, useState, type FormEvent } from "react";
 import { Banner } from "@/components/base/banner/banner";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { PhoneField } from "@/components/application/phone-field/phone-field";
 import { completeOnboarding, type OnboardingState } from "./actions";
-import { newMetaEventId, trackMetaEvent } from "@/lib/meta/client";
+import { META_FLUSH_DELAY_MS, newMetaEventId, trackMetaEvent } from "@/lib/meta/client";
 
 export type OnboardingMode = "first_login" | "no_workspace";
 
@@ -32,10 +32,25 @@ export interface OnboardingFormProps {
 }
 
 export function OnboardingForm({ mode, defaultName, defaultWorkspace, defaultPhone, defaultCountry }: OnboardingFormProps) {
-  const [state, action, pending] = useActionState<OnboardingState, FormData>(completeOnboarding, { status: "idle" });
   const [phoneValid, setPhoneValid] = useState(true);
   // One id per form instance, shared by the browser pixel and the server event (deduplication).
   const [metaEventId] = useState(newMetaEventId);
+  const metaTracked = useRef(false);
+  // Guards the one-time navigation (Strict Mode re-runs effects in dev).
+  const navigated = useRef(false);
+
+  // Meta Ads: browser half of the signup conversion; the action sent the server half
+  // with the same id. Fired here, as soon as the action succeeds, and not in the effect
+  // below: the action deletes a cookie, so Next refreshes /onboarding, whose redirect to
+  // /lists can unmount this form before any effect runs (lost on prod, 2026-11-09).
+  const submit = async (previous: OnboardingState, formData: FormData): Promise<OnboardingState> => {
+    const next = await completeOnboarding(previous, formData);
+    if (next.status === "done" && mode === "first_login" && !metaTracked.current) {
+      metaTracked.current = trackMetaEvent("CompleteRegistration", {}, metaEventId);
+    }
+    return next;
+  };
+  const [state, action, pending] = useActionState<OnboardingState, FormData>(submit, { status: "idle" });
   const copy = COPY[mode];
   const done = state.status === "done";
   const phoneError = state.status === "error" && state.field === "phone" ? state.message : null;
@@ -51,12 +66,16 @@ export function OnboardingForm({ mode, defaultName, defaultWorkspace, defaultPho
   // Full navigation (not router.push): the app shell is a different layout
   // group and must render from a fresh tree with the new workspace.
   useEffect(() => {
-    if (!done) return;
-    // Meta Ads: browser half of the signup conversion; the action sent the server half with the same id.
-    if (mode === "first_login") trackMetaEvent("CompleteRegistration", {}, metaEventId);
+    if (!done || navigated.current) return;
+    navigated.current = true;
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- intentional hard navigation, see actions.ts
-    window.location.assign("/lists");
-  }, [done, metaEventId, mode]);
+    const go = () => window.location.assign("/lists");
+    // The pixel sends asynchronously and a full navigation cancels a pending request,
+    // so give it a moment when the conversion was just fired. No timer cleanup on
+    // purpose: the navigation must happen even if the effect re-runs.
+    if (metaTracked.current) window.setTimeout(go, META_FLUSH_DELAY_MS);
+    else go();
+  }, [done]);
 
   return (
     <div className="flex w-full max-w-[440px] flex-col rounded-3xl border border-border-button-default bg-background-primary-default p-6 shadow-xs sm:p-8">
