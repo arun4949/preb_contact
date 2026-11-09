@@ -160,6 +160,7 @@ function CheckInboxCard({ card, email, codeLength, next, resend, resending }: { 
         <InputOtp
           length={codeLength}
           groupEvery={signInCodeGroup(codeLength)}
+          size={codeLength <= 6 ? "sm" : "xs"}
           value={code}
           onChange={setCode}
           onComplete={onComplete}

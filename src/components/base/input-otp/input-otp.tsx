@@ -45,6 +45,8 @@ export interface InputOtpProps {
   isInvalid?: boolean;
   /** Renders a gap between groups, e.g. `3` gives 000 000. */
   groupEvery?: number;
+  /** Box size. `sm` and `xs` keep 6 to 10 digits inside a narrow card. */
+  size?: "md" | "sm" | "xs";
   "aria-label"?: string;
   className?: string;
   ref?: Ref<HTMLDivElement>;
@@ -61,6 +63,7 @@ export function InputOtp({
   isDisabled = false,
   isInvalid = false,
   groupEvery,
+  size = "md",
   "aria-label": ariaLabel = "One-time code",
   className,
   ref,
@@ -138,14 +141,14 @@ export function InputOtp({
       aria-label={ariaLabel}
       // No `aria-invalid` here: `group` does not support it. Each box carries
       // its own, which is where a screen reader looks anyway.
-      className={cx("flex items-center gap-2", className)}
+      className={cx("flex items-center", size === "md" ? "gap-2" : size === "sm" ? "gap-1.5" : "gap-1", className)}
     >
       {Array.from({ length }, (_, index) => {
         const filled = code[index] ?? "";
         const gapBefore = groupEvery !== undefined && index > 0 && index % groupEvery === 0;
 
         return (
-          <div key={index} className={cx("flex items-center", gapBefore && "ms-3")}>
+          <div key={index} className={cx("flex items-center", gapBefore && (size === "md" ? "ms-3" : "ms-2"))}>
             <input
               ref={(node) => {
                 inputsRef.current[index] = node;
@@ -168,7 +171,10 @@ export function InputOtp({
               onPaste={(event) => onPaste(event, index)}
               onFocus={(event) => event.target.select()}
               className={cx(
-                "size-12 rounded-2lg text-center font-mono text-title-3-medium tabular-nums",
+                "rounded-2lg text-center font-mono tabular-nums",
+                size === "md" && "size-12 text-title-3-medium",
+                size === "sm" && "size-10 text-headline-medium",
+                size === "xs" && "size-9 text-body-medium",
                 "bg-background-primary-default text-text-primary",
                 "border border-border-button-default shadow-xs",
                 "transition-[background-color,border-color,box-shadow] duration-150 ease outline-none",
