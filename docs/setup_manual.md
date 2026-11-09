@@ -17,7 +17,7 @@ These are the only tasks Claude Code cannot do through MCP. Tick them off as you
 ## M2 · Supabase dashboard — providers, URLs, secret key · needed day 1 (step 4b on day 7)
 
 - [x] 1. Open [https://supabase.com/dashboard](https://supabase.com/dashboard) → project **preb-contact** (ref `zigocelujwbasujrozpk`).
-- [x] 2. **Authentication → Sign In / Providers → Email**: keep *Enable Email provider* on (Supabase verifies the sign‑in token; it never sends the email — our app sends it through Resend). Set *Email OTP expiration* to 3600 s. *Email OTP length* is 8 digits in this project; since 2026-11-09 the sign-in email carries this code next to the link and the login page adapts to whatever length is configured (6 to 10). Save.
+- [x] 2. **Authentication → Sign In / Providers → Email**: keep *Enable Email provider* on (Supabase verifies the sign‑in token; it never sends the email — our app sends it through Resend). Set *Email OTP expiration* to 3600 s. *Email OTP length* is 6 digits (set 2026-11-09); since 2026-11-09 the sign-in email carries this code next to the link and the login page adapts to whatever length is configured (6 to 10). Save.
 - [x] 3. **Authentication → Sign In / Providers → Google**: toggle **Enable**, paste Client ID and Client secret from M1. Save.
 - [x] 4. **Authentication → URL Configuration**: *Site URL* `http://localhost:3000` for now. Under *Redirect URLs* add `http://localhost:3000/`**, `https://app.preb.co/`** and your Vercel preview pattern `https://*-<your-team-slug>.vercel.app/**`. Save.
 - [ ] 4b. (Go-live) change *Site URL* to `https://preb.co` and add `https://preb.co/**` to *Redirect URLs* (the `app.preb.co` entry can go; no preview environment for now, so the `*.vercel.app` pattern is optional).

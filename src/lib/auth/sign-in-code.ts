@@ -9,7 +9,7 @@
 export const SIGN_IN_CODE_MIN = 6;
 export const SIGN_IN_CODE_MAX = 10;
 /** Used before the actual length is known (the card's initial render). */
-export const SIGN_IN_CODE_DEFAULT_LENGTH = 8;
+export const SIGN_IN_CODE_DEFAULT_LENGTH = 6;
 
 export function isSignInCode(value: string): boolean {
   return new RegExp(`^[0-9]{${SIGN_IN_CODE_MIN},${SIGN_IN_CODE_MAX}}$`).test(value);
