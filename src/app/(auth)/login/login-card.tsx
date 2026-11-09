@@ -149,8 +149,8 @@ function CheckInboxCard({ card, email, codeLength, next, resend, resending }: { 
       </div>
       <h1 className="text-title-2-medium text-text-primary">Check your inbox</h1>
       <p className="mt-1.5 text-body-regular text-text-secondary">
-        We sent a {codeLength}-digit code and a sign-in link to <span className="text-body-medium text-text-primary" dir="ltr">{email}</span>. Enter the
-        code here or click the link. Both expire in one hour.
+        We sent a sign-in link and a code with {codeLength} digits to <span className="text-body-medium text-text-primary" dir="ltr">{email}</span>.
+        Enter the code here or click the link. Both expire in one hour.
       </p>
 
       <form ref={formRef} action={verify} className="mt-6 flex flex-col gap-3" aria-live="polite">
