@@ -24,7 +24,7 @@ const ERRORS: Record<string, string> = {
   oauth: "Google sign-in didn't complete. Please try again.",
   callback: "We couldn't finish signing you in. Please try again.",
   link: "That sign-in link is invalid or has expired. Request a new one below.",
-  work_email: "Please sign in with your work email. Personal and disposable mailboxes can't start a Preb workspace.",
+  work_email: "That is a personal email address, and Preb only works with a work email. Choose your work Google account, or type your work email below and we send you a sign-in code.",
 };
 
 /** Non-error notices after a redirect, e.g. a completed account deletion. */
@@ -65,9 +65,12 @@ export function LoginCard({ next, error, notice, prefillEmail }: { next: string;
 
       <form action={signInWithGoogle} className="mt-6">
         <input type="hidden" name="next" value={next} />
+        {/* A personal account was just rejected: ask Google for the account chooser instead of reusing it. */}
+        {error === "work_email" ? <input type="hidden" name="choose_account" value="1" /> : null}
         <SocialButton brand="google" appearance="white" fullWidth type="submit">
           Continue with Google
         </SocialButton>
+        <p className="mt-2 text-center text-caption-1-regular text-text-tertiary">Use your work account. Personal Gmail addresses are not accepted.</p>
       </form>
 
       <div className="my-5">

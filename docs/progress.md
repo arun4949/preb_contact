@@ -2,6 +2,21 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Signup stages in Ops and the Google rejection loop — 2026-11-13 (complete, walked locally)
+
+### Why
+Ops listed three accounts from Meta ads, Meta counted one `CompleteRegistration`. Meta was right: an account and its workspace are created when a sign-in code is requested, so two of the three were only leads (one bounced address, one who never entered the code). Tracking was not broken. The auth logs then showed the real leak: from 2026-11-09 to 2026-11-13 midday, 37 different personal Google accounts were rejected by the work-email rule in 67 attempts, many of them three to five times in a row, because Google silently reuses the same account. Only three of those people came back with a work address.
+
+### Done
+- ✅ `/admin/ops` "Recent signups": new **Status** column (Onboarded, Signed in, Code requested, Unknown) from `profiles.onboarded_at` and `auth.users.last_sign_in_at` (looked up with the service role only for rows that are not onboarded; a failed lookup shows Unknown, never a guess). Column "Signed up" is now "Created", the tile reads "New accounts (30 d)" with the onboarded count. Pure `lib/admin/signup-stage.ts` with tests.
+- ✅ Login card: after `error=work_email` the Google form sends `choose_account=1` and `signInWithGoogle` adds `prompt=select_account`, so Google shows the account chooser instead of reusing the rejected account. Clearer rejection text and a permanent hint under the Google button. The work-email rule itself is unchanged.
+- ✅ Docs: "How to sign in" explains what to do after picking a personal Google account.
+
+### Verified
+- ✅ typecheck, eslint, 240 tests. Playwright walk (own dev server on :3111, temporary admin test account, deleted afterwards): login card plain and rejected, light and dark, 420 px, no horizontal scroll; authorize request carries `prompt=select_account` only after a rejection; Ops table shows the right stage for every real row; /lists, /enrich, /admin/leads, /admin/referrals, /admin/notifications and the docs article render.
+- ⚠️ Found, not caused by this change: `/admin/ops` logs a React hydration warning in dev inside the first table (same warning with the change removed). Not fixed here.
+- ⬜ Open decision for the CTO: whether personal addresses stay blocked. Not live until deployed.
+
 ## Sign-in code and stored Meta click context — 2026-11-09 · Meta attribution across the magic-link browser switch (complete, walked locally)
 
 ### Why

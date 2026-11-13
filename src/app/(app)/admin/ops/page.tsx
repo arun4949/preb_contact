@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/base/empty-state/empty-state";
 import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@/components/base/table/table";
 import { LIST_STATUS_META } from "@/components/application/list-card/list-status";
 import { isAdminEmail } from "@/lib/auth/work-email";
+import { SIGNUP_STAGE_META, signupStage } from "@/lib/admin/signup-stage";
 import { getAccountCredits } from "@/lib/fullenrich/client";
 import { formatUsd } from "@/lib/credits/money";
 import { getPlan } from "@/lib/credits/plans";
@@ -81,6 +82,23 @@ export default async function OpsPage() {
     // Invite friends: signups through a referral link and rewards paid out in the last month.
     admin.from("referrals").select("status, reward_credits").gte("created_at", minutesAgo(31 * 24 * 60)).limit(5000),
   ]);
+  // An account exists as soon as a sign-in code is requested. Whether the person ever
+  // logged in lives in `auth.users`, so look it up for the rows that are not onboarded
+  // (onboarded implies signed in). A failed lookup stays `undefined` and shows "Unknown".
+  const lastSignIn = new Map<string, string | null>();
+  await Promise.all(
+    (signups.data ?? [])
+      .filter((u) => !u.onboarded_at)
+      .map(async (u) => {
+        try {
+          const { data, error } = await admin.auth.admin.getUserById(u.id);
+          if (!error && data.user) lastSignIn.set(u.id, data.user.last_sign_in_at ?? null);
+        } catch {}
+      }),
+  );
+  const stageOf = (u: { id: string; onboarded_at: string | null }) => signupStage({ onboardedAt: u.onboarded_at, lastSignInAt: lastSignIn.get(u.id) });
+  const onboardedCount = (signups.data ?? []).filter((u) => u.onboarded_at).length;
+
   // A failed query must never look like "nothing to report": list every error at the top.
   const queryErrors = (
     [
@@ -142,7 +160,7 @@ export default async function OpsPage() {
     { label: "Webhook problems", value: String(webhooks.data?.length ?? 0), tone: webhooks.data?.length ? "warn" : undefined },
     { label: "Paused / failed lists", value: String(paused.data?.length ?? 0), tone: paused.data?.length ? "warn" : undefined },
     { label: "Last provider call", value: lastTick.data?.window_start ? when(lastTick.data.window_start) : "never" },
-    { label: `Signups (${SIGNUP_DAYS} d)`, value: String(signups.data?.length ?? 0) },
+    { label: `New accounts (${SIGNUP_DAYS} d)`, value: `${signups.data?.length ?? 0} · ${onboardedCount} onboarded` },
     { label: `Docs votes (${DOCS_FEEDBACK_DAYS} d)`, value: docsShare === null ? "0" : `${docsTotal} · ${docsShare}% helpful`, tone: docsShare !== null && docsTotal >= 10 && docsShare < 60 ? "warn" : undefined },
     { label: "AI assistants", value: `${mcp.connections} connected · ${mcp.activeToday} active (24 h) · ${mcp.runsToday} ${mcp.runsToday === 1 ? "run" : "runs"} (24 h)` },
     { label: "Referrals (31 d)", value: `${referral.signups} ${referral.signups === 1 ? "signup" : "signups"} · ${referral.rewarded} rewarded · ${referral.credits.toLocaleString("en-US")} cr` },
@@ -182,8 +200,9 @@ export default async function OpsPage() {
               <TableColumn isRowHeader>Name</TableColumn>
               <TableColumn>Email</TableColumn>
               <TableColumn>Workspace</TableColumn>
+              <TableColumn>Status</TableColumn>
               <TableColumn>Plan</TableColumn>
-              <TableColumn>Signed up</TableColumn>
+              <TableColumn>Created</TableColumn>
               <TableColumn>Phone</TableColumn>
               <TableColumn>Calls</TableColumn>
             </TableHeader>
@@ -191,11 +210,17 @@ export default async function OpsPage() {
               {signups.data.map((u) => {
                 const ws = u.workspace;
                 const plan = ws?.plan_key ? (getPlan(ws.plan_key)?.name ?? ws.plan_key) : ws?.trial_granted_at ? "Trial" : "No trial";
+                const stage = SIGNUP_STAGE_META[stageOf(u)];
                 return (
                   <TableRow key={u.id}>
                     <TableCell className="whitespace-nowrap">{u.full_name ?? <span className="text-text-tertiary">Not onboarded</span>}</TableCell>
                     <TableCell dir="ltr">{u.email}</TableCell>
                     <TableCell className="max-w-[220px] truncate">{ws?.name ?? "—"}</TableCell>
+                    <TableCell>
+                      <Chip variant="caption" color={stage.color}>
+                        {stage.label}
+                      </Chip>
+                    </TableCell>
                     <TableCell>
                       <Chip variant="caption" color={ws?.plan_key ? "blue" : ws?.trial_granted_at ? "lime" : "neutral"}>
                         {plan}

@@ -171,7 +171,13 @@ export async function signInWithGoogle(formData: FormData) {
   const origin = await appOrigin();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}` },
+    options: {
+      redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      // After a rejected personal account Google would silently pick the same
+      // account again (seen in the auth logs: up to five retries in a row), so
+      // show the account chooser and let the person pick the work account.
+      ...(formData.get("choose_account") === "1" ? { queryParams: { prompt: "select_account" } } : {}),
+    },
   });
   if (error || !data.url) redirect(`/login?error=oauth&next=${encodeURIComponent(next)}`);
   redirect(data.url);

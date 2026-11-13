@@ -40,7 +40,7 @@ export const gettingStarted: DocsCollection = {
       title: "How to sign in",
       summary: "Sign in with Google or with the code and link we send to your work email. There are no passwords.",
       keywords: ["login", "log in", "magic link", "code", "sign-in code", "google", "password", "email link"],
-      updated: UPDATED,
+      updated: "2026-11-13",
       related: ["magic-link-not-arriving", "create-your-workspace"],
       blocks: [
         { type: "paragraph", text: "Preb has no passwords. You sign in with your Google account or with a one-time code and link that we email to you." },
@@ -57,7 +57,7 @@ export const gettingStarted: DocsCollection = {
           "Open the email from Preb. It contains a one-time code and a sign-in link. Type the code on the sign-in page, or click the link if you read the email on the same device. Both work once and for one hour.",
         ] },
         { type: "callout", tone: "tip", title: "On a phone, use the code", text: "If you opened Preb from an app such as Instagram, Facebook or LinkedIn, the link in the email would open in a different browser. Typing the code keeps you where you are." },
-        { type: "callout", tone: "note", title: "Why personal mailboxes are not accepted", text: "Preb is a tool for teams, and a work address is how we tell workspaces apart. Addresses from Gmail, Outlook.com, Yahoo and similar providers, and disposable mailboxes, cannot sign in." },
+        { type: "callout", tone: "note", title: "Why personal mailboxes are not accepted", text: "Preb is a tool for teams, and a work address is how we tell workspaces apart. Addresses from Gmail, Outlook.com, Yahoo and similar providers, and disposable mailboxes, cannot sign in. If you picked a personal Google account by mistake, click **Continue with Google** again and choose your work account, or type your work email instead." },
         { type: "heading", text: "The email did not arrive" },
         { type: "paragraph", text: "Check your spam folder first. On the sign-in page you can click **Send a new code** at any time and use the newest email. If nothing arrives after a few minutes, read [The sign-in email does not arrive](/docs/troubleshooting/magic-link-not-arriving)." },
       ],
