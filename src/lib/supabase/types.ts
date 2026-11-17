@@ -1617,6 +1617,47 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_accounts: {
+        Args: {
+          p_dir?: string
+          p_filter?: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_sort?: string
+        }
+        Returns: {
+          created_at: string
+          credits_available: number
+          credits_spent: number
+          email: string
+          full_name: string
+          last_sign_in_at: string
+          lists_count: number
+          member_role: string
+          onboarded_at: string
+          plan_key: string
+          subscription_status: string
+          total_count: number
+          trial_granted_at: string
+          user_id: string
+          workspace_id: string
+          workspace_kind: string
+          workspace_name: string
+        }[]
+      }
+      admin_workspace_spend: {
+        Args: { p_workspaces: string[] }
+        Returns: {
+          absorbed: number
+          from_balance: number
+          last_spend_at: string
+          overspend: number
+          spent: number
+          spent_30d: number
+          workspace_id: string
+        }[]
+      }
       apply_contact_suppression: {
         Args: { p_cache_hashes: string[]; p_kind: string; p_value: string }
         Returns: number

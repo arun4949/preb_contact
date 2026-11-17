@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/base/empty-state/empty-state";
 import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@/components/base/table/table";
 import { LIST_STATUS_META } from "@/components/application/list-card/list-status";
 import { isAdminEmail } from "@/lib/auth/work-email";
+import { getWorkspaceSpend } from "@/lib/admin/accounts";
 import { SIGNUP_STAGE_META, signupStage } from "@/lib/admin/signup-stage";
 import { getAccountCredits } from "@/lib/fullenrich/client";
 import { formatUsd } from "@/lib/credits/money";
@@ -18,6 +19,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getSessionContext } from "@/lib/supabase/queries";
 import { minutesAgo } from "@/lib/jobs/shared";
 import { cx } from "@/utils/cx";
+import { SignupsTable, type SignupRow } from "./signups-table";
 
 export const metadata: Metadata = { title: "Ops" };
 export const dynamic = "force-dynamic";
@@ -68,7 +70,7 @@ export default async function OpsPage() {
     admin
       .from("profiles")
       // Explicit relationship: workspaces.overspend_enabled_by (0027) is a second link between the two tables.
-      .select("id, full_name, email, created_at, onboarded_at, phone:profile_phones(phone, country, calls_allowed), workspace:workspaces!profiles_default_workspace_id_fkey(name, plan_key, subscription_status, trial_granted_at)")
+      .select("id, full_name, email, created_at, onboarded_at, phone:profile_phones(phone, country, calls_allowed), workspace:workspaces!profiles_default_workspace_id_fkey(id, name, plan_key, subscription_status, trial_granted_at)")
       .gte("created_at", minutesAgo(SIGNUP_DAYS * 24 * 60))
       .order("created_at", { ascending: false })
       .limit(50),
@@ -97,6 +99,27 @@ export default async function OpsPage() {
       }),
   );
   const stageOf = (u: { id: string; onboarded_at: string | null }) => signupStage({ onboardedAt: u.onboarded_at, lastSignInAt: lastSignIn.get(u.id) });
+  // Credits spent per workspace, from the ledger (one call for all visible rows). A failed
+  // lookup shows "—" plus the error banner, never a zero.
+  const spend = await getWorkspaceSpend((signups.data ?? []).flatMap((u) => (u.workspace ? [u.workspace.id] : [])));
+  const signupRows: SignupRow[] = (signups.data ?? []).map((u) => {
+    const ws = u.workspace;
+    const stage = SIGNUP_STAGE_META[stageOf(u)];
+    return {
+      id: u.id,
+      name: u.full_name,
+      email: u.email,
+      workspace: ws?.name ?? null,
+      stage: { label: stage.label, color: stage.color },
+      plan: {
+        label: ws?.plan_key ? (getPlan(ws.plan_key)?.name ?? ws.plan_key) : ws?.trial_granted_at ? "Trial" : "No trial",
+        color: ws?.plan_key ? "blue" : ws?.trial_granted_at ? "lime" : "neutral",
+      },
+      creditsSpent: spend.error !== null ? null : ws ? (spend.data.get(ws.id)?.spent ?? 0) : 0,
+      created: when(u.created_at),
+      phone: u.phone ? { href: `tel:${u.phone.phone}`, label: formatPhone(u.phone.phone), callsAllowed: u.phone.calls_allowed } : null,
+    };
+  });
   const onboardedCount = (signups.data ?? []).filter((u) => u.onboarded_at).length;
 
   // A failed query must never look like "nothing to report": list every error at the top.
@@ -109,6 +132,7 @@ export default async function OpsPage() {
       ["Emails sent", emails.error],
       ["Lists running", running.error],
       ["Recent signups", signups.error],
+      ["Credits spent", spend.error !== null ? { message: spend.error } : null],
       ["Help center feedback", docsVotes.error],
       ["Overspend", overages.error],
       ["AI assistants", mcpConnections.error ?? mcpRuns.error],
@@ -193,66 +217,16 @@ export default async function OpsPage() {
         </Banner>
       ) : null}
 
-      <Section title={`Recent signups (last ${SIGNUP_DAYS} days)`} error={signups.error}>
-        {signups.data?.length ? (
-          <Table aria-label="Recent signups" size="sm" containerClassName="rounded-2xl">
-            <TableHeader>
-              <TableColumn isRowHeader>Name</TableColumn>
-              <TableColumn>Email</TableColumn>
-              <TableColumn>Workspace</TableColumn>
-              <TableColumn>Status</TableColumn>
-              <TableColumn>Plan</TableColumn>
-              <TableColumn>Created</TableColumn>
-              <TableColumn>Phone</TableColumn>
-              <TableColumn>Calls</TableColumn>
-            </TableHeader>
-            <TableBody>
-              {signups.data.map((u) => {
-                const ws = u.workspace;
-                const plan = ws?.plan_key ? (getPlan(ws.plan_key)?.name ?? ws.plan_key) : ws?.trial_granted_at ? "Trial" : "No trial";
-                const stage = SIGNUP_STAGE_META[stageOf(u)];
-                return (
-                  <TableRow key={u.id}>
-                    <TableCell className="whitespace-nowrap">{u.full_name ?? <span className="text-text-tertiary">Not onboarded</span>}</TableCell>
-                    <TableCell dir="ltr">{u.email}</TableCell>
-                    <TableCell className="max-w-[220px] truncate">{ws?.name ?? "—"}</TableCell>
-                    <TableCell>
-                      <Chip variant="caption" color={stage.color}>
-                        {stage.label}
-                      </Chip>
-                    </TableCell>
-                    <TableCell>
-                      <Chip variant="caption" color={ws?.plan_key ? "blue" : ws?.trial_granted_at ? "lime" : "neutral"}>
-                        {plan}
-                      </Chip>
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">{when(u.created_at)}</TableCell>
-                    <TableCell className="whitespace-nowrap" dir="ltr">
-                      {u.phone ? (
-                        <a href={`tel:${u.phone.phone}`} className="tabular-nums underline-offset-2 hover:underline">
-                          {formatPhone(u.phone.phone)}
-                        </a>
-                      ) : (
-                        <span className="text-text-tertiary">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {u.phone ? (
-                        <Chip variant="caption" color={u.phone.calls_allowed ? "lime" : "neutral"}>
-                          {u.phone.calls_allowed ? "Call ok" : "Opted out"}
-                        </Chip>
-                      ) : (
-                        <span className="text-body-2-regular text-text-tertiary">No phone</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        ) : (
-          <Empty text="No signups in the last 30 days." />
-        )}
+      <Section
+        title={`Recent signups (last ${SIGNUP_DAYS} days)`}
+        error={signups.error}
+        action={
+          <Link href="/admin/users" className="rounded-sm text-body-medium text-text-secondary underline-offset-2 outline-none hover:text-text-primary hover:underline focus-visible:ring-2 focus-visible:ring-border-focus-ring">
+            View all accounts
+          </Link>
+        }
+      >
+        {signupRows.length ? <SignupsTable rows={signupRows} /> : <Empty text="No signups in the last 30 days." />}
       </Section>
 
       <Section title={`Stuck batches (submitted > ${STUCK_BATCH_MINUTES} min, no result)`} error={stuck.error}>
@@ -406,10 +380,13 @@ export default async function OpsPage() {
   );
 }
 
-function Section({ title, error, children }: { title: string; error?: { message: string; code?: string } | null; children: React.ReactNode }) {
+function Section({ title, error, action, children }: { title: string; error?: { message: string; code?: string } | null; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-headline-medium text-text-primary">{title}</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-headline-medium text-text-primary">{title}</h2>
+        {action}
+      </div>
       {error ? (
         <Banner tone="error" title="Could not load this section">
           {error.code ? `${error.code}: ` : ""}

@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Last updated:** [date of publication]
-**Version:** 1.5 (2026-11-09: Sign-in code, stored Meta click identifiers, Sections 3.2, 5 and 8)
+**Version:** 1.6 (2026-11-17: Section 4, data categories our founders see for internal administration)
 
 Preb is a contact data enrichment service for recruiting teams. This Privacy Policy explains how Kranz & Gupta, Indiepal GbR ("Preb", "we", "us") collects, uses, shares and protects personal data when you visit preb.co, create an account, use the Preb application, receive our emails or contact our support.
 
@@ -122,7 +122,7 @@ The GDPR requires us to name a legal basis for every purpose. The table below ap
 | Measuring our advertising: understanding whether a visit, sign-up or purchase followed one of our ads on Meta platforms (Facebook, Instagram) | Cookie identifiers, click identifier, IP address, browser details, and a hashed form of your email address and user ID at sign-up and purchase | Your consent (Art. 6 (1) (a) GDPR, § 25 TDDDG), which you can withdraw at any time, see Section 5 |
 | Website analytics and other non-essential cookies, where used | Usage data, cookie identifiers | Your consent (Art. 6 (1) (a) GDPR, § 25 TDDDG), which you can withdraw at any time |
 | Preparing a free sample list for a prospective customer: enriching a few profiles the prospect names, showing the prospect the result behind a link and an access code, and recording whether the link was opened, unlocked, downloaded and whether the prospect signed up | Name, company and LinkedIn profile of the prospect, optionally their email address; names, employers and LinkedIn profiles of the people in the sample and the results found; engagement events without IP address or device data | Our legitimate interest in demonstrating the service to business prospects and in following up on our outreach (Art. 6 (1) (f) GDPR). For the people in the sample, see Section 12 |
-| Internal administration: our founders viewing user, workspace and operations data to run the service, send announcements and resolve incidents | Account data, usage data, aggregated operations data | Performance of our contract (Art. 6 (1) (b) GDPR) and our legitimate interest in operating the service (Art. 6 (1) (f) GDPR) |
+| Internal administration: our founders viewing user, workspace and operations data to run the service, send announcements and resolve incidents | Account and profile data, sign-in data, billing data, usage data, communication data, AI assistant connection data, aggregated operations data | Performance of our contract (Art. 6 (1) (b) GDPR) and our legitimate interest in operating the service (Art. 6 (1) (f) GDPR) |
 | Responding to legal requests, defending claims, enforcing our terms | Any of the above as needed | Our legal obligations (Art. 6 (1) (c) GDPR) and our legitimate interest in protecting our rights (Art. 6 (1) (f) GDPR) |
 | Responding to privacy requests and keeping a record of them | Identity and contact data of the requester | Our legal obligation (Art. 6 (1) (c) GDPR, Art. 12 to 22 GDPR) |
 

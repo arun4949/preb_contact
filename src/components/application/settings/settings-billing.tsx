@@ -12,7 +12,8 @@ import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from 
 import { useToast } from "@/components/base/toast/toast";
 import { PlanPicker } from "@/components/application/billing/plan-picker";
 import { fetchBillingOverview, fetchOverspendOverview, openBillingPortal } from "@/lib/billing/actions";
-import type { BillingOverview, LedgerEntry, OverspendOverview } from "@/lib/billing/queries";
+import { ledgerLabel } from "@/lib/billing/ledger-label";
+import type { BillingOverview, OverspendOverview } from "@/lib/billing/queries";
 import { formatUsd, formatUsdFine } from "@/lib/credits/money";
 import { cx } from "@/utils/cx";
 import { SettingsOverspend } from "./settings-overspend";
@@ -31,21 +32,6 @@ const STATUS_CHIP: Record<string, { label: string; color: "lime" | "yellow" | "r
   paused: { label: "Paused", color: "neutral" },
   canceled: { label: "Canceled", color: "neutral" },
 };
-
-function describe(entry: LedgerEntry): string {
-  switch (entry.kind) {
-    case "grant":
-      return entry.note ?? "Credits granted";
-    case "consume":
-      return entry.listName ? `Enrichment · ${entry.listName}` : "Enrichment";
-    case "expire":
-      return "Credits expired";
-    case "adjust":
-      return entry.note ?? "Adjustment";
-    case "overage":
-      return entry.listName ? `Overspend · ${entry.listName}` : "Overspend";
-  }
-}
 
 export type BillingView = "overview" | "plans";
 
@@ -227,10 +213,10 @@ export function SettingsBilling({ view, onViewChange, onClose, planReason, refre
                   <TableCell>
                     {entry.listId && (entry.kind === "consume" || entry.kind === "overage") ? (
                       <Link href={`/lists/${entry.listId}`} className="text-text-primary underline-offset-2 hover:underline">
-                        {describe(entry)}
+                        {ledgerLabel(entry)}
                       </Link>
                     ) : (
-                      describe(entry)
+                      ledgerLabel(entry)
                     )}
                   </TableCell>
                   <TableCell className={cx("text-end tabular-nums", entry.delta > 0 ? "text-status-lime-text" : entry.delta < 0 ? "text-text-primary" : "text-text-tertiary")}>

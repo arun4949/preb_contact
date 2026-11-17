@@ -2,6 +2,28 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Admin accounts: credits spent, accounts page and account detail — 2026-11-17 (complete, walked locally)
+
+### Why
+To answer "did this account use credits, on what, and with what result" we had to query the database by hand (2026-11-17, the Net2source signups). Ops only listed the last 30 days, had no usage figure and no row led anywhere.
+
+### Done
+- ✅ Migration 0034 (additive, two functions, service role only): `admin_workspace_spend(uuid[])` is the one definition of "credits spent" (ledger kinds `consume`, `overage` and the absorbed overdraft, told apart from "Referral reward revoked" by the missing grant, because `batch_id` is nulled when a list is deleted); `admin_accounts(...)` returns one row per account with search, filter, sort and paging. Applied via MCP. `types.ts`: the two function entries were added by hand in the generator's format instead of regenerating the whole file.
+- ✅ `/admin/ops` "Recent signups": **Credits spent** column, rows open the account, `View all accounts` link. A failed spend lookup shows `—` plus "Credits spent" in the error banner. The table moved to `ops/signups-table.tsx` with dates formatted on the server.
+- ✅ `/admin/users`: all accounts, filter (All, Onboarded, Paying, Trial, With spend), search, five sortable columns, 25 per page, state in the URL. Account menu entry **Accounts**.
+- ✅ `/admin/users/[id]`: header, six tiles, tabs Lists · Credits · Billing · Workspace · Acquisition and activity (see `screens.md` § 16). Owned workspaces without a member row are included, so the internal "Preb outreach" workspace is reachable through its owner (workspace switcher).
+- ✅ List level only (CTO decision): `list_contacts` is never read. Enrich tab lookups show as "Single lookup" because their list name is the person looked up. IP address and user agent of the Meta click context are not read.
+- ✅ `lib/billing/ledger-label.ts`: the ledger label function moved out of `settings-billing.tsx` unchanged and is shared by the customer Billing page and the admin page.
+- ✅ Docs: `screens.md` § 4 and new § 16, `implementation_plan.md`. Help center: no article covers the admin area and customers see no change, so none was added; the billing articles were checked and are unaffected. Legal: Privacy v1.6 (Section 4 row "Internal administration" now names account and profile, sign-in, billing, usage, communication and AI assistant connection data) in markdown and HTML, README item 18. DPA and Terms unchanged.
+
+### Verified
+- ✅ typecheck, eslint (the 2 known TanStack warnings), 267 tests (27 new: URL params, Meta verdict, ledger labels, Stripe invoices incl. the other-mode case, row range). Embed guard green.
+- ✅ SQL through MCP: spend per workspace equals hand-written ledger sums (Net2source 26 and 26, Scoopgroup 38, internal 422); filter totals and paging against `count(*)` of `profiles`; wildcard characters in the search are literal; `anon` and `authenticated` cannot execute either function.
+- ✅ Playwright walk (own dev server on :3111, two temporary accounts, one of them allow-listed only for that server, both deleted afterwards, 14 profiles before and after): Ops column, row click, name link, `tel:` link; Accounts filters, every sort in both directions, search, reload, back, no-match state, stale `?page=99`, hostile parameters; detail pages for a trial account with spend, one without lists, a shared workspace (member link), a lead that only requested a code, a signed-in but not onboarded account, the internal workspace through the switcher, a foreign `?ws=`, and a workspace pointed at a Stripe test customer (4 invoices, total paid, dashboard link); other-Stripe-mode banner; pagers and list filters with page sizes lowered for the walk and restored; tabs by click, arrow keys and reload; copy button; forced failure of the spend function (banner and `—` on Ops and on the detail page, never a zero); 404 for unknown and malformed ids and for a non-admin on all three pages, redirect to login when signed out; light and dark, 1440 px and 390 px, no horizontal page scroll, no console errors. Regression: /lists, /enrich, /integrations, Settings › Billing, /admin/notifications, /admin/leads, /admin/leads/new, /admin/referrals, /admin/suppressions, /docs.
+- ⚠️ Not walkable locally: a real paying customer. The only workspace with a Stripe customer belongs to live mode and the local key is a test key, so it shows the other-mode notice. The invoice table was walked with a Stripe test customer instead.
+- ✅ CTO decisions 2026-11-17: Privacy v1.6 accepted (website updated by the CTO); Enrich tab lookups stay "Single lookup" on the admin page.
+- ⬜ For the CTO: deploy.
+
 ## Signup stages in Ops and the Google rejection loop — 2026-11-13 (complete, walked locally)
 
 ### Why
