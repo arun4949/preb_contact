@@ -14,6 +14,7 @@ import {
   type ListStatusFilter,
 } from "./accounts-params";
 import { metaAttribution, type MetaAttribution } from "./attribution";
+import { signupSourceStatus, type SignupSourceStatus } from "./signup-source-meta";
 import { signupStage, type SignupStage } from "./signup-stage";
 
 /**
@@ -286,6 +287,8 @@ export interface AccountDetail {
   members: Part<AdminMember[]>;
   invites: Part<AdminInvite[]>;
   meta: Part<{ attribution: MetaAttribution; source: string | null; capturedAt: string | null }>;
+  /** The answer to "How did you first hear about Preb?"; null when this account was never asked. */
+  signupSource: Part<{ status: SignupSourceStatus; source: string | null; detail: string | null; askedAt: string; respondedAt: string | null } | null>;
   referredBy: Part<{ workspaceId: string | null; workspaceName: string; status: string; source: string; rejectedReason: string | null; signedUpAt: string } | null>;
   referralCode: Part<{ code: string; clicks: number; revoked: boolean; signups: number; rewarded: number; rewardCredits: number } | null>;
   leadShare: Part<{ listId: string; signedUpAt: string | null } | null>;
@@ -599,6 +602,7 @@ export async function getAccountDetail(userId: string, params: AccountDetailPara
     admin.from("mcp_connections").select("client_name, tool_calls, last_used_at, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(50),
     admin.from("email_sends").select("id, kind, sent_at").eq("email", p.email).order("sent_at", { ascending: false }).limit(30),
     loadSameDomain(admin, userId, p.email),
+    admin.from("signup_sources").select("status, source, detail, asked_at, responded_at").eq("user_id", userId).maybeSingle(),
   ]);
 
   const workspaceParts = workspace
@@ -618,7 +622,7 @@ export async function getAccountDetail(userId: string, params: AccountDetailPara
       ])
     : null;
 
-  const [[meta, referredBy, leadShare, mcp, emails, sameDomain], ws] = await Promise.all([personParts, workspaceParts]);
+  const [[meta, referredBy, leadShare, mcp, emails, sameDomain, signupSource], ws] = await Promise.all([personParts, workspaceParts]);
 
   const scoped = ws
     ? {
@@ -650,6 +654,19 @@ export async function getAccountDetail(userId: string, params: AccountDetailPara
     ...scoped,
     stripeUrl: workspace?.stripe_customer_id ? stripeCustomerUrl(workspace.stripe_customer_id) : null,
     meta: meta.error ? fail(meta.error) : ok({ attribution: metaAttribution(meta.data), source: meta.data?.source ?? null, capturedAt: meta.data?.captured_at ?? null }),
+    signupSource: signupSource.error
+      ? fail(signupSource.error)
+      : ok(
+          signupSource.data
+            ? {
+                status: signupSourceStatus(signupSource.data.status),
+                source: signupSource.data.source,
+                detail: signupSource.data.detail,
+                askedAt: signupSource.data.asked_at,
+                respondedAt: signupSource.data.responded_at,
+              }
+            : null,
+        ),
     referredBy: referredBy.error
       ? fail(referredBy.error)
       : ok(

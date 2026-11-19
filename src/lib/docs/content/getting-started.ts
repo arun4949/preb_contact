@@ -65,9 +65,9 @@ export const gettingStarted: DocsCollection = {
     {
       slug: "create-your-workspace",
       title: "Your first workspace",
-      summary: "The one-time setup after your first sign-in: your name, your workspace and an optional phone number.",
-      keywords: ["onboarding", "setup", "workspace", "phone", "full name"],
-      updated: UPDATED,
+      summary: "The one-time setup after your first sign-in: your name, your workspace, an optional phone number and one optional question.",
+      keywords: ["onboarding", "setup", "workspace", "phone", "full name", "how did you hear about us", "survey", "skip"],
+      updated: "2026-11-19",
       related: ["invite-your-team", "profile-and-notifications", "free-trial"],
       blocks: [
         { type: "paragraph", text: "A workspace is your team's home in Preb. It holds your lists, your teammates, your credits and your plan. Every new user gets one workspace at the first sign-in, unless a teammate invited them into an existing one." },
@@ -79,8 +79,15 @@ export const gettingStarted: DocsCollection = {
           "Click **Create workspace**.",
         ] },
         { type: "callout", tone: "note", title: "About the one onboarding call", text: "If you add a phone number, one of the founders may call you once to help with your setup. You can switch this off at any time under Settings, Profile, **Onboarding call**." },
+        { type: "heading", text: "One optional question" },
+        { type: "paragraph", text: "Right after you create your workspace, Preb asks **How did you first hear about Preb?** Pick the option that fits, for example a colleague, a search engine or LinkedIn. A short field then lets you add a detail, such as who recommended us. Click **Continue** to save your answer." },
+        { type: "list", items: [
+          "The question is optional. Click **Skip for now** to go straight to your lists.",
+          "You are asked once. If you skip or close the page, Preb does not ask again.",
+          "Your answer is never shown to your teammates. We use it only to understand how people find Preb. See [Your data and your contacts' data](/docs/data/data-privacy-and-retention).",
+        ] },
         { type: "heading", text: "Invited by a teammate?" },
-        { type: "paragraph", text: "If you accepted an invite, you skip this step and land directly in your teammate's workspace. You share that workspace's credits and lists. See [Invite teammates](/docs/workspace/invite-your-team)." },
+        { type: "paragraph", text: "If you accepted an invite, you skip the setup and the question and land directly in your teammate's workspace. You share that workspace's credits and lists. See [Invite teammates](/docs/workspace/invite-your-team)." },
       ],
     },
     {

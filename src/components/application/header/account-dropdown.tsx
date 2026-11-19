@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { RiBankCardLine, RiBookOpenLine, RiCustomerService2Line, RiGiftLine, RiGroupLine, RiLogoutBoxRLine, RiMegaphoneLine, RiPlugLine, RiPulseLine, RiSettings3Line, RiShieldCheckLine, RiTeamLine, RiUserForbidLine, RiUserStarLine } from "@remixicon/react";
+import { RiBankCardLine, RiBookOpenLine, RiCompass3Line, RiCustomerService2Line, RiGiftLine, RiGroupLine, RiLogoutBoxRLine, RiMegaphoneLine, RiPlugLine, RiPulseLine, RiSettings3Line, RiShieldCheckLine, RiTeamLine, RiUserForbidLine, RiUserStarLine } from "@remixicon/react";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Dropdown, DropdownDivider, DropdownGroup, DropdownItem, DropdownPopover, DropdownTrigger } from "@/components/base/dropdown/dropdown";
 import { openCookiePreferences } from "@/components/foundations/termly/termly-cmp";
@@ -139,6 +139,15 @@ export function AccountDropdown({ name, email, avatarUrl, workspaceName, isAdmin
               >
                 <RiGroupLine className="size-5 text-foreground-icon-secondary" aria-hidden />
                 <span className="text-body-medium">Accounts</span>
+              </DropdownItem>
+              <DropdownItem
+                onSelect={() => {
+                  setOpen(false);
+                  router.push("/admin/sources");
+                }}
+              >
+                <RiCompass3Line className="size-5 text-foreground-icon-secondary" aria-hidden />
+                <span className="text-body-medium">Sources</span>
               </DropdownItem>
               <DropdownItem
                 onSelect={() => {

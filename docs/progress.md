@@ -2,6 +2,35 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Second onboarding step "How did you first hear about Preb?" and acquisition sources page — 2026-11-19 (complete, walked locally)
+
+### Why
+Tracked attribution (Meta click context, referral, lead magnet) misses word of mouth, AI assistants, communities and everything opened in another browser. A self-reported answer right after signup fills that gap, and the two can be compared.
+
+### Decisions (CTO, 2026-11-19)
+- Visible single-select chips in an order shuffled per person, **Other** and **Not sure** pinned last, one optional detail line, always skippable. Not a dropdown: hidden options and first-option bias distort the answers.
+- Options: Google or another search engine, AI assistant (ChatGPT, Claude, Perplexity), LinkedIn, Facebook, Instagram, TikTok, YouTube, Colleague or friend, Podcast or newsletter, Online community or forum.
+- Asked once, new workspace owners only. Existing accounts and invited teammates are never asked ("Not asked" in admin).
+- Admin: field on the account page plus `/admin/sources`. The Accounts list and `admin_accounts` stay untouched.
+- The Meta verdict is stored as a category with the row, so the comparison survives the 90-day cleanup of the click context.
+
+### Done
+- ✅ Migration 0035 (additive, applied): table `signup_sources` (service role only, cascade on account deletion, option list deliberately not a check constraint) and `admin_signup_sources(p_since, p_until)` (service role only, joins the owned workspace, not `default_workspace_id`).
+- ✅ Step 1 is unchanged in behaviour: `onboarded_at`, welcome email, Resend contact, lead and referral attribution and both Meta events fire where they did. It only adds the pending row for a new owner and returns where to go next.
+- ✅ `/onboarding/source`: `tag-group` chips, detail field per option, Continue and Skip for now, hard navigation to `/lists`. Shown only for a pending row younger than 24 hours; no app page gates on it, so nobody can be trapped. `/onboarding` redirects by the same check, so the refresh after the step 1 action and the form's navigation agree.
+- ✅ Options, shuffle (seeded by the user id, recomputed on the server) and validation in `src/lib/onboarding/signup-source.ts`; storage in `signup-source-store.ts` (never throws, never blocks onboarding).
+- ✅ Account page, tab Acquisition and activity: **Self-reported** field with the four states.
+- ✅ `/admin/sources`: tiles, channel mix, answer quality with a position bias check, value by source, self-reported against tracked, by month, all responses. Period, team filter and page in the URL. Account menu entry **Sources**.
+- ✅ BoardUI: `tag-group` and `bar-list-card` installed (with `chart-card`, `scroll-direction`); `chip.tsx` only gained the `CHIP_COLORS` and `ChipColor` exports.
+- ✅ Docs: help center articles "Your first workspace" and "Your data and your contacts' data"; `screens.md` § 4, § 7, § 16 and new § 17. Legal: Privacy v1.7 (§ 3.1, § 4, § 5, § 8) in markdown and HTML.
+
+### Verified
+- ✅ typecheck, eslint (the 2 known TanStack warnings), 293 tests (26 new: options, shuffle, validation, labels, URL params, aggregation). Embed guard green.
+- ✅ SQL through MCP: `anon` and `authenticated` cannot execute the function, RLS on with no policies, security advisors show nothing new beyond the expected "RLS enabled, no policy" note.
+- ✅ Playwright walk (own dev server on :3000, six temporary accounts on Resend's test address, one allow-listed only for that server, all deleted afterwards through `deleteUserCompletely`, 23 profiles before and after): answer with detail, skip, closed tab (no trap, stays "No response"), reload keeps the chip order, back button, second visit goes to the app, account from before the feature and the no-workspace case are never asked, keyboard only, 390 px, light and dark; every `/admin` page and all account tabs render without console errors.
+- ⚠️ Not walkable locally: the Meta verdict other than "none" (needs advertising consent and a real ad click). The verdict function itself is unit tested.
+- ⬜ For the CTO: deploy, and re-paste `/privacy` in Framer from `docs/legal/privacy-policy.html` (v1.7).
+
 ## Admin accounts: credits spent, accounts page and account detail — 2026-11-17 (complete, walked locally)
 
 ### Why

@@ -129,8 +129,8 @@ export const data: DocsCollection = {
       slug: "data-privacy-and-retention",
       title: "Your data and your contacts' data",
       summary: "How long Preb keeps lists and results, what people can ask for, and where to find the legal documents.",
-      keywords: ["privacy", "gdpr", "retention", "delete", "opt out", "suppressed", "processor", "dpa", "security", "cookies", "advertising", "meta pixel"],
-      updated: "2026-10-15",
+      keywords: ["privacy", "gdpr", "retention", "delete", "opt out", "suppressed", "processor", "dpa", "security", "cookies", "advertising", "meta pixel", "how did you hear about us", "survey"],
+      updated: "2026-11-19",
       related: ["delete-workspace-or-account", "duplicates-and-already-enriched", "faq"],
       blocks: [
         { type: "heading", text: "How long we keep things" },
@@ -150,6 +150,9 @@ export const data: DocsCollection = {
         { type: "callout", tone: "note", text: "If a contact writes to you instead, you can point them to that page. Preb handles the request and the row in your list changes to Suppressed." },
         { type: "heading", text: "Cookies and advertising" },
         { type: "paragraph", text: "Preb sets only the cookies it needs to keep you signed in. If you accept advertising cookies in the consent banner, Preb also uses the Meta Pixel to measure whether a sign-up or purchase followed one of our ads. Because you may finish signing up in a different browser than the one you clicked the ad in, Preb keeps the Meta click and browser identifiers from that first visit with your account for up to 90 days and uses them only for these two measurements. Nothing is sent to Meta before you accept, and you can change your choice at any time with **Cookie preferences** in the account menu." },
+        { type: "heading", text: "How you found us" },
+        { type: "paragraph", text: "When you create your first workspace, Preb asks once how you first heard about it. Answering is optional. Your answer and any detail you add are stored with your account, are never shown to your teammates and are used only to understand which channels bring people to Preb. They are removed when you delete your account." },
+        { type: "paragraph", text: "To compare these answers with our advertising, Preb also keeps a single note with your account that says whether you came from one of our Meta ads. It is a category only. The click and browser identifiers themselves are still removed after 90 days." },
         { type: "heading", text: "The documents" },
         { type: "list", items: [
           "[Privacy Policy](https://preb.co/privacy), what Preb stores about you and your contacts.",

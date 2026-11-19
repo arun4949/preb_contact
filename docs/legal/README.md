@@ -8,7 +8,7 @@ Copy rules: no em dashes, en dashes or " - " as punctuation (AGENTS.md). The enr
 
 | Document | File | Status |
 |---|---|---|
-| Privacy Policy | `privacy-policy.md` | v1.6 (2026-11-17): § 4 data categories of the "Internal administration" row. v1.5 (2026-11-09): sign-in code and stored Meta click identifiers. v1.4 (2026-11-05): referral programme, § 3.1 paragraph, § 4 purpose row, § 5 cookie `preb_ref`, § 8 retention row, § 15 transactional mail. Re-paste `/privacy` in Framer |
+| Privacy Policy | `privacy-policy.md` | v1.7 (2026-11-19): optional question on how the Customer first heard about Preb, § 3.1 paragraph, § 4 purpose row, § 5 advertising category kept with the account, § 8 retention row. Re-paste `/privacy` in Framer. v1.6 (2026-11-17): § 4 data categories of the "Internal administration" row. v1.5 (2026-11-09): sign-in code and stored Meta click identifiers. v1.4 (2026-11-05): referral programme, § 3.1 paragraph, § 4 purpose row, § 5 cookie `preb_ref`, § 8 retention row, § 15 transactional mail. Re-paste `/privacy` in Framer |
 | Terms of Service (B2B only, incl. acceptable use, credits, refunds) | `terms-of-service.md` | v1.5 (2026-11-05): § 5 "Referral programme" paragraph, § 6.3 referral credit expiry, § 6.4 withdrawal. Re-paste `/terms` in Framer |
 | Data Processing Agreement (Art. 28 GDPR, SCCs by reference, CCPA service provider terms) | `dpa.md` | Draft v1.0, awaiting founder review |
 | Sub-processor List (names the enrichment provider and its sub-processors) | `sub-processors.md` | Draft v1.0, awaiting founder review |

@@ -1429,6 +1429,50 @@ export type Database = {
           },
         ]
       }
+      signup_sources: {
+        Row: {
+          asked_at: string
+          detail: string | null
+          meta_attribution: string | null
+          options_shown: string[] | null
+          responded_at: string | null
+          shown_position: number | null
+          source: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          asked_at?: string
+          detail?: string | null
+          meta_attribution?: string | null
+          options_shown?: string[] | null
+          responded_at?: string | null
+          shown_position?: number | null
+          source?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          asked_at?: string
+          detail?: string | null
+          meta_attribution?: string | null
+          options_shown?: string[] | null
+          responded_at?: string | null
+          shown_position?: number | null
+          source?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signup_sources_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       webhook_events: {
         Row: {
           error: string | null
@@ -1643,6 +1687,33 @@ export type Database = {
           user_id: string
           workspace_id: string
           workspace_kind: string
+          workspace_name: string
+        }[]
+      }
+      admin_signup_sources: {
+        Args: { p_since?: string; p_until?: string }
+        Returns: {
+          asked_at: string
+          credits_spent: number
+          detail: string
+          email: string
+          from_lead_share: boolean
+          full_name: string
+          meta_attribution: string
+          onboarded_at: string
+          options_count: number
+          owns_internal: boolean
+          plan_key: string
+          referral_status: string
+          responded_at: string
+          shown_position: number
+          signed_up_at: string
+          source: string
+          status: string
+          subscription_status: string
+          trial_granted_at: string
+          user_id: string
+          workspace_id: string
           workspace_name: string
         }[]
       }

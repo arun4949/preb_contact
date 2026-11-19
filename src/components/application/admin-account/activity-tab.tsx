@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from 
 import type { AccountDetail } from "@/lib/admin/accounts";
 import { META_ATTRIBUTION_META } from "@/lib/admin/attribution";
 import { day, n, plural, when } from "@/lib/admin/format";
+import { SIGNUP_SOURCE_NOT_ASKED, SIGNUP_SOURCE_STATUS_META, signupSourceLabel } from "@/lib/admin/signup-source-meta";
 import { cx } from "@/utils/cx";
 import { Block, Card, Field, Fields, Muted, Nothing, PartError, humanize } from "./parts";
 
@@ -24,12 +25,41 @@ const REFERRAL_CHIP: Record<string, { label: string; color: "yellow" | "lime" | 
 
 /** Where the account came from and what it did besides enriching: ads, referrals, AI assistants, emails, colleagues. */
 export function ActivityTab({ detail }: { detail: AccountDetail }) {
-  const { meta, referredBy, leadShare, referralCode, mcp, emails, sameDomain } = detail;
+  const { meta, signupSource, referredBy, leadShare, referralCode, mcp, emails, sameDomain } = detail;
 
   return (
     <>
       <Card title="Where this account came from">
         <Fields>
+          <Field label="Self-reported">
+            {signupSource.error !== null ? (
+              <span className="text-text-error-primary">Could not be loaded: {signupSource.error}</span>
+            ) : !signupSource.data ? (
+              <span className="flex flex-col gap-1">
+                <Muted>{SIGNUP_SOURCE_NOT_ASKED}</Muted>
+                <span className="text-body-2-regular text-text-secondary">Only new workspace owners are asked, right after they create their workspace.</span>
+              </span>
+            ) : signupSource.data.status === "answered" && signupSource.data.source ? (
+              <span className="flex flex-col gap-1">
+                <span className="flex flex-wrap items-center gap-2">
+                  <Chip variant="caption" color="blue">
+                    {signupSourceLabel(signupSource.data.source)}
+                  </Chip>
+                  {signupSource.data.detail ? <bdi>{signupSource.data.detail}</bdi> : null}
+                </span>
+                <span className="text-body-2-regular text-text-secondary">
+                  Answered {when(signupSource.data.respondedAt ?? signupSource.data.askedAt)} in the second onboarding step.
+                </span>
+              </span>
+            ) : (
+              <span className="flex flex-col gap-1">
+                <Muted>{SIGNUP_SOURCE_STATUS_META[signupSource.data.status].label}</Muted>
+                <span className="text-body-2-regular text-text-secondary">
+                  {SIGNUP_SOURCE_STATUS_META[signupSource.data.status].description} Asked {when(signupSource.data.askedAt)}.
+                </span>
+              </span>
+            )}
+          </Field>
           <Field label="Meta ads">
             {meta.error !== null ? (
               <span className="text-text-error-primary">Could not be loaded: {meta.error}</span>

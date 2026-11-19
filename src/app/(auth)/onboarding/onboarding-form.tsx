@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState, type FormEvent } from "rea
 import { Banner } from "@/components/base/banner/banner";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
+import { OnboardingSteps } from "@/components/application/auth/onboarding-steps";
 import { PhoneField } from "@/components/application/phone-field/phone-field";
 import { completeOnboarding, type OnboardingState } from "./actions";
 import { META_FLUSH_DELAY_MS, newMetaEventId, trackMetaEvent } from "@/lib/meta/client";
@@ -68,17 +69,24 @@ export function OnboardingForm({ mode, defaultName, defaultWorkspace, defaultPho
   useEffect(() => {
     if (!done || navigated.current) return;
     navigated.current = true;
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- intentional hard navigation, see actions.ts
-    const go = () => window.location.assign("/lists");
+    const go = () => {
+      const next = state.next ?? "/lists";
+      // The refresh Next runs after the action may already have brought us there
+      // (a new owner's second step): a second load would only flash the page.
+      if (window.location.pathname === next) return;
+      // Intentional hard navigation, see actions.ts.
+      window.location.assign(next);
+    };
     // The pixel sends asynchronously and a full navigation cancels a pending request,
     // so give it a moment when the conversion was just fired. No timer cleanup on
     // purpose: the navigation must happen even if the effect re-runs.
     if (metaTracked.current) window.setTimeout(go, META_FLUSH_DELAY_MS);
     else go();
-  }, [done]);
+  }, [done, state.next]);
 
   return (
     <div className="flex w-full max-w-[440px] flex-col rounded-3xl border border-border-button-default bg-background-primary-default p-6 shadow-xs sm:p-8">
+      {mode === "first_login" ? <OnboardingSteps current={0} className="mb-6" /> : null}
       <div className="flex flex-col gap-1.5">
         <h1 className="text-title-2-medium text-text-primary">{copy.title}</h1>
         <p className="text-body-regular text-text-secondary">{copy.intro}</p>

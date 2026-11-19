@@ -16,16 +16,20 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendMetaEvent } from "@/lib/meta/capi";
 import { readMetaClickContext } from "@/lib/meta/click-context";
 import { isMetaEventId } from "@/lib/meta/client";
+import { SIGNUP_SOURCE_PATH } from "@/lib/onboarding/signup-source";
+import { createPendingSignupSource, hasFreshPendingSignupSource } from "@/lib/onboarding/signup-source-store";
 
 export interface OnboardingState {
-  /** `done` → the form performs a full navigation to /lists (see onboarding-form.tsx). */
+  /** `done` → the form performs a full navigation to `next` (see onboarding-form.tsx). */
   status: "idle" | "error" | "done";
+  /** Where to go after `done`: the optional second step for a new owner, otherwise the app. */
+  next?: string;
   message?: string;
   /** Set when the error belongs to one field (shown inline instead of the banner). */
   field?: "phone";
 }
 
-const DONE: OnboardingState = { status: "done" };
+const DONE: OnboardingState = { status: "done", next: "/lists" };
 
 const SAVE_FAILED = "Something went wrong saving your details. Please try again.";
 
@@ -97,6 +101,10 @@ export async function completeOnboarding(_prev: OnboardingState, formData: FormD
 
   // Welcome email + Resend contact, once, after the workspace is named. Never blocks onboarding.
   if (!profile.onboarded_at) {
+    // Second step ("How did you first hear about Preb?"): new owners only. Written
+    // first, so a slow email or attribution call below can never leave an onboarded
+    // owner without the row. Best effort: without it the person goes straight to the app.
+    if (session?.role === "owner") await createPendingSignupSource(profile.id);
     const firstName = firstNameFor(fullName, profile.email);
     const welcome = async () => {
       try {
@@ -138,5 +146,10 @@ export async function completeOnboarding(_prev: OnboardingState, formData: FormD
   // target lives under the (app) layout. A server-action redirect across the
   // two groups left the client router re-fetching /lists in a loop on prod
   // (blank, flickering page); a full navigation starts from a clean tree.
+  //
+  // The destination is read from the row, not from "this call wrote it": a second
+  // submit (another tab) skips the block above, and /onboarding redirects by the
+  // same check, so the action and the page always agree.
+  if (session?.role === "owner" && (await hasFreshPendingSignupSource(profile.id))) return { status: "done", next: SIGNUP_SOURCE_PATH };
   return DONE;
 }
