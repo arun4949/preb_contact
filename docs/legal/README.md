@@ -8,7 +8,7 @@ Copy rules: no em dashes, en dashes or " - " as punctuation (AGENTS.md). The enr
 
 | Document | File | Status |
 |---|---|---|
-| Privacy Policy | `privacy-policy.md` | v1.7 (2026-11-19): optional question on how the Customer first heard about Preb, § 3.1 paragraph, § 4 purpose row, § 5 advertising category kept with the account, § 8 retention row. Re-paste `/privacy` in Framer. v1.6 (2026-11-17): § 4 data categories of the "Internal administration" row. v1.5 (2026-11-09): sign-in code and stored Meta click identifiers. v1.4 (2026-11-05): referral programme, § 3.1 paragraph, § 4 purpose row, § 5 cookie `preb_ref`, § 8 retention row, § 15 transactional mail. Re-paste `/privacy` in Framer |
+| Privacy Policy | `privacy-policy.md` | v1.8 (2026-11-19): Google Analytics 4 on preb.co and app.preb.co with consent, § 4 purpose row, § 5 paragraph (cookies `_ga`, `_ga_E4WLY812HF`, `preb_analytics_consent`, server-side checkout and first-payment events, ids stored at Stripe), § 6 recipient Google Ireland, § 8 retention 14 months. Re-paste `/privacy` in Framer. v1.7 (2026-11-19): optional question on how the Customer first heard about Preb, § 3.1 paragraph, § 4 purpose row, § 5 advertising category kept with the account, § 8 retention row. Re-paste `/privacy` in Framer. v1.6 (2026-11-17): § 4 data categories of the "Internal administration" row. v1.5 (2026-11-09): sign-in code and stored Meta click identifiers. v1.4 (2026-11-05): referral programme, § 3.1 paragraph, § 4 purpose row, § 5 cookie `preb_ref`, § 8 retention row, § 15 transactional mail. Re-paste `/privacy` in Framer |
 | Terms of Service (B2B only, incl. acceptable use, credits, refunds) | `terms-of-service.md` | v1.5 (2026-11-05): § 5 "Referral programme" paragraph, § 6.3 referral credit expiry, § 6.4 withdrawal. Re-paste `/terms` in Framer |
 | Data Processing Agreement (Art. 28 GDPR, SCCs by reference, CCPA service provider terms) | `dpa.md` | Draft v1.0, awaiting founder review |
 | Sub-processor List (names the enrichment provider and its sub-processors) | `sub-processors.md` | Draft v1.0, awaiting founder review |
@@ -36,7 +36,7 @@ Paste-ready HTML for the Framer Embeds (2026-10-13): `privacy-policy.html` (/pri
 
 - `[date of publication]` at the top of every text: set when the pages are built.
 - Confirm the DPF status of Supabase and Termly on dataprivacyframework.gov before publishing. Vercel, Resend, Stripe and Google are certified per their own pages.
-- Answered 2026-10-09: no analytics tools on the website; no Sentry (removed from all texts); DPA Annex 2 statements on 2FA and restore tests confirmed by the CTO. Superseded 2026-10-15 for marketing: the Meta Pixel and Conversions API are now used with consent (privacy policy v1.2).
+- Answered 2026-10-09: no analytics tools on the website; no Sentry (removed from all texts); DPA Annex 2 statements on 2FA and restore tests confirmed by the CTO. Superseded 2026-10-15 for marketing: the Meta Pixel and Conversions API are now used with consent (privacy policy v1.2). Superseded 2026-11-19 for analytics: Google Analytics 4 runs on both domains with consent (privacy policy v1.8).
 
 ## Code and process changes the policy depends on
 

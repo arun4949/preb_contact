@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { ADS_CONSENT_COOKIE, ADS_CONSENT_VALUE } from "@/lib/meta/consent";
+import { termlyCategoryAllowed } from "@/lib/termly/consent";
 import "@/lib/meta/client";
 
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
@@ -13,18 +14,6 @@ function setConsentCookie() {
 
 function clearConsentCookie() {
   document.cookie = `${ADS_CONSENT_COOKIE}=; path=/; max-age=0; SameSite=Lax; Secure`;
-}
-
-/** Termly reports consent either as a category → boolean map or as a list of accepted categories. */
-function advertisingAllowed(payload: unknown): boolean | null {
-  if (!payload || typeof payload !== "object") return null;
-  const state = payload as { categories?: unknown; advertising?: unknown };
-  const categories = state.categories ?? state;
-  if (Array.isArray(categories)) return categories.includes("advertising");
-  if (categories && typeof categories === "object" && "advertising" in categories) {
-    return Boolean((categories as { advertising?: unknown }).advertising);
-  }
-  return null;
 }
 
 /**
@@ -54,7 +43,7 @@ export function MetaPixel({ pixelId }: { pixelId: string | null }) {
   useEffect(() => {
     if (!pixelId) return;
     const apply = (payload: unknown) => {
-      const allowed = advertisingAllowed(payload);
+      const allowed = termlyCategoryAllowed(payload, "advertising");
       if (allowed === true) setConsentCookie();
       else if (allowed === false) clearConsentCookie();
     };

@@ -8,6 +8,7 @@ import { OnboardingSteps } from "@/components/application/auth/onboarding-steps"
 import { PhoneField } from "@/components/application/phone-field/phone-field";
 import { completeOnboarding, type OnboardingState } from "./actions";
 import { META_FLUSH_DELAY_MS, newMetaEventId, trackMetaEvent } from "@/lib/meta/client";
+import { trackGaEvent } from "@/lib/ga/client";
 
 export type OnboardingMode = "first_login" | "no_workspace";
 
@@ -48,6 +49,8 @@ export function OnboardingForm({ mode, defaultName, defaultWorkspace, defaultPho
     const next = await completeOnboarding(previous, formData);
     if (next.status === "done" && mode === "first_login" && !metaTracked.current) {
       metaTracked.current = trackMetaEvent("CompleteRegistration", {}, metaEventId);
+      // GA4 key event; gtag sends by beacon, so the navigation below cannot cancel it.
+      trackGaEvent("sign_up");
     }
     return next;
   };

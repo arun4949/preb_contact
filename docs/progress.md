@@ -2,6 +2,24 @@
 
 Update at the end of every session. Newest day on top. Legend: ✅ done · ⚠️ partial · ⬜ not started.
 
+## Google Analytics 4 on app.preb.co (website via Framer) — 2026-11-19 (complete, walked locally; needs M13 steps 2 to 6)
+
+### Why
+Framer analytics give too little data. One GA4 property and one web stream cover preb.co and app.preb.co, so a visitor keeps one client id (cookie on `.preb.co`) from the website into signup and payment.
+
+### Done
+- ✅ GA4 property and stream configured with the CTO in chat (see `setup_manual.md` M13). Framer uses its built-in GA field; Termly autoblock gates it.
+- ✅ App: `GoogleAnalytics` (`src/components/foundations/ga/google-analytics.tsx`) in the root layout, bootstrap `type="text/plain" data-categories="analytics"` like the Meta pixel. The bootstrap sets `preb_analytics_consent`; the Termly consent listener clears it on withdrawal, sets `ga-disable-<id>` and deletes the `_ga*` cookies (Termly leaves them). Shared `termlyCategoryAllowed` in `src/lib/termly/consent.ts`, also used by the Meta pixel now.
+- ✅ Page views on client-side navigation come from GA enhanced measurement (history events), no manual page_view (would double count).
+- ✅ Events: `sign_up` in the browser next to Meta CompleteRegistration (onboarding). `begin_checkout` and `purchase` server-side via Measurement Protocol (`src/lib/ga/measurement.ts`): the Stripe redirect drops gtag's pending batch (0 of 3 browser hits arrived in the walk), and only the webhook knows the payment. `startCheckout` reads `_ga` / `_ga_<id>` (only with the consent cookie) and stores `ga_client_id` / `ga_session_id` in the subscription metadata; `invoice.paid` with `subscription_create` sends `purchase` with `transaction_id` = invoice id (GA deduplicates).
+- ✅ Env: `NEXT_PUBLIC_GA_MEASUREMENT_ID`, `GA_API_SECRET` (empty until M13 step 2). Without them nothing renders or sends.
+- ✅ Legal: Privacy v1.8 (§ 4, § 5, § 6, § 8) markdown and HTML. Help center "Your data and your contacts' data" paragraph.
+
+### Verified
+- ✅ typecheck, eslint, unit tests for cookie parsing and the MP payloads; both payloads pass `debug/mp/collect` with no validation messages.
+- ✅ Playwright (own dev server, one temporary account deleted afterwards): no GA request and no `gtag` before consent; after Accept the tag loads and page_view arrives; Decline All in Preferences clears the consent flag and `_ga*` cookies and blocks later events; onboarding sends `sign_up`; in-app navigation sends page_view; `startCheckout` logged `ga.sent begin_checkout` (with a dummy secret, removed again).
+- ⬜ `purchase` end to end needs the real API secret and a paid test subscription; payload validated only.
+
 ## Second onboarding step "How did you first hear about Preb?" and acquisition sources page — 2026-11-19 (complete, walked locally)
 
 ### Why

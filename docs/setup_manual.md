@@ -147,3 +147,13 @@ Everything runs with defaults; these steps only tune or publish.
 - [x] 4. (done 2026-11-05, empty table rendered on production) After the deploy, open **Admin → Referrals** once as a founder (the walk could not sign in as an admin) and check the empty table renders; the first real reward shows there with its Stripe invoice link, and `/admin/ops` counts it.
 - [ ] 5. No Stripe change: the reward rides the existing `invoice.paid` subscription of the live Preb webhook.
 
+## M13 · Google Analytics 4 on preb.co and app.preb.co · 2026-11-19
+
+Property "Preb.co" (account Indiepal), one web stream "Preb Web" for both domains, measurement id `G-E4WLY812HF`. Stream settings done in chat on 2026-11-19: enhanced measurement incl. history-based page views, domains `preb.co` + `app.preb.co`, unwanted referrals `checkout.stripe.com` + `accounts.google.com`, URL parameter redaction `code`, `token`, `token_hash`, `email`, retention 14 months, Google signals and user-provided data off, personalised ads off, no data sharing.
+
+- [x] 1. **Framer** Site Settings → General → Google Analytics: `G-E4WLY812HF` (done 2026-11-19, Realtime checked). Termly autoblock keeps it off until analytics consent.
+- [ ] 2. **GA → Admin → Data streams → Preb Web → Measurement Protocol API secrets → Create** (nickname `preb-app-server`). Paste the value into `.env.local` as `GA_API_SECRET`.
+- [ ] 3. **Vercel → Settings → Environment Variables (Production)**: `NEXT_PUBLIC_GA_MEASUREMENT_ID=G-E4WLY812HF` and `GA_API_SECRET` (step 2). Not on Preview, so test deploys do not count. Redeploy.
+- [ ] 4. **GA → Admin → Events** (after the first real events arrived, up to 24 h): mark `sign_up` and `purchase` as **key events**.
+- [ ] 5. **Termly** cookie list: add `_ga` and `_ga_E4WLY812HF` (Analytics, 2 years, Google Analytics) and `preb_analytics_consent` (Analytics, 1 year, "remembers analytics consent for server-side events"), or run a new scan.
+- [ ] 6. **Framer**: re-paste `docs/legal/privacy-policy.html` (v1.8) on `/privacy`.

@@ -6,6 +6,7 @@ import type { Tables } from "@/lib/supabase/types";
 import { INVOICE_FOOTER, stripe } from "./client";
 import type { CataloguePlan } from "./catalogue";
 import { ADS_CONSENT_VALUE, META_CONSENT_METADATA_KEY } from "@/lib/meta/consent";
+import { gaTrackingMetadata, type GaBrowserContext } from "@/lib/ga/measurement";
 
 type Workspace = Tables<"workspaces">;
 
@@ -60,6 +61,7 @@ export async function createCheckoutSession(
   plan: CataloguePlan,
   urls: CheckoutUrls,
   tracking: CheckoutTracking | null = null,
+  ga: GaBrowserContext | null = null,
 ): Promise<Stripe.Checkout.Session> {
   return stripe().checkout.sessions.create({
     mode: "subscription",
@@ -71,7 +73,7 @@ export async function createCheckoutSession(
     tax_id_collection: { enabled: true },
     allow_promotion_codes: true,
     subscription_data: {
-      metadata: { workspace_id: workspace.id, plan_key: plan.key, app: "preb", ...trackingMetadata(tracking) },
+      metadata: { workspace_id: workspace.id, plan_key: plan.key, app: "preb", ...trackingMetadata(tracking), ...gaTrackingMetadata(ga) },
     },
     metadata: { workspace_id: workspace.id, plan_key: plan.key },
     success_url: urls.successUrl,

@@ -104,6 +104,7 @@ export function PlanPicker({ reason, onCancel }: PlanPickerProps) {
         return;
       }
       // Meta Ads: browser event now, server event from the action, same id (deduplicated).
+      // GA4 begin_checkout is sent by the action (the Stripe redirect would drop a browser hit).
       const metaEventId = newMetaEventId();
       trackMetaEvent("InitiateCheckout", { value: chosen.priceCents / 100, currency: "USD", content_name: chosen.key }, metaEventId);
       const res = await startCheckout(chosen.key, metaEventId);

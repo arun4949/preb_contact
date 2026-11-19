@@ -24,6 +24,7 @@ import { log, logError, type Admin } from "@/lib/jobs/shared";
 import { sendMetaEventDetached } from "@/lib/meta/capi";
 import { hasConsent, mergeClickContext, readMetaClickContext } from "@/lib/meta/click-context";
 import { isAdsConsentValue, META_CONSENT_METADATA_KEY } from "@/lib/meta/consent";
+import { gaContextFromMetadata, sendGaEvent } from "@/lib/ga/measurement";
 
 export const maxDuration = 60;
 
@@ -154,7 +155,18 @@ async function onInvoicePaid(admin: Admin, invoice: Stripe.Invoice) {
     roles: ["owner", "admin"],
     dedupeKey: `credits_granted:${invoice.id}`,
   });
-  if (invoice.billing_reason === "subscription_create") after(() => sendPurchaseEvent(admin, wsId, invoice, decision.plan.key));
+  if (invoice.billing_reason === "subscription_create") {
+    after(() => sendPurchaseEvent(admin, wsId, invoice, decision.plan.key));
+    // GA4 purchase via Measurement Protocol; the ids were stored at checkout with analytics consent.
+    after(() =>
+      sendGaEvent(gaContextFromMetadata(invoice.parent?.subscription_details?.metadata), "purchase", {
+        transactionId: invoice.id ?? `invoice:${wsId}`,
+        value: invoice.amount_paid / 100,
+        currency: invoice.currency,
+        planKey: decision.plan.key,
+      }),
+    );
+  }
 }
 
 /**

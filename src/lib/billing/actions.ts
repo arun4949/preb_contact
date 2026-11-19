@@ -13,6 +13,7 @@ import { overspendEligibility, paymentMethodSummary, retryOverspendPayment, type
 import { createAdminClient } from "@/lib/supabase/admin";
 import { readMetaRequestContext, sendMetaEvent } from "@/lib/meta/capi";
 import { isMetaEventId } from "@/lib/meta/client";
+import { readGaRequestContext, sendGaEvent } from "@/lib/ga/measurement";
 
 type Result<T = undefined> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -63,6 +64,7 @@ export async function startCheckout(planKey: string, metaEventId?: string): Prom
   const ws = session.workspace;
 
   let url: string | null = null;
+  let ga: Awaited<ReturnType<typeof readGaRequestContext>> = null;
   try {
     if (await activeSubscriptionId(ws)) {
       return { ok: false, error: "You already have a subscription. Use Switch plan instead." };
@@ -71,12 +73,15 @@ export async function startCheckout(planKey: string, metaEventId?: string): Prom
     // Meta Ads: the browser ids ride along in the subscription metadata so the
     // webhook can attribute the first payment; only with advertising consent.
     const meta = await readMetaRequestContext();
+    // GA4: client and session id for the server-side purchase, only with analytics consent.
+    ga = await readGaRequestContext();
     const checkout = await createCheckoutSession(
       ws,
       customerId,
       plan,
       { successUrl: `${BILLING_RETURN()}&checkout=success`, cancelUrl: `${BILLING_RETURN()}&checkout=cancelled` },
       meta.consent ? { fbp: meta.fbp, fbc: meta.fbc } : null,
+      ga,
     );
     url = checkout.url;
   } catch (error) {
@@ -84,6 +89,7 @@ export async function startCheckout(planKey: string, metaEventId?: string): Prom
     return { ok: false, error: "Could not start checkout. Please try again." };
   }
   if (!url) return { ok: false, error: "Could not start checkout. Please try again." };
+  after(() => sendGaEvent(ga, "begin_checkout", { value: plan.priceCents / 100, currency: "USD", planKey: plan.key }));
   if (isMetaEventId(metaEventId)) {
     after(() =>
       sendMetaEvent({
