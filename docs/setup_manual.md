@@ -152,8 +152,8 @@ Everything runs with defaults; these steps only tune or publish.
 Property "Preb.co" (account Indiepal), one web stream "Preb Web" for both domains, measurement id `G-E4WLY812HF`. Stream settings done in chat on 2026-11-19: enhanced measurement incl. history-based page views, domains `preb.co` + `app.preb.co`, unwanted referrals `checkout.stripe.com` + `accounts.google.com`, URL parameter redaction `code`, `token`, `token_hash`, `email`, retention 14 months, Google signals and user-provided data off, personalised ads off, no data sharing.
 
 - [x] 1. **Framer** Site Settings → General → Google Analytics: `G-E4WLY812HF` (done 2026-11-19, Realtime checked). Termly autoblock keeps it off until analytics consent.
-- [ ] 2. **GA → Admin → Data streams → Preb Web → Measurement Protocol API secrets → Create** (nickname `preb-app-server`). Paste the value into `.env.local` as `GA_API_SECRET`.
-- [ ] 3. **Vercel → Settings → Environment Variables (Production)**: `NEXT_PUBLIC_GA_MEASUREMENT_ID=G-E4WLY812HF` and `GA_API_SECRET` (step 2). Not on Preview, so test deploys do not count. Redeploy.
-- [ ] 4. **GA → Admin → Events** (after the first real events arrived, up to 24 h): mark `sign_up` and `purchase` as **key events**.
-- [ ] 5. **Termly** cookie list: add `_ga` and `_ga_E4WLY812HF` (Analytics, 2 years, Google Analytics) and `preb_analytics_consent` (Analytics, 1 year, "remembers analytics consent for server-side events"), or run a new scan.
-- [ ] 6. **Framer**: re-paste `docs/legal/privacy-policy.html` (v1.8) on `/privacy`.
+- [x] 2. (done 2026-11-19, secret verified with a test event) **GA → Admin → Data streams → Preb Web → Measurement Protocol API secrets → Create** (nickname `preb-app-server`). Paste the value into `.env.local` as `GA_API_SECRET`.
+- [x] 3. (done 2026-11-19, deployed) **Vercel → Settings → Environment Variables (Production)**: `NEXT_PUBLIC_GA_MEASUREMENT_ID=G-E4WLY812HF` and `GA_API_SECRET` (step 2). Not on Preview, so test deploys do not count. Redeploy.
+- [x] 4. (done 2026-11-20) **GA → Admin → Events** (after the first real events arrived, up to 24 h): mark `sign_up` as **key event**. `purchase` is a key event by default (locked); the goal defaults `close_convert_lead` and `qualify_lead` were unmarked on 2026-11-19.
+- [x] 5. (left to Termly's automatic scan, CTO decision 2026-11-20) **Termly** cookie list: add `_ga` and `_ga_E4WLY812HF` (Analytics, 2 years, Google Analytics) and `preb_analytics_consent` (Analytics, 1 year, "remembers analytics consent for server-side events"), or run a new scan.
+- [x] 6. (done 2026-11-19) **Framer**: re-paste `docs/legal/privacy-policy.html` (v1.8) on `/privacy`.
