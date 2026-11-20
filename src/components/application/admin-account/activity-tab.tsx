@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from 
 import type { AccountDetail } from "@/lib/admin/accounts";
 import { META_ATTRIBUTION_META } from "@/lib/admin/attribution";
 import { day, n, plural, when } from "@/lib/admin/format";
+import { SIGNUP_ATS_STATUS_META, signupAtsLabel } from "@/lib/admin/signup-ats-meta";
 import { SIGNUP_SOURCE_NOT_ASKED, SIGNUP_SOURCE_STATUS_META, signupSourceLabel } from "@/lib/admin/signup-source-meta";
 import { cx } from "@/utils/cx";
 import { Block, Card, Field, Fields, Muted, Nothing, PartError, humanize } from "./parts";
@@ -25,7 +26,7 @@ const REFERRAL_CHIP: Record<string, { label: string; color: "yellow" | "lime" | 
 
 /** Where the account came from and what it did besides enriching: ads, referrals, AI assistants, emails, colleagues. */
 export function ActivityTab({ detail }: { detail: AccountDetail }) {
-  const { meta, signupSource, referredBy, leadShare, referralCode, mcp, emails, sameDomain } = detail;
+  const { meta, signupSource, signupAts, referredBy, leadShare, referralCode, mcp, emails, sameDomain } = detail;
 
   return (
     <>
@@ -56,6 +57,35 @@ export function ActivityTab({ detail }: { detail: AccountDetail }) {
                 <Muted>{SIGNUP_SOURCE_STATUS_META[signupSource.data.status].label}</Muted>
                 <span className="text-body-2-regular text-text-secondary">
                   {SIGNUP_SOURCE_STATUS_META[signupSource.data.status].description} Asked {when(signupSource.data.askedAt)}.
+                </span>
+              </span>
+            )}
+          </Field>
+          <Field label="ATS">
+            {signupAts.error !== null ? (
+              <span className="text-text-error-primary">Could not be loaded: {signupAts.error}</span>
+            ) : !signupAts.data ? (
+              <span className="flex flex-col gap-1">
+                <Muted>{SIGNUP_SOURCE_NOT_ASKED}</Muted>
+                <span className="text-body-2-regular text-text-secondary">Only new workspace owners are asked which ATS they use, since November 20, 2026.</span>
+              </span>
+            ) : signupAts.data.status === "answered" && signupAts.data.ats ? (
+              <span className="flex flex-col gap-1">
+                <span className="flex flex-wrap items-center gap-2">
+                  <Chip variant="caption" color="blue">
+                    {signupAtsLabel(signupAts.data.ats)}
+                  </Chip>
+                  {signupAts.data.detail ? <bdi>{signupAts.data.detail}</bdi> : null}
+                </span>
+                <span className="text-body-2-regular text-text-secondary">
+                  Answered {when(signupAts.data.respondedAt ?? signupAts.data.askedAt)} in the third onboarding step.
+                </span>
+              </span>
+            ) : (
+              <span className="flex flex-col gap-1">
+                <Muted>{SIGNUP_ATS_STATUS_META[signupAts.data.status].label}</Muted>
+                <span className="text-body-2-regular text-text-secondary">
+                  {SIGNUP_ATS_STATUS_META[signupAts.data.status].description} Asked {when(signupAts.data.askedAt)}.
                 </span>
               </span>
             )}

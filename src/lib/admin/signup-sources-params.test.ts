@@ -3,15 +3,15 @@ import { parseSourcesParams, periodSince } from "./signup-sources-params";
 
 describe("parseSourcesParams", () => {
   it("falls back to the defaults", () => {
-    expect(parseSourcesParams({})).toEqual({ period: "90d", team: "exclude", page: 1 });
+    expect(parseSourcesParams({})).toEqual({ view: "sources", period: "90d", team: "exclude", page: 1 });
   });
 
   it("accepts known values", () => {
-    expect(parseSourcesParams({ period: "all", team: "include", page: "3" })).toEqual({ period: "all", team: "include", page: 3 });
+    expect(parseSourcesParams({ view: "ats", period: "all", team: "include", page: "3" })).toEqual({ view: "ats", period: "all", team: "include", page: 3 });
   });
 
   it("ignores hostile values and repeated keys", () => {
-    expect(parseSourcesParams({ period: "1 year; drop", team: ["include", "x"], page: "-2" })).toEqual({ period: "90d", team: "include", page: 1 });
+    expect(parseSourcesParams({ view: "ATS", period: "1 year; drop", team: ["include", "x"], page: "-2" })).toEqual({ view: "sources", period: "90d", team: "include", page: 1 });
     expect(parseSourcesParams({ page: "1e9" }).page).toBe(1);
     expect(parseSourcesParams({ page: "0" }).page).toBe(1);
   });

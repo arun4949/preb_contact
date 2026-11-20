@@ -1429,6 +1429,41 @@ export type Database = {
           },
         ]
       }
+      signup_ats: {
+        Row: {
+          asked_at: string
+          ats: string | null
+          detail: string | null
+          responded_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          asked_at?: string
+          ats?: string | null
+          detail?: string | null
+          responded_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          asked_at?: string
+          ats?: string | null
+          detail?: string | null
+          responded_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signup_ats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       signup_sources: {
         Row: {
           asked_at: string
@@ -1687,6 +1722,26 @@ export type Database = {
           user_id: string
           workspace_id: string
           workspace_kind: string
+          workspace_name: string
+        }[]
+      }
+      admin_signup_ats: {
+        Args: { p_since?: string; p_until?: string }
+        Returns: {
+          asked_at: string
+          ats: string
+          credits_spent: number
+          detail: string
+          email: string
+          full_name: string
+          owns_internal: boolean
+          plan_key: string
+          responded_at: string
+          status: string
+          subscription_status: string
+          trial_granted_at: string
+          user_id: string
+          workspace_id: string
           workspace_name: string
         }[]
       }

@@ -10,11 +10,13 @@ export interface StepperProps {
   steps: StepperStep[];
   /** Index of the current step. Steps before it are done. */
   current: number;
+  /** `current` shows only the active step's label, for narrow cards with more than two steps. The other labels stay available to screen readers. */
+  labels?: "all" | "current";
   className?: string;
 }
 
 /** Wizard steps (Upload · Map · Configure) with done / current / upcoming states. */
-export function Stepper({ steps, current, className }: StepperProps) {
+export function Stepper({ steps, current, labels = "all", className }: StepperProps) {
   return (
     <ol className={cx("flex items-center gap-2", className)} aria-label="Progress">
       {steps.map((step, index) => {
@@ -37,7 +39,7 @@ export function Stepper({ steps, current, className }: StepperProps) {
                 className={cx(
                   "text-body-medium",
                   active ? "text-text-primary" : done ? "text-text-secondary" : "text-text-tertiary",
-                  "hidden sm:inline",
+                  labels === "current" ? (active ? "max-sm:sr-only" : "sr-only") : "hidden sm:inline",
                 )}
               >
                 {step.label}

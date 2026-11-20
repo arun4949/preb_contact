@@ -8,7 +8,7 @@ describe("isPublic", () => {
     }
   });
   it("keeps the app private, including the root", () => {
-    for (const p of ["/", "/lists", "/lists/new", "/enrich", "/onboarding", "/onboarding/source", "/admin/sources", "/admin/ops", "/api/lists", "/pricing", "/docsx", "/documents", "/loginx", "/opt-outx", "/opt-outs", "/l", "/lx", "/leads", "/r", "/rx", "/referrals", "/api/leads", "/mcpx", "/oauth/consent", "/integrations"]) {
+    for (const p of ["/", "/lists", "/lists/new", "/enrich", "/onboarding", "/onboarding/source", "/onboarding/ats", "/admin/sources", "/admin/insights", "/admin/ops", "/api/lists", "/pricing", "/docsx", "/documents", "/loginx", "/opt-outx", "/opt-outs", "/l", "/lx", "/leads", "/r", "/rx", "/referrals", "/api/leads", "/mcpx", "/oauth/consent", "/integrations"]) {
       expect(isPublic(p), p).toBe(false);
     }
   });

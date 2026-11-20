@@ -20,6 +20,34 @@ Framer analytics give too little data. One GA4 property and one web stream cover
 - ✅ Playwright (own dev server, one temporary account deleted afterwards): no GA request and no `gtag` before consent; after Accept the tag loads and page_view arrives; Decline All in Preferences clears the consent flag and `_ga*` cookies and blocks later events; onboarding sends `sign_up`; in-app navigation sends page_view; `startCheckout` logged `ga.sent begin_checkout` (with a dummy secret, removed again).
 - ⬜ `purchase` end to end needs the real API secret and a paid test subscription; payload validated only.
 
+## Third onboarding step "Which ATS do you use?" and admin Insights page — 2026-11-20 (complete, walked locally)
+
+### Why
+To learn more about our audience we ask new workspace owners which ATS they use. The answers show which recruiting software our customers work with.
+
+### Decisions (CTO, 2026-11-20)
+- An own third step, not a second field on the source screen. The workspace exists and the signup events fired at the end of step 1, so the extra step can cost answers but no signups.
+- Wording "Which ATS do you use?", a dropdown in a fixed order: Bullhorn, Crelate, Loxo, JobDiva, Ceipal, Recruit CRM, Greenhouse, Ashby, No ATS (spreadsheet or CRM), Other. Other offers an optional free text line.
+- Optional, asked once, new workspace owners only, same 24 hour window as the source question. Existing accounts and invited teammates are never asked ("Not asked" in admin).
+- No further admin page: `/admin/sources` became `/admin/insights` ("Insights") with one view per question. The old URL redirects.
+
+### Done
+- ✅ Migration 0036 (additive, applied): table `signup_ats` (service role only, cascade on account deletion, option list not a check constraint) and `admin_signup_ats(p_since, p_until)` (service role only). `signup_sources` and `admin_signup_sources` are untouched. `types.ts` extended in the generator's format.
+- ✅ Step chain in one place: `src/lib/onboarding/steps.ts` (pure) and `steps-store.ts`. `/onboarding`, the step 1 action, `/onboarding/source` and its action all ask it where to go. Step 1 is otherwise unchanged; it writes the second pending row next to the first.
+- ✅ `/onboarding/ats`: `select`, free text for Other, Continue and Skip for now, hard navigation to `/lists`. Nothing in the app gates on the row.
+- ✅ Stepper: three steps. `Stepper` gained `labels="current"` (only the active label is visible, the others stay for screen readers) so three steps fit the 440 px card. The list wizard keeps the default.
+- ✅ `Select` gained two opt-in props, `listClassName` and `scrollFade` (top-edge fade of the option list once scrolled). Other selects are unchanged.
+- ✅ `/admin/insights`: shell with the view switch and the shared filters, the Sources view as before, the new ATS view (tiles, ATS mix, answer quality, value by ATS, by month, responses). `/admin/sources` is a redirect stub that keeps the query. Account menu entry **Insights**.
+- ✅ Account page, tab Acquisition and activity: **ATS** field with the four states.
+- ✅ CTO review on the local server: the source question uses the same dropdown as the ATS step instead of chips (CTO decision 2026-11-20, reverses the chips decision of 2026-11-19). The per-person shuffle, Other and Not sure last, the detail line and the stored position stay unchanged. Walked in light, dark, 375 px and by keyboard (type-ahead); stored position equals the position shown.
+- ✅ Docs: help center articles "Your first workspace" and "Your data and your contacts' data"; `screens.md` § 4, § 7, § 16, § 17. Legal: Privacy v1.9 (§ 3.1, § 4, § 8) in markdown and HTML.
+
+### Verified
+- ✅ typecheck, eslint (the 2 known TanStack warnings), 321 tests (21 new: options, validation, step chain, labels, URL view, aggregation). Embed guard green. Production build green.
+- ✅ SQL through MCP: `anon` and `authenticated` cannot execute the function, RLS on with no policies, security advisors show nothing new beyond the expected "RLS enabled, no policy" note.
+- ✅ Playwright walk (own dev server on :3100 with email, Meta and Google Analytics switched off and one allow-listed test admin; five temporary accounts, all deleted afterwards with their empty workspaces): answer both steps with Other plus free text, skip both, answer one and leave (no trap, stays "No response", `/onboarding` returns to the open step), back button, second visit goes to the app, keyboard only with type-ahead, 375 px, light and dark; the list opens below the field and fades at the top once scrolled; `/admin/insights` both views with filters, view switch, row link, empty state and the `/admin/sources` redirect; the account field in all states; every other `/admin` and app page renders without console errors.
+- ⬜ For the CTO: commit and deploy, and re-paste `/privacy` in Framer from `docs/legal/privacy-policy.html` (v1.9).
+
 ## Second onboarding step "How did you first hear about Preb?" and acquisition sources page — 2026-11-19 (complete, walked locally)
 
 ### Why

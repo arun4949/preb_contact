@@ -9,7 +9,7 @@ import { signupSourceStatus } from "./signup-source-meta";
 import type { SourceRow } from "./signup-sources-stats";
 
 /**
- * Data for /admin/sources: everyone who was asked "How did you first hear
+ * Data for the Sources view of /admin/insights: everyone who was asked "How did you first hear
  * about Preb?" in the period, one row each (`admin_signup_sources`, migration
  * 0035). Service-role read across all accounts, so the loader checks the
  * allowlist itself on top of the page guard. A failed query is returned as an

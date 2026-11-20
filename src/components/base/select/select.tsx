@@ -54,6 +54,13 @@ export interface SelectProps<T extends object>
   triggerClassName?: string;
   /** Classes for the open popover (e.g. constrain its width). */
   popoverClassName?: string;
+  /** Classes for the option list, for example another `max-h-*` than the default 240px. */
+  listClassName?: string;
+  /**
+   * Softens the top edge of the option list once it is scrolled (the app's rule
+   * for internal scroll regions). Opt in for lists that are longer than their cap.
+   */
+  scrollFade?: boolean;
   /** `md` (default) or `sm` for compact/dense contexts (e.g. compact tables). */
   size?: SelectSize;
   children: ReactNode;
@@ -68,6 +75,8 @@ export function Select<T extends object>({
   className,
   triggerClassName,
   popoverClassName,
+  listClassName,
+  scrollFade = false,
   size = "md",
   children,
   items,
@@ -86,6 +95,8 @@ export function Select<T extends object>({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLElement>(null);
   const [isOpen, setIsOpen] = useState(false);
+  // 0 at the top of the list, 1 after the first 24px of scrolling.
+  const [fade, setFade] = useState(0);
   useDismissOnOutsidePress(isOpen, () => setIsOpen(false), [triggerRef, popoverRef]);
   // Pressing the trigger while open closes the popover instead of reopening
   const allowOpenChange = useTriggerToggle(isOpen, triggerRef);
@@ -95,7 +106,12 @@ export function Select<T extends object>({
       ref={ref}
       {...props}
       isOpen={isOpen}
-      onOpenChange={(o) => allowOpenChange(o) && setIsOpen(o)}
+      onOpenChange={(o) => {
+        if (!allowOpenChange(o)) return;
+        // The list mounts again at the top (or at the selected option, which fires its own scroll event).
+        if (o) setFade(0);
+        setIsOpen(o);
+      }}
       className={cx("group flex flex-col", className)}
     >
       {({ isOpen }) => (
@@ -145,12 +161,23 @@ export function Select<T extends object>({
               popoverClassName,
             )}
           >
-            <AriaListBox
-              items={items}
-              className={cx(MENU_ITEMS_CONTAINER, "max-h-[240px] overflow-auto")}
-            >
-              <SelectSizeContext.Provider value={size}>{children}</SelectSizeContext.Provider>
-            </AriaListBox>
+            <div className="relative">
+              <AriaListBox
+                items={items}
+                onScroll={scrollFade ? (event) => setFade(Math.min(1, event.currentTarget.scrollTop / 24)) : undefined}
+                className={cx(MENU_ITEMS_CONTAINER, "max-h-[240px] overflow-auto", listClassName)}
+              >
+                <SelectSizeContext.Provider value={size}>{children}</SelectSizeContext.Provider>
+              </AriaListBox>
+              {scrollFade ? (
+                // Stationary overlay, same recipe as ScrollFade: opacity on each layer, never on the parent.
+                <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-10 h-6">
+                  <div style={{ opacity: fade }} className="absolute inset-x-0 top-0 h-6 backdrop-blur-[1px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
+                  <div style={{ opacity: fade }} className="absolute inset-x-0 top-0 h-4 backdrop-blur-[4px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
+                  <div style={{ opacity: fade }} className="absolute inset-x-0 top-0 h-6 bg-gradient-to-b from-background-primary-default to-transparent" />
+                </div>
+              ) : null}
+            </div>
           </AriaPopover>
         </>
       )}

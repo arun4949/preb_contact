@@ -2,13 +2,12 @@
 
 import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import type { Selection } from "react-aria-components";
 import { OnboardingSteps } from "@/components/application/auth/onboarding-steps";
 import { Banner } from "@/components/base/banner/banner";
 import { Button } from "@/components/base/buttons/button";
 import { LinkButton } from "@/components/base/buttons/link-button";
 import { Input } from "@/components/base/input/input";
-import { Tag, TagGroup } from "@/components/base/tag-group/tag-group";
+import { Select, SelectItem } from "@/components/base/select/select";
 import { SIGNUP_SOURCE_DETAIL_MAX, signupSourceOption } from "@/lib/onboarding/signup-source";
 import { submitSignupSource, type SignupSourceState } from "./actions";
 
@@ -32,19 +31,15 @@ export function SourceForm({ order }: SourceFormProps) {
   const navigated = useRef(false);
 
   // Full navigation (not router.push): the app shell is a different layout
-  // group and must render from a fresh tree, as after the first step.
+  // group and must render from a fresh tree, as after the first step. The
+  // target is the ATS question when it is still open, else the app.
   useEffect(() => {
     if (!done || navigated.current) return;
     navigated.current = true;
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- intentional hard navigation, see ../actions.ts
-    window.location.assign("/lists");
-  }, [done]);
+    window.location.assign(state.next ?? "/lists");
+  }, [done, state.next]);
 
   const option = signupSourceOption(selected);
-  const onSelectionChange = (keys: Selection) => {
-    const [key] = keys === "all" ? [] : [...keys];
-    setSelected(key === undefined ? null : String(key));
-  };
 
   return (
     <div className="flex w-full max-w-[440px] flex-col rounded-3xl border border-border-button-default bg-background-primary-default p-6 shadow-xs sm:p-8">
@@ -64,20 +59,31 @@ export function SourceForm({ order }: SourceFormProps) {
 
       <form action={action} className="mt-6 flex flex-col">
         <input type="hidden" name="source" value={selected ?? ""} />
-        <TagGroup
+        {/* Same dropdown as the ATS step. The options keep the per-person shuffled order (Other and Not sure last). */}
+        <Select
           aria-labelledby={titleId}
-          selectionMode="single"
-          selectedKeys={selected ? [selected] : []}
-          onSelectionChange={onSelectionChange}
-          className="w-full [&>div]:gap-2"
+          placeholder="Select an option"
+          selectedKey={selected}
+          onSelectionChange={(key) => setSelected(key === null ? null : String(key))}
+          isDisabled={busy}
+          className="w-full"
+          // The placeholder reads as a prompt, not as a chosen value.
+          triggerClassName="w-full [&>[data-placeholder]]:text-text-placeholder"
+          popoverClassName="w-[var(--trigger-width)]"
+          // Six and a half rows: the list opens below the field on a laptop screen instead of
+          // flipping over the question, and the cut row shows that there is more to scroll.
+          listClassName="max-h-[258px]"
+          scrollFade
         >
-          {/* "gray" is the secondary surface: it stands out from the card in light and dark, the neutral pair equals the card in dark mode. */}
-          {order.map((key) => (
-            <Tag key={key} id={key} color="gray" className="h-9 px-3">
-              {signupSourceOption(key)?.label ?? key}
-            </Tag>
-          ))}
-        </TagGroup>
+          {order.map((key) => {
+            const label = signupSourceOption(key)?.label ?? key;
+            return (
+              <SelectItem key={key} id={key} textValue={label}>
+                {label}
+              </SelectItem>
+            );
+          })}
+        </Select>
 
         <AnimatePresence initial={false} mode="wait">
           {option?.detailLabel ? (

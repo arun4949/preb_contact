@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Last updated:** [date of publication]
-**Version:** 1.8 (2026-11-19: Sections 4, 5, 6 and 8, Google Analytics on preb.co and app.preb.co)
+**Version:** 1.9 (2026-11-20: Sections 3.1, 4 and 8, optional question on the applicant tracking system)
 
 Preb is a contact data enrichment service for recruiting teams. This Privacy Policy explains how Kranz & Gupta, Indiepal GbR ("Preb", "we", "us") collects, uses, shares and protects personal data when you visit preb.co, create an account, use the Preb application, receive our emails or contact our support.
 
@@ -53,6 +53,8 @@ We collect only what we need to run the service. The data falls into the followi
 When you sign up we collect your email address, your full name, the name of your workspace and the role you hold in it (owner, admin or member). You can also give us a phone number during onboarding or later in your profile settings. It is optional, it is never shown to your teammates, and you can change or remove it at any time. We use it to help you set up your trial and to reach you about support requests you raise or urgent issues with your account. If you sign in with Google, we also receive your Google profile picture and your Google account identifier. We record when you created your account, when you completed onboarding and when you were invited to a workspace.
 
 After you create your first workspace we ask you once how you first heard about Preb. Answering is optional and you can skip the question. If you answer, we store the option you chose and any detail you add, for example the name of the person who recommended us. Your answer is never shown to your teammates. With it we store whether you answered or skipped the question, the order in which the options were shown to you and the advertising category described in Section 5.
+
+On the next screen we ask you once which applicant tracking system (ATS) you use. Answering is optional and you can skip the question. If you answer, we store the system you chose, or that you work without one, and the name you type in if yours is not on the list. Your answer is never shown to your teammates. With it we store whether you answered or skipped the question.
 
 Preb is a business tool. During sign-up we check the domain of your email address and do not accept addresses from free webmail providers or disposable email services, unless you were invited by an existing workspace. Invitations contain the invitee's email address and the role assigned by the inviter.
 
@@ -118,6 +120,7 @@ The GDPR requires us to name a legal basis for every purpose. The table below ap
 | Calling a new Customer once to help them get started with their trial | Phone number, name, workspace | Our legitimate interest in helping business customers succeed with the product they signed up for (Art. 6 (1) (f) GDPR) and the presumed consent of a business that gave us its number for this purpose (§ 7 (2) no. 1 UWG). You can opt out at any time in your profile settings, see Section 15 |
 | Running the referral programme: recording that an account was created through an invite link, checking the conditions, granting and where necessary withdrawing the reward, preventing abuse | Invite code, time of sign-up, hashed email address of the referred person, the referred workspace's first payment, the inviting workspace | Performance of our contract with both Customers (Art. 6 (1) (b) GDPR) and our legitimate interest in running the programme fairly and preventing abuse (Art. 6 (1) (f) GDPR) |
 | Understanding how Customers find us: asking new Customers once how they first heard about Preb and comparing the answers with our advertising, referral and sample list records | Your answer and any detail you add, whether you answered or skipped, the advertising category (Section 5), referral and sample list records | Our legitimate interest in knowing which channels bring Customers to Preb and in spending our marketing budget sensibly (Art. 6 (1) (f) GDPR). Answering is voluntary |
+| Understanding which tools Customers work with: asking new Customers once which applicant tracking system they use | Your answer and the name you type in, whether you answered or skipped | Our legitimate interest in knowing which recruiting software our Customers use, so that we can develop Preb and its integrations for them (Art. 6 (1) (f) GDPR). Answering is voluntary |
 | Keeping the service secure: preventing fraud, account takeover, trial abuse and automated attacks, rate limiting, blocking free webmail domains | Sign-in, session, usage and log data | Our legitimate interest in protecting the service and our Customers (Art. 6 (1) (f) GDPR) |
 | Finding and fixing errors, monitoring availability and performance | Usage and log data | Our legitimate interest in running a reliable service (Art. 6 (1) (f) GDPR) |
 | Answering support requests and collecting product feedback | Support and feedback data | Performance of our contract (Art. 6 (1) (b) GDPR) and our legitimate interest in improving Preb (Art. 6 (1) (f) GDPR) |
@@ -226,7 +229,7 @@ We keep personal data only as long as we need it for the purposes above or as th
 | In-app notifications | 90 days |
 | Google Analytics data (Section 5) | 14 months, then deleted automatically by Google. The Google Analytics cookies expire after 2 years or when you withdraw your consent. The browser and visit identifiers stored with a subscription at Stripe are kept with the billing records |
 | Meta click and browser identifiers stored with your account for advertising measurement (Section 5) | 90 days after your account was created, or deleted at once with the account |
-| Your answer to how you first heard about Preb and the advertising category kept with it (Sections 3.1 and 5) | For as long as your account exists. Deleted with the account |
+| Your answers to how you first heard about Preb and which applicant tracking system you use, and the advertising category kept with the first answer (Sections 3.1 and 5) | For as long as your account exists. Deleted with the account |
 | Email send log | 12 months, or deleted at once with the account |
 | Hashed email address and Google account identifier of a deleted account, used only to prevent repeated free trials | 12 months after deletion |
 | Referral records (invite code, time of sign-up, status, hashed email address of the referred person) | For the life of the inviting workspace. The hashed email address of a referred person is kept so that no second reward is paid for the same person |

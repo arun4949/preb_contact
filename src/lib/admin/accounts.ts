@@ -289,6 +289,8 @@ export interface AccountDetail {
   meta: Part<{ attribution: MetaAttribution; source: string | null; capturedAt: string | null }>;
   /** The answer to "How did you first hear about Preb?"; null when this account was never asked. */
   signupSource: Part<{ status: SignupSourceStatus; source: string | null; detail: string | null; askedAt: string; respondedAt: string | null } | null>;
+  /** The answer to "Which ATS do you use?"; null when this account was never asked. */
+  signupAts: Part<{ status: SignupSourceStatus; ats: string | null; detail: string | null; askedAt: string; respondedAt: string | null } | null>;
   referredBy: Part<{ workspaceId: string | null; workspaceName: string; status: string; source: string; rejectedReason: string | null; signedUpAt: string } | null>;
   referralCode: Part<{ code: string; clicks: number; revoked: boolean; signups: number; rewarded: number; rewardCredits: number } | null>;
   leadShare: Part<{ listId: string; signedUpAt: string | null } | null>;
@@ -603,6 +605,7 @@ export async function getAccountDetail(userId: string, params: AccountDetailPara
     admin.from("email_sends").select("id, kind, sent_at").eq("email", p.email).order("sent_at", { ascending: false }).limit(30),
     loadSameDomain(admin, userId, p.email),
     admin.from("signup_sources").select("status, source, detail, asked_at, responded_at").eq("user_id", userId).maybeSingle(),
+    admin.from("signup_ats").select("status, ats, detail, asked_at, responded_at").eq("user_id", userId).maybeSingle(),
   ]);
 
   const workspaceParts = workspace
@@ -622,7 +625,7 @@ export async function getAccountDetail(userId: string, params: AccountDetailPara
       ])
     : null;
 
-  const [[meta, referredBy, leadShare, mcp, emails, sameDomain, signupSource], ws] = await Promise.all([personParts, workspaceParts]);
+  const [[meta, referredBy, leadShare, mcp, emails, sameDomain, signupSource, signupAts], ws] = await Promise.all([personParts, workspaceParts]);
 
   const scoped = ws
     ? {
@@ -664,6 +667,19 @@ export async function getAccountDetail(userId: string, params: AccountDetailPara
                 detail: signupSource.data.detail,
                 askedAt: signupSource.data.asked_at,
                 respondedAt: signupSource.data.responded_at,
+              }
+            : null,
+        ),
+    signupAts: signupAts.error
+      ? fail(signupAts.error)
+      : ok(
+          signupAts.data
+            ? {
+                status: signupSourceStatus(signupAts.data.status),
+                ats: signupAts.data.ats,
+                detail: signupAts.data.detail,
+                askedAt: signupAts.data.asked_at,
+                respondedAt: signupAts.data.responded_at,
               }
             : null,
         ),

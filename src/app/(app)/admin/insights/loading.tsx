@@ -1,11 +1,12 @@
 import { Skeleton, SkeletonRows } from "@/components/base/skeleton/skeleton";
 
-export default function AdminSourcesLoading() {
+export default function AdminInsightsLoading() {
   return (
-    <div className="flex flex-col gap-8" aria-busy aria-label="Loading acquisition sources">
+    <div className="flex flex-col gap-8" aria-busy aria-label="Loading insights">
       <div className="flex flex-col gap-2">
         <Skeleton className="h-8 w-56" />
         <Skeleton className="h-4 w-full max-w-[560px]" />
+        <Skeleton className="mt-2 h-9 w-full max-w-[160px] rounded-2lg" />
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <Skeleton className="h-9 w-full max-w-[340px] rounded-2lg" />

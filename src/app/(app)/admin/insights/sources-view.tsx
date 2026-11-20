@@ -4,14 +4,13 @@ import Link from "next/link";
 import { RiCompass3Line } from "@remixicon/react";
 import { Block, Card, Field, Fields, Muted, StatTile } from "@/components/application/admin-account/parts";
 import { RowLinks } from "@/components/application/admin-account/row-links";
-import { UrlPagination, UrlSegmented } from "@/components/application/admin-account/url-controls";
+import { UrlPagination } from "@/components/application/admin-account/url-controls";
 import { BarListCard } from "@/components/application/charts/bar-list-card";
 import { Chip } from "@/components/base/badges/chip";
 import { Banner } from "@/components/base/banner/banner";
 import { EmptyState } from "@/components/base/empty-state/empty-state";
 import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@/components/base/table/table";
-import { n, percent, plural } from "@/lib/admin/format";
-import type { SourcesParams } from "@/lib/admin/signup-sources-params";
+import { n, percent } from "@/lib/admin/format";
 import type { SourceStats, TrackedCounts } from "@/lib/admin/signup-sources-stats";
 
 export interface ResponseDisplayRow {
@@ -35,29 +34,15 @@ export interface MonthDisplayRow {
   topSource: string | null;
 }
 
-export interface SourcesAdminProps {
-  params: SourcesParams;
+export interface SourcesViewProps {
   error: string | null;
   stats: SourceStats;
   months: MonthDisplayRow[];
-  /** Team accounts in the period, whether shown or not. */
-  teamCount: number;
   responses: ResponseDisplayRow[];
   range: string;
   page: number;
   totalPages: number;
 }
-
-const PERIODS = [
-  { id: "30d", label: "Last 30 days" },
-  { id: "90d", label: "Last 90 days" },
-  { id: "all", label: "All time" },
-];
-
-const TEAM = [
-  { id: "exclude", label: "Customers only" },
-  { id: "include", label: "With team accounts" },
-];
 
 const linkClass = "rounded-sm underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-border-focus-ring";
 
@@ -79,35 +64,14 @@ function TrackedRow({ id, label, counts, muted }: { id: string; label: string; c
   );
 }
 
-/** /admin/sources: response rate, channel mix, value and tracked comparison per source, every response. State lives in the URL. */
-export function SourcesAdmin({ params, error, stats, months, teamCount, responses, range, page, totalPages }: SourcesAdminProps) {
+/** Sources view of /admin/insights: response rate, channel mix, value and tracked comparison per source, every response. */
+export function SourcesView({ error, stats, months, responses, range, page, totalPages }: SourcesViewProps) {
   const top = stats.bySource[0] ?? null;
   const { quality } = stats;
   const otherInTopThree = stats.bySource.slice(0, 3).some((source) => source.key === "other");
 
   return (
-    <div className="flex flex-col gap-8 animate-page-enter">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-title-2-medium text-text-primary">Acquisition sources</h1>
-        <p className="text-body-regular text-text-secondary">
-          What new workspace owners answer when we ask how they first heard about Preb, next to what we tracked ourselves. Only owners who signed up since the question exists are asked.
-        </p>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="max-w-full overflow-x-auto">
-          <UrlSegmented aria-label="Period" param="period" value={params.period} defaultValue="90d" options={PERIODS} reset={["page"]} />
-        </div>
-        <div className="max-w-full overflow-x-auto">
-          <UrlSegmented aria-label="Team accounts" param="team" value={params.team} defaultValue="exclude" options={TEAM} reset={["page"]} />
-        </div>
-        {teamCount > 0 ? (
-          <span className="text-body-2-regular text-text-tertiary">
-            {plural(teamCount, "team account", "team accounts")} {params.team === "include" ? "included" : "hidden"}
-          </span>
-        ) : null}
-      </div>
-
+    <>
       {error ? (
         <Banner tone="error" title="Acquisition sources could not be loaded">
           {error}
@@ -308,6 +272,6 @@ export function SourcesAdmin({ params, error, stats, months, teamCount, response
           </Block>
         </>
       )}
-    </div>
+    </>
   );
 }

@@ -2,7 +2,7 @@ import type { MetaAttribution } from "./attribution";
 import { signupSourceLabel, type SignupSourceStatus } from "./signup-source-meta";
 
 /**
- * Aggregation for /admin/sources. Pure, so the numbers on the page are unit
+ * Aggregation for the Sources view of /admin/insights. Pure, so the numbers on the page are unit
  * tested. Input is one row per asked person (`admin_signup_sources`).
  *
  * Shares of a source are always shares of the answers, never of everyone

@@ -16,8 +16,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendMetaEvent } from "@/lib/meta/capi";
 import { readMetaClickContext } from "@/lib/meta/click-context";
 import { isMetaEventId } from "@/lib/meta/client";
-import { SIGNUP_SOURCE_PATH } from "@/lib/onboarding/signup-source";
-import { createPendingSignupSource, hasFreshPendingSignupSource } from "@/lib/onboarding/signup-source-store";
+import { createPendingSignupAts } from "@/lib/onboarding/signup-ats-store";
+import { createPendingSignupSource } from "@/lib/onboarding/signup-source-store";
+import { ONBOARDING_DONE_PATH } from "@/lib/onboarding/steps";
+import { nextOnboardingPathFor } from "@/lib/onboarding/steps-store";
 
 export interface OnboardingState {
   /** `done` → the form performs a full navigation to `next` (see onboarding-form.tsx). */
@@ -101,10 +103,11 @@ export async function completeOnboarding(_prev: OnboardingState, formData: FormD
 
   // Welcome email + Resend contact, once, after the workspace is named. Never blocks onboarding.
   if (!profile.onboarded_at) {
-    // Second step ("How did you first hear about Preb?"): new owners only. Written
-    // first, so a slow email or attribution call below can never leave an onboarded
-    // owner without the row. Best effort: without it the person goes straight to the app.
-    if (session?.role === "owner") await createPendingSignupSource(profile.id);
+    // The two optional questions ("How did you first hear about Preb?", then
+    // "Which ATS do you use?"): new owners only. Written first, so a slow email or
+    // attribution call below can never leave an onboarded owner without the rows.
+    // Best effort: without a row the person is simply not asked that question.
+    if (session?.role === "owner") await Promise.all([createPendingSignupSource(profile.id), createPendingSignupAts(profile.id)]);
     const firstName = firstNameFor(fullName, profile.email);
     const welcome = async () => {
       try {
@@ -147,9 +150,12 @@ export async function completeOnboarding(_prev: OnboardingState, formData: FormD
   // two groups left the client router re-fetching /lists in a loop on prod
   // (blank, flickering page); a full navigation starts from a clean tree.
   //
-  // The destination is read from the row, not from "this call wrote it": a second
+  // The destination is read from the rows, not from "this call wrote it": a second
   // submit (another tab) skips the block above, and /onboarding redirects by the
   // same check, so the action and the page always agree.
-  if (session?.role === "owner" && (await hasFreshPendingSignupSource(profile.id))) return { status: "done", next: SIGNUP_SOURCE_PATH };
+  if (session?.role === "owner") {
+    const next = await nextOnboardingPathFor(profile.id);
+    if (next !== ONBOARDING_DONE_PATH) return { status: "done", next };
+  }
   return DONE;
 }
